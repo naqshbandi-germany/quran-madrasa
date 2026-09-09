@@ -1,19 +1,23 @@
-import { getServerSession } from "next-auth";
 import { notFound, redirect } from "next/navigation";
 
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 // Zentraler Einstiegspunkt in eine Kurssitzung. Aktuell wird bei ZOOM direkt
 // weitergeleitet. Sobald ein eigener Klassenraum (Video + Tafel) existiert,
 // wird hier für classroomType === "IN_APP" die eigene Komponente gerendert –
 // die restliche App muss dafür nicht angepasst werden.
-export default async function ClassroomPage({ params }: { params: { sessionId: string } }) {
-  const session = await getServerSession(authOptions);
+export default async function ClassroomPage({
+  params,
+}: {
+  params: Promise<{ sessionId: string }>;
+}) {
+  const { sessionId } = await params;
+  const session = await auth();
   if (!session) redirect("/auth/signin");
 
   const classSession = await prisma.classSession.findUnique({
-    where: { id: params.sessionId },
+    where: { id: sessionId },
     include: { course: true },
   });
   if (!classSession) notFound();

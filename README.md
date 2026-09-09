@@ -6,10 +6,14 @@ teilnehmen.
 
 ## Tech-Stack
 
-- **Next.js 14** (App Router) + **TypeScript** + **Tailwind CSS**
+- **Next.js 16** (App Router) + **React 19** + **TypeScript** + **Tailwind CSS**
 - **PostgreSQL** + **Prisma** als ORM
-- **NextAuth** (Credentials-Login) für Nutzer-Accounts (Rollen: `STUDENT`, `TEACHER`, `ADMIN`)
+- **Auth.js / NextAuth v5** (Credentials-Login) für Nutzer-Accounts (Rollen: `STUDENT`,
+  `TEACHER`, `ADMIN`). Aktuell als `5.0.0-beta.x` gepinnt, da es (Stand jetzt) noch keinen
+  finalen v5-Release gibt – die Kern-APIs sind aber stabil und breit im Einsatz.
 - **Stripe** (Checkout + Billing Portal) für monatlich kündbare Abos
+- Routen-Schutz über `src/proxy.ts` (Next.js 16 hat `middleware.ts` in `proxy.ts`
+  umbenannt) + den `authorized`-Callback in `src/auth.config.ts`
 - Unterricht aktuell über **Zoom-Links** pro Kurssitzung. Die Klassenraum-Logik liegt
   hinter einer Abstraktion (`ClassSession.classroomType`), damit später ein eigener
   Online-Klassenraum mit Tafel-Funktion (z.B. auf Basis von Daily.co/LiveKit) ergänzt
@@ -31,7 +35,8 @@ teilnehmen.
 
 ### 1. Voraussetzungen
 
-- [Node.js 20 LTS](https://nodejs.org/)
+- [Node.js](https://nodejs.org/) **20.9 oder neuer** (Next.js 16 benötigt mindestens diese
+  Version)
 - [Docker](https://www.docker.com/) (für lokale Postgres-Datenbank) oder eine eigene
   Postgres-Instanz
 - Ein [Stripe-Testkonto](https://dashboard.stripe.com/register) (kostenlos)

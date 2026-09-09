@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import "./globals.css";
+import { AuthNav } from "./auth-nav";
 import { AuthProvider } from "./providers";
 
 export const metadata: Metadata = {
@@ -19,10 +20,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/" className="text-lg font-semibold text-brand-700">
                 Quran Madrasa
               </Link>
-              <div className="flex gap-4 text-sm">
+              <div className="flex items-center gap-4 text-sm">
                 <Link href="/">Kursangebot</Link>
                 <Link href="/dashboard">Mein Bereich</Link>
-                <Link href="/auth/signin">Anmelden</Link>
+                <AuthNav />
               </div>
             </nav>
           </header>

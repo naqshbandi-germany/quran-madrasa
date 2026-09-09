@@ -1,14 +1,13 @@
-import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
 // Leitet zum Stripe Customer Portal weiter, wo Nutzer ihr Abo selbst
 // verwalten und monatlich kündigen können, ohne dass wir das nachbauen müssen.
 export async function POST() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }

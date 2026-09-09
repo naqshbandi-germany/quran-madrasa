@@ -7,9 +7,10 @@ function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-export default async function ManageCoursePage({ params }: { params: { id: string } }) {
+export default async function ManageCoursePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const course = await prisma.course.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { sessions: { orderBy: { startsAt: "asc" } } },
   });
   if (!course) notFound();
