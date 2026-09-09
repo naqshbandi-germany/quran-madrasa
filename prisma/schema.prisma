@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+// Wie eine Kurssitzung wahrgenommen wird. ZOOM ist für den MVP implementiert;
+// IN_APP ist als Erweiterungspunkt für einen späteren eigenen Klassenraum
+// (Video + Tafel) vorgesehen, ohne dass sich das Datenmodell ändern muss.
+enum ClassroomType {
+  ZOOM
+  IN_APP
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          Role      @default(STUDENT)
+  image         String?
+  createdAt     DateTime  @default(now())
+
+  stripeCustomerId String? @unique
+
+  taughtCourses Course[]       @relation("TeacherCourses")
+  enrollments   Enrollment[]
+  subscriptions Subscription[]
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  // Kategorie, z.B. "Koran-Rezitation (Tadschwid)", "Hifz", "Arabisch", "Islamische Wissenschaften"
+  category    String
+  level       String?
+  // Preis pro Monat in Cent (z.B. 2900 = 29,00 €)
+  priceCents  Int
+  currency    String   @default("eur")
+  // ID des Stripe Price-Objekts (recurring, monatlich) für den Checkout
+  stripePriceId String?
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  teacherId   String
+  teacher     User     @relation("TeacherCourses", fields: [teacherId], references: [id])
+
+  sessions    ClassSession[]
+  enrollments Enrollment[]
+}
+
+// Eine wiederkehrende oder einmalige Unterrichtseinheit innerhalb eines Kurses.
+model ClassSession {
+  id            String        @id @default(cuid())
+  courseId      String
+  course        Course        @relation(fields: [courseId], references: [id])
+  title         String
+  startsAt      DateTime
+  durationMin   Int           @default(60)
+  classroomType ClassroomType @default(ZOOM)
+  // Bei ZOOM: der Meeting-Link. Bei IN_APP (zukünftig): Referenz auf den eigenen Klassenraum.
+  joinUrl        String?
+  createdAt      DateTime     @default(now())
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+// Spiegelt das Stripe-Abo pro Nutzer & Kurs, damit Zugriff (Enrollment)
+// unabhängig von Stripe-Ausfällen anhand lokaler Daten geprüft werden kann.
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String
+  user                 User               @relation(fields: [userId], references: [id])
+  courseId             String
+  stripeSubscriptionId String             @unique
+  status               SubscriptionStatus
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+}
