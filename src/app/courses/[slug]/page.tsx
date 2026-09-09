@@ -7,9 +7,10 @@ function formatPrice(cents: number, currency: string) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(cents / 100);
 }
 
-export default async function CoursePage({ params }: { params: { slug: string } }) {
+export default async function CoursePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const course = await prisma.course.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: { teacher: { select: { name: true } } },
   });
 

@@ -1,15 +1,14 @@
 "use server";
 
 import { ClassroomType } from "@prisma/client";
-import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 async function requireTeacher() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session || (session.user.role !== "TEACHER" && session.user.role !== "ADMIN")) {
     throw new Error("Nicht berechtigt.");
   }
@@ -90,4 +89,6 @@ export async function togglePublish(formData: FormData) {
   });
 
   revalidatePath("/teacher");
+  revalidatePath("/");
+  revalidatePath(`/courses/${course.slug}`);
 }

@@ -1,7 +1,6 @@
-import { getServerSession } from "next-auth";
 import Link from "next/link";
 
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 function formatDateTime(date: Date) {
@@ -12,7 +11,7 @@ function formatDateTime(date: Date) {
 }
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session) return null;
 
   const enrollments = await prisma.enrollment.findMany({

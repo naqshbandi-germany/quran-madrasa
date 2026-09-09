@@ -1,12 +1,11 @@
-import { getServerSession } from "next-auth";
 import Link from "next/link";
 
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createCourse, togglePublish } from "@/lib/teacher-actions";
 
 export default async function TeacherPage() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session) return null;
 
   const courses = await prisma.course.findMany({
