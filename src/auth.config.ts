@@ -32,13 +32,17 @@ export const authConfig: NextAuthConfig = {
       return session;
     },
     authorized({ auth, request: { nextUrl } }) {
-      const isProtected =
-        nextUrl.pathname.startsWith("/dashboard") || nextUrl.pathname.startsWith("/teacher");
+      const isTeacherArea = nextUrl.pathname.startsWith("/teacher");
+      const isAdminArea = nextUrl.pathname.startsWith("/admin");
+      const isProtected = nextUrl.pathname.startsWith("/dashboard") || isTeacherArea || isAdminArea;
       if (!isProtected) return true;
 
       if (!auth?.user) return false;
 
-      const isTeacherArea = nextUrl.pathname.startsWith("/teacher");
+      if (isAdminArea && auth.user.role !== "ADMIN") {
+        return Response.redirect(new URL("/dashboard", nextUrl));
+      }
+
       if (isTeacherArea && auth.user.role !== "TEACHER" && auth.user.role !== "ADMIN") {
         return Response.redirect(new URL("/dashboard", nextUrl));
       }

@@ -4,6 +4,18 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../src/lib/prisma";
 
 async function main() {
+  const adminPasswordHash = await bcrypt.hash("admin1234", 10);
+  await prisma.user.upsert({
+    where: { email: "admin@quran-madrasa.de" },
+    update: {},
+    create: {
+      name: "Admin",
+      email: "admin@quran-madrasa.de",
+      passwordHash: adminPasswordHash,
+      role: Role.ADMIN,
+    },
+  });
+
   const passwordHash = await bcrypt.hash("lehrer1234", 10);
 
   const teacher = await prisma.user.upsert({

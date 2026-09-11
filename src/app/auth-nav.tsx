@@ -16,6 +16,7 @@ export function AuthNav() {
 
   return (
     <div className="flex items-center gap-4">
+      {session.user.role === "ADMIN" && <Link href="/admin">Admin</Link>}
       <span className="text-brand-600">{session.user.name}</span>
       <button onClick={() => signOut({ callbackUrl: "/" })} className="underline">
         Abmelden

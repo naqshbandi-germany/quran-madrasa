@@ -15,6 +15,13 @@ async function requireTeacher() {
   return session;
 }
 
+// Lehrer duerfen nur ihre eigenen Kurse bearbeiten; Admins duerfen alle.
+function assertOwnsCourse(session: { user: { id: string; role: string } }, teacherId: string) {
+  if (session.user.role !== "ADMIN" && session.user.id !== teacherId) {
+    throw new Error("Nicht berechtigt.");
+  }
+}
+
 const createCourseSchema = z.object({
   title: z.string().min(3),
   slug: z
@@ -52,7 +59,7 @@ const createSessionSchema = z.object({
 });
 
 export async function createClassSession(formData: FormData) {
-  await requireTeacher();
+  const session = await requireTeacher();
 
   const parsed = createSessionSchema.parse({
     courseId: formData.get("courseId"),
@@ -60,6 +67,9 @@ export async function createClassSession(formData: FormData) {
     startsAt: formData.get("startsAt"),
     joinUrl: formData.get("joinUrl") ?? "",
   });
+
+  const course = await prisma.course.findUniqueOrThrow({ where: { id: parsed.courseId } });
+  assertOwnsCourse(session, course.teacherId);
 
   await prisma.classSession.create({
     data: {
@@ -79,10 +89,12 @@ const togglePublishSchema = z.object({
 });
 
 export async function togglePublish(formData: FormData) {
-  await requireTeacher();
+  const session = await requireTeacher();
   const { courseId } = togglePublishSchema.parse({ courseId: formData.get("courseId") });
 
   const course = await prisma.course.findUniqueOrThrow({ where: { id: courseId } });
+  assertOwnsCourse(session, course.teacherId);
+
   await prisma.course.update({
     where: { id: courseId },
     data: { isPublished: !course.isPublished },
