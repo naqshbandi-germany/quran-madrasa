@@ -8,6 +8,7 @@ export function SubscribeButton({ courseId, slug }: { courseId: string; slug: st
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubscribe() {
     if (!session) {
@@ -16,6 +17,7 @@ export function SubscribeButton({ courseId, slug }: { courseId: string; slug: st
     }
 
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
@@ -25,19 +27,26 @@ export function SubscribeButton({ courseId, slug }: { courseId: string; slug: st
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+        return;
       }
+      setError(data.error ?? "Abo konnte nicht gestartet werden.");
+    } catch {
+      setError("Abo konnte nicht gestartet werden. Bitte später erneut versuchen.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <button
-      onClick={handleSubscribe}
-      disabled={loading}
-      className="rounded-md bg-brand-600 px-5 py-2.5 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
-    >
-      {loading ? "Einen Moment..." : "Jetzt abonnieren"}
-    </button>
+    <div className="text-right">
+      <button
+        onClick={handleSubscribe}
+        disabled={loading}
+        className="rounded-md bg-brand-600 px-5 py-2.5 font-medium text-white transition hover:bg-brand-700 disabled:opacity-60"
+      >
+        {loading ? "Einen Moment..." : "Jetzt abonnieren"}
+      </button>
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+    </div>
   );
 }
