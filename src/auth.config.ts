@@ -7,6 +7,12 @@ import type { NextAuthConfig } from "next-auth";
 // in src/auth.ts), da proxy.ts eine eigene NextAuth-Instanz nur aus dieser
 // Config erzeugt – sonst fehlt "role" in der vom Proxy gesehenen Session.
 export const authConfig: NextAuthConfig = {
+  // Explizit setzen: proxy.ts und auth.ts erzeugen zwei getrennte
+  // NextAuth-Instanzen. Ohne ein hier gemeinsam festgelegtes Secret kann
+  // Auth.js v5 (das primär AUTH_SECRET statt NEXTAUTH_SECRET erwartet) pro
+  // Instanz ein anderes/keins verwenden, wodurch der Proxy gültige Sessions
+  // aus der Auth-Route nicht erkennt.
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/auth/signin",
   },
