@@ -1,11 +1,9 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 export default function SignUpPage() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -40,8 +38,9 @@ export default function SignUpPage() {
       redirect: false,
     });
 
-    setLoading(false);
-    router.push("/dashboard");
+    // Voller Seiten-Reload statt router.push, siehe Kommentar in signin/page.tsx.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/dashboard";
   }
 
   return (

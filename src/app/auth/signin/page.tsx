@@ -2,11 +2,10 @@
 
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 
 function SignInForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -30,7 +29,10 @@ function SignInForm() {
       return;
     }
 
-    router.push(searchParams.get("callbackUrl") ?? "/dashboard");
+    // Voller Seiten-Reload statt router.push: sonst kann der Next.js
+    // Router-Cache eine vor dem Login geladene (nicht-eingeloggte)
+    // Version von z.B. /dashboard weiter anzeigen.
+    window.location.href = searchParams.get("callbackUrl") ?? "/dashboard";
   }
 
   return (
