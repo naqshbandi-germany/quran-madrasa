@@ -37,7 +37,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
             </p>
             <p className="text-sm text-brand-600">Monatlich kündbar, keine Mindestlaufzeit</p>
           </div>
-          <SubscribeButton courseId={course.id} />
+          <SubscribeButton courseId={course.id} slug={course.slug} />
         </div>
       </div>
     </article>

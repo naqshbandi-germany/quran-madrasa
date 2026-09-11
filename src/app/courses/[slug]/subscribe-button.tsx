@@ -4,14 +4,14 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function SubscribeButton({ courseId }: { courseId: string }) {
+export function SubscribeButton({ courseId, slug }: { courseId: string; slug: string }) {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   async function handleSubscribe() {
     if (!session) {
-      router.push(`/auth/signin?callbackUrl=/courses/${courseId}`);
+      router.push(`/auth/signin?callbackUrl=/courses/${slug}`);
       return;
     }
 
