@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import Stripe from "stripe";
 
 import { auth } from "@/auth";
 import { getAppUrl } from "@/lib/app-url";
@@ -20,33 +21,39 @@ export async function POST(request: Request) {
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
 
-  let stripeCustomerId = user.stripeCustomerId;
-  if (!stripeCustomerId) {
-    const customer = await stripe.customers.create({
-      email: user.email,
-      name: user.name,
-      metadata: { userId: user.id },
-    });
-    stripeCustomerId = customer.id;
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { stripeCustomerId },
-    });
-  }
+  try {
+    let stripeCustomerId = user.stripeCustomerId;
+    if (!stripeCustomerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.name,
+        metadata: { userId: user.id },
+      });
+      stripeCustomerId = customer.id;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { stripeCustomerId },
+      });
+    }
 
-  const appUrl = getAppUrl();
+    const appUrl = getAppUrl();
 
-  const checkoutSession = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    customer: stripeCustomerId,
-    line_items: [{ price: course.stripePriceId, quantity: 1 }],
-    success_url: `${appUrl}/dashboard?checkout=success`,
-    cancel_url: `${appUrl}/courses/${course.slug}?checkout=cancelled`,
-    metadata: { userId: user.id, courseId: course.id },
-    subscription_data: {
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer: stripeCustomerId,
+      line_items: [{ price: course.stripePriceId, quantity: 1 }],
+      success_url: `${appUrl}/dashboard?checkout=success`,
+      cancel_url: `${appUrl}/courses/${course.slug}?checkout=cancelled`,
       metadata: { userId: user.id, courseId: course.id },
-    },
-  });
+      subscription_data: {
+        metadata: { userId: user.id, courseId: course.id },
+      },
+    });
 
-  return NextResponse.json({ url: checkoutSession.url });
+    return NextResponse.json({ url: checkoutSession.url });
+  } catch (err) {
+    console.error("Stripe checkout error:", err);
+    const message = err instanceof Stripe.errors.StripeError ? err.message : "Unbekannter Fehler.";
+    return NextResponse.json({ error: `Stripe-Fehler: ${message}` }, { status: 500 });
+  }
 }
