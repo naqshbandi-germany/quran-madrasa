@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { getAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = getAppUrl();
 
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: "subscription",

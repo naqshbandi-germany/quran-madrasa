@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { getAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
@@ -17,7 +18,7 @@ export async function POST() {
     return NextResponse.json({ error: "Kein Abo vorhanden." }, { status: 400 });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = getAppUrl();
 
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: user.stripeCustomerId,
