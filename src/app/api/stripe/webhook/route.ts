@@ -25,11 +25,17 @@ async function upsertSubscriptionFromStripe(subscription: Stripe.Subscription) {
   const courseId = subscription.metadata.courseId;
   if (!userId || !courseId) return;
 
+  // Seit neueren Stripe-API-Versionen liegt current_period_end nicht mehr
+  // direkt am Abo, sondern an dessen Items (ein Abo kann theoretisch
+  // mehrere Items mit unterschiedlichen Abrechnungszeitraeumen haben). Wir
+  // haben immer genau ein Item pro Kurs-Abo.
+  const currentPeriodEnd = subscription.items.data[0]?.current_period_end;
+
   const data = {
     userId,
     courseId,
     status: mapStripeStatus(subscription.status),
-    currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+    currentPeriodEnd: new Date((currentPeriodEnd ?? 0) * 1000),
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
   };
 
