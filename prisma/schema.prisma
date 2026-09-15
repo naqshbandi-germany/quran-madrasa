@@ -28,6 +28,24 @@ enum ClassroomType {
   IN_APP
 }
 
+// Zielgruppe eines Kurses nach Alter. Ein Kurs kann mehrere Altersgruppen ansprechen
+// (z.B. "für alle Altersgruppen"), daher als Array am Kurs statt als Einzelwert.
+enum AgeGroup {
+  KIDS // 6-13 Jahre
+  TEENS // 14-22 Jahre
+  ADULTS // 23+ Jahre
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String
@@ -52,6 +70,8 @@ model Course {
   // Kategorie, z.B. "Koran-Rezitation (Tadschwid)", "Hifz", "Arabisch", "Islamische Wissenschaften"
   category    String
   level       String?
+  // Zielgruppe(n) nach Alter, für die Filterung im Kursangebot (z.B. Kurse für Kinder).
+  ageGroups   AgeGroup[] @default([])
   // Preis pro Monat in Cent (z.B. 2900 = 29,00 €)
   priceCents  Int
   currency    String   @default("eur")
@@ -63,8 +83,24 @@ model Course {
   teacherId   String
   teacher     User     @relation("TeacherCourses", fields: [teacherId], references: [id])
 
-  sessions    ClassSession[]
-  enrollments Enrollment[]
+  sessions      ClassSession[]
+  enrollments   Enrollment[]
+  scheduleSlots ScheduleSlot[]
+}
+
+// Wiederkehrender wöchentlicher Termin eines Kurses (z.B. "Mittwoch 18:00-18:40"),
+// unabhängig von den konkreten ClassSession-Terminen mit Zoom-Link. Dient der
+// Anzeige im Kursangebot/Stundenplan und der Filterung nach Wochentag.
+model ScheduleSlot {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  weekday   Weekday
+  // Uhrzeit als "HH:MM", z.B. "18:00"
+  startTime String
+  endTime   String
+  // Optionaler Hinweis, z.B. "Morgens"
+  note      String?
 }
 
 // Eine wiederkehrende oder einmalige Unterrichtseinheit innerhalb eines Kurses.

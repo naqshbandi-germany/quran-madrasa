@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createCourse, togglePublish } from "@/lib/teacher-actions";
+import { AGE_GROUP_LABELS } from "../course-catalog";
 
 export default async function TeacherPage() {
   const session = await auth();
@@ -73,6 +74,20 @@ export default async function TeacherPage() {
             required
             className="rounded-md border border-brand-200 px-3 py-2"
           />
+          <input
+            name="level"
+            placeholder="Level (optional, z.B. Level 1)"
+            className="rounded-md border border-brand-200 px-3 py-2"
+          />
+          <fieldset className="col-span-full flex flex-wrap gap-4 text-sm text-brand-700">
+            <legend className="mb-1 font-medium">Altersgruppe</legend>
+            {Object.entries(AGE_GROUP_LABELS).map(([value, label]) => (
+              <label key={value} className="flex items-center gap-1.5">
+                <input type="checkbox" name="ageGroups" value={value} />
+                {label}
+              </label>
+            ))}
+          </fieldset>
           <textarea
             name="description"
             placeholder="Beschreibung"
