@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { createClassSession, createScheduleSlot, deleteScheduleSlot } from "@/lib/teacher-actions";
-import { WEEKDAY_LABELS } from "../../../course-catalog";
+import { WEEKDAY_LABELS } from "@/lib/course-labels";
 
 function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(date);

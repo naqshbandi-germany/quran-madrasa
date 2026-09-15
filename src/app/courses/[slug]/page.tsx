@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { AGE_GROUP_LABELS, WEEKDAY_LABELS } from "../../course-catalog";
+import { AGE_GROUP_LABELS, WEEKDAY_LABELS } from "@/lib/course-labels";
 import { SubscribeButton } from "./subscribe-button";
 
 function formatPrice(cents: number, currency: string) {

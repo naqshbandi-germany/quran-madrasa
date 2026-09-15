@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { CourseCatalog, type CatalogCourse } from "./course-catalog";
+import type { CatalogCourse } from "@/lib/course-labels";
+import { CourseCatalog } from "./course-catalog";
 
 export default async function HomePage() {
   const courses = await prisma.course.findMany({

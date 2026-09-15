@@ -3,7 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createCourse, togglePublish } from "@/lib/teacher-actions";
-import { AGE_GROUP_LABELS } from "../course-catalog";
+import { AGE_GROUP_LABELS } from "@/lib/course-labels";
 
 export default async function TeacherPage() {
   const session = await auth();
