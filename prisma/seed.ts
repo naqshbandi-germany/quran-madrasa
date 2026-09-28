@@ -110,7 +110,7 @@ async function main() {
     where: { email: "lehrer@quran-madrasa.de" },
     update: {},
     create: {
-      name: "Ustadh Muhammad",
+      name: "Abdul Fattah",
       email: "lehrer@quran-madrasa.de",
       passwordHash,
       role: Role.TEACHER,
