@@ -1,6 +1,6 @@
 "use server";
 
-import { ClassroomType } from "@prisma/client";
+import { AgeGroup, ClassroomType, Weekday } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -30,6 +30,11 @@ const createCourseSchema = z.object({
     .regex(/^[a-z0-9-]+$/, "Nur Kleinbuchstaben, Ziffern und Bindestriche."),
   description: z.string().min(10),
   category: z.string().min(2),
+  level: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? v.trim() : null)),
+  ageGroups: z.array(z.nativeEnum(AgeGroup)).default([]),
   priceCents: z.coerce.number().int().positive(),
 });
 
@@ -41,6 +46,8 @@ export async function createCourse(formData: FormData) {
     slug: formData.get("slug"),
     description: formData.get("description"),
     category: formData.get("category"),
+    level: formData.get("level"),
+    ageGroups: formData.getAll("ageGroups"),
     priceCents: formData.get("priceCents"),
   });
 
@@ -49,6 +56,59 @@ export async function createCourse(formData: FormData) {
   });
 
   revalidatePath("/teacher");
+}
+
+const createScheduleSlotSchema = z.object({
+  courseId: z.string().cuid(),
+  weekday: z.nativeEnum(Weekday),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, "Format HH:MM"),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, "Format HH:MM"),
+  note: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? v.trim() : null)),
+});
+
+export async function createScheduleSlot(formData: FormData) {
+  const session = await requireTeacher();
+
+  const parsed = createScheduleSlotSchema.parse({
+    courseId: formData.get("courseId"),
+    weekday: formData.get("weekday"),
+    startTime: formData.get("startTime"),
+    endTime: formData.get("endTime"),
+    note: formData.get("note"),
+  });
+
+  const course = await prisma.course.findUniqueOrThrow({ where: { id: parsed.courseId } });
+  assertOwnsCourse(session, course.teacherId);
+
+  await prisma.scheduleSlot.create({ data: parsed });
+
+  revalidatePath(`/teacher/courses/${parsed.courseId}`);
+  revalidatePath("/");
+}
+
+const deleteScheduleSlotSchema = z.object({
+  slotId: z.string().cuid(),
+  courseId: z.string().cuid(),
+});
+
+export async function deleteScheduleSlot(formData: FormData) {
+  const session = await requireTeacher();
+
+  const parsed = deleteScheduleSlotSchema.parse({
+    slotId: formData.get("slotId"),
+    courseId: formData.get("courseId"),
+  });
+
+  const course = await prisma.course.findUniqueOrThrow({ where: { id: parsed.courseId } });
+  assertOwnsCourse(session, course.teacherId);
+
+  await prisma.scheduleSlot.delete({ where: { id: parsed.slotId } });
+
+  revalidatePath(`/teacher/courses/${parsed.courseId}`);
+  revalidatePath("/");
 }
 
 const createSessionSchema = z.object({
