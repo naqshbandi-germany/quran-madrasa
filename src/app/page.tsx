@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { CatalogCourse } from "@/lib/course-labels";
+import { BookingButton } from "./booking-button";
 import { CourseCatalog } from "./course-catalog";
 
 export default async function HomePage() {
@@ -33,8 +34,24 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-8">
+      <section className="rounded-xl border border-brand-200 bg-gradient-to-br from-brand-600 to-brand-700 px-6 py-10 text-white sm:px-10">
+        <h1 className="text-3xl font-bold sm:text-4xl">
+          Online Koran-Unterricht – live, persönlich, für jeden zugänglich
+        </h1>
+        <p className="mt-3 max-w-2xl text-brand-50">
+          Nicht sicher, welcher Kurs passt? In einem kostenlosen, unverbindlichen
+          Erstgespräch schauen wir gemeinsam, welches Angebot zu dir oder deinem Kind passt.
+        </p>
+        <div className="mt-6">
+          <BookingButton
+            variant="secondary"
+            className="!border-white !text-white hover:!bg-white hover:!text-brand-700"
+          />
+        </div>
+      </section>
+
       <section>
-        <h1 className="text-3xl font-bold text-brand-700">Unser Kursangebot</h1>
+        <h2 className="text-3xl font-bold text-brand-700">Unser Kursangebot</h2>
         <p className="mt-2 text-brand-600">
           Online-Unterricht in Koran-Rezitation (Tadschwid), Hifz und islamischer Wissenschaft –
           live mit unseren Lehrern. Filtere nach Thema, Altersgruppe, Lehrer, Level oder

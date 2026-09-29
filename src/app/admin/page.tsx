@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
-import { createTeacherAccount } from "@/lib/admin-actions";
+import { createTeacherAccount, updateSiteContent, updateTeacherProfile } from "@/lib/admin-actions";
 import { togglePublish } from "@/lib/teacher-actions";
 
 export default async function AdminPage() {
@@ -10,6 +10,8 @@ export default async function AdminPage() {
     orderBy: { createdAt: "desc" },
     include: { _count: { select: { taughtCourses: true } } },
   });
+
+  const siteContent = await prisma.siteContent.findUnique({ where: { id: "main" } });
 
   const courses = await prisma.course.findMany({
     orderBy: { createdAt: "desc" },
@@ -29,13 +31,37 @@ export default async function AdminPage() {
         {teachers.length === 0 ? (
           <p className="mb-4 text-sm text-brand-600">Noch keine Lehrer angelegt.</p>
         ) : (
-          <ul className="mb-4 space-y-1 text-sm text-brand-900">
+          <div className="mb-4 space-y-2">
             {teachers.map((teacher) => (
-              <li key={teacher.id}>
-                {teacher.name} ({teacher.email}) · {teacher._count.taughtCourses} Kurse
-              </li>
+              <details key={teacher.id} className="rounded-md border border-brand-200 px-3 py-2">
+                <summary className="cursor-pointer text-sm text-brand-900">
+                  {teacher.name} ({teacher.email}) · {teacher._count.taughtCourses} Kurse
+                </summary>
+                <form
+                  action={updateTeacherProfile}
+                  className="mt-3 grid gap-2 border-t border-brand-100 pt-3 sm:grid-cols-2"
+                >
+                  <input type="hidden" name="teacherId" value={teacher.id} />
+                  <input
+                    name="image"
+                    placeholder="Foto-URL (https://...)"
+                    defaultValue={teacher.image ?? ""}
+                    className="rounded-md border border-brand-200 px-3 py-2 text-sm"
+                  />
+                  <textarea
+                    name="bio"
+                    placeholder="Kurze Vita"
+                    defaultValue={teacher.bio ?? ""}
+                    rows={2}
+                    className="rounded-md border border-brand-200 px-3 py-2 text-sm sm:col-span-2"
+                  />
+                  <button className="rounded-md bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-700 sm:col-span-2 sm:w-fit">
+                    Profil speichern
+                  </button>
+                </form>
+              </details>
             ))}
-          </ul>
+          </div>
         )}
 
         <form action={createTeacherAccount} className="grid gap-3 sm:grid-cols-3">
@@ -62,6 +88,25 @@ export default async function AdminPage() {
           />
           <button className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
             Lehrer-Account anlegen
+          </button>
+        </form>
+      </section>
+
+      <section className="rounded-lg border border-brand-200 bg-white p-5">
+        <h2 className="mb-4 font-semibold text-brand-700">Website-Inhalte</h2>
+        <form action={updateSiteContent} className="space-y-3">
+          <label className="block text-sm text-brand-700">
+            Statement of Purpose (Seite &quot;Ziel &amp; Zweck&quot;)
+            <textarea
+              name="missionStatement"
+              defaultValue={siteContent?.missionStatement ?? ""}
+              rows={6}
+              placeholder="Unser Ziel ist es, hochwertigen Koran-Unterricht kostengünstig und für jeden zugänglich zu machen..."
+              className="mt-1 w-full rounded-md border border-brand-200 px-3 py-2 text-sm"
+            />
+          </label>
+          <button className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
+            Text speichern
           </button>
         </form>
       </section>

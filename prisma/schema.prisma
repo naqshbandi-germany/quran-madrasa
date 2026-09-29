@@ -52,7 +52,11 @@ model User {
   email         String    @unique
   passwordHash  String
   role          Role      @default(STUDENT)
+  // Foto-URL fürs Lehrer-Profil (kein eigener Datei-Upload, nur ein Link auf ein
+  // gehostetes Bild).
   image         String?
+  // Kurze Vita fürs Lehrer-Profil, nur für Rolle TEACHER relevant.
+  bio           String?
   createdAt     DateTime  @default(now())
 
   stripeCustomerId String? @unique
@@ -126,6 +130,15 @@ model Enrollment {
   createdAt DateTime @default(now())
 
   @@unique([userId, courseId])
+}
+
+// Ein einzelner Datensatz (id fest "main") für global editierbare Website-Texte,
+// z.B. das Statement of Purpose. Admin-editierbar, ohne dass dafür Code-Änderungen
+// nötig sind.
+model SiteContent {
+  id               String   @id @default("main")
+  missionStatement String   @default("")
+  updatedAt        DateTime @updatedAt
 }
 
 // Spiegelt das Stripe-Abo pro Nutzer & Kurs, damit Zugriff (Enrollment)

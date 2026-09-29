@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { BookingButton } from "@/app/booking-button";
 import { prisma } from "@/lib/prisma";
 import { AGE_GROUP_LABELS, WEEKDAY_LABELS } from "@/lib/course-labels";
 import { SubscribeButton } from "./subscribe-button";
@@ -74,6 +75,11 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
           </div>
           <SubscribeButton courseId={course.id} slug={course.slug} />
         </div>
+      </div>
+
+      <div className="rounded-lg border border-brand-200 bg-brand-50 p-5 text-center">
+        <p className="mb-3 text-brand-700">Unsicher, ob dieser Kurs passt? Lass es uns unverbindlich besprechen.</p>
+        <BookingButton />
       </div>
     </article>
   );
