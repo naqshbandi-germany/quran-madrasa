@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
-// Zentraler Einstiegspunkt in eine Kurssitzung. Aktuell wird bei ZOOM direkt
+// Zentraler Einstiegspunkt in eine Kurssitzung. Bei JITSI/ZOOM wird direkt
 // weitergeleitet. Sobald ein eigener Klassenraum (Video + Tafel) existiert,
 // wird hier für classroomType === "IN_APP" die eigene Komponente gerendert –
 // die restliche App muss dafür nicht angepasst werden.
@@ -29,11 +29,11 @@ export default async function ClassroomPage({
     redirect("/dashboard");
   }
 
-  if (classSession.classroomType === "ZOOM") {
+  if (classSession.classroomType === "JITSI" || classSession.classroomType === "ZOOM") {
     if (classSession.joinUrl) {
       redirect(classSession.joinUrl);
     }
-    return <p className="text-brand-600">Für diese Sitzung wurde noch kein Zoom-Link hinterlegt.</p>;
+    return <p className="text-brand-600">Für diese Sitzung wurde noch kein Meeting-Link hinterlegt.</p>;
   }
 
   // classroomType === "IN_APP" — noch nicht implementiert.
@@ -42,7 +42,7 @@ export default async function ClassroomPage({
       <h1 className="text-xl font-semibold text-brand-700">{classSession.title}</h1>
       <p className="mt-2 text-brand-600">
         Der eigene Online-Klassenraum mit Tafel ist noch nicht verfügbar. Diese Sitzung nutzt
-        aktuell keine Zoom-Verbindung.
+        aktuell keine Meeting-Verbindung.
       </p>
     </div>
   );

@@ -20,10 +20,13 @@ enum SubscriptionStatus {
   INCOMPLETE
 }
 
-// Wie eine Kurssitzung wahrgenommen wird. ZOOM ist für den MVP implementiert;
+// Wie eine Kurssitzung wahrgenommen wird. JITSI ist der Standard (Link wird
+// automatisch generiert); ZOOM bleibt als manuelle Override-Option bestehen.
 // IN_APP ist als Erweiterungspunkt für einen späteren eigenen Klassenraum
-// (Video + Tafel) vorgesehen, ohne dass sich das Datenmodell ändern muss.
+// (Video + Tafel, z.B. selbst gehostetes Jitsi) vorgesehen, ohne dass sich das
+// Datenmodell ändern muss.
 enum ClassroomType {
+  JITSI
   ZOOM
   IN_APP
 }

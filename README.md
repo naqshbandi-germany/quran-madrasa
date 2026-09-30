@@ -1,7 +1,7 @@
 # Quran Madrasa (Arbeitstitel)
 
 Online-Plattform für Koran-Unterricht (Tadschwid, Hifz) und islamische Wissenschaften:
-Kursangebot durchstöbern, monatlich kündbares Abo abschließen, per Zoom am Unterricht
+Kursangebot durchstöbern, monatlich kündbares Abo abschließen, per Jitsi Meet am Unterricht
 teilnehmen.
 
 ## Tech-Stack
@@ -14,10 +14,13 @@ teilnehmen.
 - **Stripe** (Checkout + Billing Portal) für monatlich kündbare Abos
 - Routen-Schutz über `src/proxy.ts` (Next.js 16 hat `middleware.ts` in `proxy.ts`
   umbenannt) + den `authorized`-Callback in `src/auth.config.ts`
-- Unterricht aktuell über **Zoom-Links** pro Kurssitzung. Die Klassenraum-Logik liegt
-  hinter einer Abstraktion (`ClassSession.classroomType`), damit später ein eigener
-  Online-Klassenraum mit Tafel-Funktion (z.B. auf Basis von Daily.co/LiveKit) ergänzt
-  werden kann, ohne das Datenmodell oder bestehende Seiten zu ändern.
+- Unterricht über **automatisch generierte Jitsi-Meet-Links** (kostenlos, keine Zeit-/
+  Teilnehmerlimits, kein Account nötig – öffentliche Instanz meet.jit.si, siehe
+  `src/lib/jitsi.ts`) pro Kurssitzung; Lehrer können optional einen eigenen Link
+  eintragen. Die Klassenraum-Logik liegt hinter einer Abstraktion
+  (`ClassSession.classroomType`), damit später ein eigener, selbst gehosteter
+  Online-Klassenraum mit Tafel-Funktion ergänzt werden kann, ohne das Datenmodell oder
+  bestehende Seiten zu ändern.
 
 ## Funktionsumfang (MVP)
 
@@ -29,7 +32,8 @@ teilnehmen.
 - Stripe Customer Portal → Nutzer können ihr Abo selbst monatlich kündigen oder
   Zahlungsdaten ändern
 - Schüler-Dashboard: eigene Kurse + kommende Sitzungen + "Klasse beitreten"
-- Lehrer-Bereich: Kurse anlegen/veröffentlichen, Sitzungen mit Zoom-Link anlegen
+- Lehrer-Bereich: Kurse anlegen/veröffentlichen, einzelne oder wiederkehrende Sitzungen
+  mit automatischem Jitsi-Link anlegen
 
 ## Lokales Setup
 
@@ -133,7 +137,7 @@ App läuft auf http://localhost:3000.
 ## Nächste sinnvolle Schritte
 
 - Eigenständiger Online-Klassenraum mit Tafel-Funktion (`ClassroomType.IN_APP`) als
-  Ersatz/Ergänzung zu Zoom
+  Ersatz/Ergänzung zu Jitsi (z.B. selbst gehostet)
 - E-Mail-Versand (Registrierungsbestätigung, Erinnerung vor Unterrichtsbeginn)
 - Admin-Oberfläche zur Nutzerverwaltung und Freischaltung weiterer Lehrer
 - Mehrsprachigkeit (Deutsch/Arabisch/Englisch)
