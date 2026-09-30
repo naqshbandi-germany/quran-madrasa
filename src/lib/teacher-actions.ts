@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { auth } from "@/auth";
+import { generateJitsiUrl } from "@/lib/jitsi";
 import { prisma } from "@/lib/prisma";
 
 async function requireTeacher() {
@@ -131,15 +132,82 @@ export async function createClassSession(formData: FormData) {
   const course = await prisma.course.findUniqueOrThrow({ where: { id: parsed.courseId } });
   assertOwnsCourse(session, course.teacherId);
 
+  // Ohne manuellen Link automatisch einen Jitsi-Meeting-Link generieren.
+  const joinUrl = parsed.joinUrl || generateJitsiUrl(course.slug);
+  const classroomType = parsed.joinUrl ? ClassroomType.ZOOM : ClassroomType.JITSI;
+
   await prisma.classSession.create({
     data: {
       courseId: parsed.courseId,
       title: parsed.title,
       startsAt: parsed.startsAt,
-      joinUrl: parsed.joinUrl || null,
-      classroomType: ClassroomType.ZOOM,
+      joinUrl,
+      classroomType,
     },
   });
+
+  revalidatePath(`/teacher/courses/${parsed.courseId}`);
+}
+
+const createRecurringSessionsSchema = z.object({
+  courseId: z.string().cuid(),
+  title: z.string().min(3),
+  weekday: z.nativeEnum(Weekday),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, "Format HH:MM"),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, "Format HH:MM"),
+  firstDate: z.coerce.date(),
+  interval: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]),
+  occurrences: z.coerce.number().int().min(1).max(52),
+});
+
+function addInterval(date: Date, interval: "WEEKLY" | "BIWEEKLY" | "MONTHLY", index: number) {
+  const result = new Date(date);
+  if (interval === "MONTHLY") {
+    result.setMonth(result.getMonth() + index);
+  } else {
+    const days = interval === "WEEKLY" ? 7 : 14;
+    result.setDate(result.getDate() + index * days);
+  }
+  return result;
+}
+
+// Legt mehrere Sitzungen auf einmal an (z.B. "12x woechentlich ab dem 5.10."),
+// jede mit automatisch generiertem Jitsi-Link.
+export async function createRecurringSessions(formData: FormData) {
+  const session = await requireTeacher();
+
+  const parsed = createRecurringSessionsSchema.parse({
+    courseId: formData.get("courseId"),
+    title: formData.get("title"),
+    weekday: formData.get("weekday"),
+    startTime: formData.get("startTime"),
+    endTime: formData.get("endTime"),
+    firstDate: formData.get("firstDate"),
+    interval: formData.get("interval"),
+    occurrences: formData.get("occurrences"),
+  });
+
+  const course = await prisma.course.findUniqueOrThrow({ where: { id: parsed.courseId } });
+  assertOwnsCourse(session, course.teacherId);
+
+  const [hours, minutes] = parsed.startTime.split(":").map(Number);
+  const [durationHours, durationMinutes] = parsed.endTime.split(":").map(Number);
+  const durationMin = durationHours * 60 + durationMinutes - (hours * 60 + minutes);
+
+  const sessions = Array.from({ length: parsed.occurrences }, (_, i) => {
+    const date = addInterval(parsed.firstDate, parsed.interval, i);
+    date.setHours(hours, minutes, 0, 0);
+    return {
+      courseId: parsed.courseId,
+      title: parsed.title,
+      startsAt: date,
+      durationMin: durationMin > 0 ? durationMin : 60,
+      joinUrl: generateJitsiUrl(course.slug),
+      classroomType: ClassroomType.JITSI,
+    };
+  });
+
+  await prisma.classSession.createMany({ data: sessions });
 
   revalidatePath(`/teacher/courses/${parsed.courseId}`);
 }

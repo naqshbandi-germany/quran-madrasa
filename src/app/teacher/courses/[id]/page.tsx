@@ -2,7 +2,12 @@ import { Weekday } from "@prisma/client";
 import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { createClassSession, createScheduleSlot, deleteScheduleSlot } from "@/lib/teacher-actions";
+import {
+  createClassSession,
+  createRecurringSessions,
+  createScheduleSlot,
+  deleteScheduleSlot,
+} from "@/lib/teacher-actions";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
 
 function formatDateTime(date: Date) {
@@ -28,7 +33,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         <h2 className="font-semibold text-brand-700">Wöchentlicher Stundenplan</h2>
         <p className="text-sm text-brand-600">
           Feste Wochentermine für das Kursangebot (z.B. &bdquo;Mittwoch 18:00–18:40&ldquo;) –
-          unabhängig von den einzelnen Sitzungen mit Zoom-Link unten.
+          unabhängig von den einzelnen Sitzungen mit Meeting-Link unten.
         </p>
 
         <ul className="space-y-2">
@@ -91,7 +96,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
       </section>
 
       <section className="space-y-4">
-        <h2 className="font-semibold text-brand-700">Sitzungen (mit Zoom-Link)</h2>
+        <h2 className="font-semibold text-brand-700">Sitzungen (mit Meeting-Link)</h2>
         <ul className="space-y-2">
           {course.sessions.map((classSession) => (
             <li
@@ -102,7 +107,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               {formatDateTime(classSession.startsAt)} ·{" "}
               {classSession.joinUrl ? (
                 <a href={classSession.joinUrl} className="underline">
-                  Zoom-Link
+                  {classSession.classroomType === "JITSI" ? "Jitsi-Link" : "Meeting-Link"}
                 </a>
               ) : (
                 "kein Link hinterlegt"
@@ -112,7 +117,10 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         </ul>
 
         <div className="rounded-lg border border-brand-200 bg-white p-5">
-          <h3 className="mb-4 font-semibold text-brand-700">Neue Sitzung anlegen</h3>
+          <h3 className="mb-4 font-semibold text-brand-700">Einzelne Sitzung anlegen</h3>
+          <p className="mb-3 text-sm text-brand-600">
+            Ohne eigenen Link wird automatisch ein kostenloser Jitsi-Meeting-Link erzeugt.
+          </p>
           <form action={createClassSession} className="grid gap-3 sm:grid-cols-2">
             <input type="hidden" name="courseId" value={course.id} />
             <input
@@ -130,11 +138,91 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
             <input
               name="joinUrl"
               type="url"
-              placeholder="Zoom-Link (https://zoom.us/j/...)"
+              placeholder="Eigener Link (optional, überschreibt Jitsi)"
               className="rounded-md border border-brand-200 px-3 py-2"
             />
             <button className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
               Sitzung anlegen
+            </button>
+          </form>
+        </div>
+
+        <div className="rounded-lg border border-brand-200 bg-white p-5">
+          <h3 className="mb-1 font-semibold text-brand-700">Wiederkehrende Sitzungen anlegen</h3>
+          <p className="mb-3 text-sm text-brand-600">
+            Legt mehrere Termine auf einmal an, jeweils mit eigenem, automatisch generiertem
+            Jitsi-Link.
+          </p>
+          <form action={createRecurringSessions} className="grid gap-3 sm:grid-cols-3">
+            <input type="hidden" name="courseId" value={course.id} />
+            <input
+              name="title"
+              placeholder="Titel (für alle Termine)"
+              required
+              className="col-span-full rounded-md border border-brand-200 px-3 py-2"
+            />
+            <select
+              name="weekday"
+              required
+              defaultValue=""
+              className="rounded-md border border-brand-200 px-3 py-2"
+            >
+              <option value="" disabled>
+                Wochentag
+              </option>
+              {Object.values(Weekday).map((day) => (
+                <option key={day} value={day}>
+                  {WEEKDAY_LABELS[day] ?? day}
+                </option>
+              ))}
+            </select>
+            <input
+              name="startTime"
+              type="time"
+              required
+              className="rounded-md border border-brand-200 px-3 py-2"
+            />
+            <input
+              name="endTime"
+              type="time"
+              required
+              className="rounded-md border border-brand-200 px-3 py-2"
+            />
+            <label className="flex flex-col text-sm text-brand-700">
+              Erster Termin
+              <input
+                name="firstDate"
+                type="date"
+                required
+                className="mt-1 rounded-md border border-brand-200 px-3 py-2"
+              />
+            </label>
+            <label className="flex flex-col text-sm text-brand-700">
+              Intervall
+              <select
+                name="interval"
+                defaultValue="WEEKLY"
+                className="mt-1 rounded-md border border-brand-200 px-3 py-2"
+              >
+                <option value="WEEKLY">Wöchentlich</option>
+                <option value="BIWEEKLY">Alle 2 Wochen</option>
+                <option value="MONTHLY">Monatlich</option>
+              </select>
+            </label>
+            <label className="flex flex-col text-sm text-brand-700">
+              Anzahl Termine
+              <input
+                name="occurrences"
+                type="number"
+                min={1}
+                max={52}
+                defaultValue={12}
+                required
+                className="mt-1 rounded-md border border-brand-200 px-3 py-2"
+              />
+            </label>
+            <button className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
+              Termine anlegen
             </button>
           </form>
         </div>
