@@ -6,7 +6,9 @@ import { z } from "zod";
 
 import { auth } from "@/auth";
 import { generateJitsiUrl } from "@/lib/jitsi";
+import { materialEmailHtml } from "@/lib/material-email";
 import { prisma } from "@/lib/prisma";
+import { MATERIAL_EMAIL_FROM, getResend } from "@/lib/resend";
 
 async function requireTeacher() {
   const session = await auth();
@@ -231,4 +233,51 @@ export async function togglePublish(formData: FormData) {
   revalidatePath("/teacher");
   revalidatePath("/");
   revalidatePath(`/courses/${course.slug}`);
+}
+
+const sendCourseMaterialSchema = z.object({
+  courseId: z.string().cuid(),
+  subject: z.string().min(3).max(200),
+  message: z.string().min(10).max(5000),
+});
+
+// Schickt eine freie Nachricht (z.B. Kursmaterial, Hausaufgaben, Ankuendigungen) per
+// E-Mail an alle aktuell eingeschriebenen Teilnehmer des Kurses, getrennt von den
+// automatischen Sitzungs-Erinnerungen (siehe MATERIAL_EMAIL_FROM).
+export async function sendCourseMaterial(formData: FormData) {
+  const session = await requireTeacher();
+
+  const parsed = sendCourseMaterialSchema.parse({
+    courseId: formData.get("courseId"),
+    subject: formData.get("subject"),
+    message: formData.get("message"),
+  });
+
+  const course = await prisma.course.findUniqueOrThrow({
+    where: { id: parsed.courseId },
+    include: { enrollments: { include: { user: { select: { name: true, email: true } } } } },
+  });
+  assertOwnsCourse(session, course.teacherId);
+
+  const resend = getResend();
+
+  for (const enrollment of course.enrollments) {
+    const { user } = enrollment;
+    try {
+      await resend.emails.send({
+        from: MATERIAL_EMAIL_FROM,
+        to: user.email,
+        subject: parsed.subject,
+        html: materialEmailHtml({
+          studentName: user.name,
+          courseTitle: course.title,
+          message: parsed.message,
+        }),
+      });
+    } catch (err) {
+      console.error(`Kursmaterial-E-Mail an ${user.email} fehlgeschlagen:`, err);
+    }
+  }
+
+  revalidatePath(`/teacher/courses/${parsed.courseId}`);
 }

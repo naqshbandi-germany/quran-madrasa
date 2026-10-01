@@ -7,6 +7,7 @@ import {
   createRecurringSessions,
   createScheduleSlot,
   deleteScheduleSlot,
+  sendCourseMaterial,
 } from "@/lib/teacher-actions";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
 
@@ -21,6 +22,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
     include: {
       sessions: { orderBy: { startsAt: "asc" } },
       scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
+      enrollments: { include: { user: { select: { name: true } } }, orderBy: { createdAt: "asc" } },
     },
   });
   if (!course) notFound();
@@ -226,6 +228,45 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
             </button>
           </form>
         </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-semibold text-brand-700">Kursmaterial per E-Mail verschicken</h2>
+        <p className="text-sm text-brand-600">
+          Schickt eine Nachricht (z.B. Lernmaterial, Hausaufgaben, Ankündigungen) an alle
+          eingeschriebenen Teilnehmer dieses Kurses – getrennt von den automatischen
+          Sitzungs-Erinnerungen.
+        </p>
+
+        {course.enrollments.length === 0 ? (
+          <p className="text-sm text-brand-600">Noch keine Teilnehmer eingeschrieben.</p>
+        ) : (
+          <div className="rounded-lg border border-brand-200 bg-white p-5">
+            <p className="mb-4 text-sm text-brand-600">
+              Empfänger: {course.enrollments.map((e) => e.user.name).join(", ")} (
+              {course.enrollments.length} Teilnehmer)
+            </p>
+            <form action={sendCourseMaterial} className="space-y-3">
+              <input type="hidden" name="courseId" value={course.id} />
+              <input
+                name="subject"
+                placeholder="Betreff"
+                required
+                className="w-full rounded-md border border-brand-200 px-3 py-2"
+              />
+              <textarea
+                name="message"
+                placeholder="Nachricht an die Teilnehmer…"
+                required
+                rows={6}
+                className="w-full rounded-md border border-brand-200 px-3 py-2"
+              />
+              <button className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
+                An {course.enrollments.length} Teilnehmer senden
+              </button>
+            </form>
+          </div>
+        )}
       </section>
     </div>
   );
