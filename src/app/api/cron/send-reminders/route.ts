@@ -1,23 +1,27 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
-import { reminderHtml, reminderSubject } from "@/lib/reminder-email";
-import { EMAIL_FROM, getResend } from "@/lib/resend";
 import { getAppUrl } from "@/lib/app-url";
+import { prisma } from "@/lib/prisma";
+import { reminderHtml, reminderSubject, type ReminderKind } from "@/lib/reminder-email";
+import { EMAIL_FROM, getResend } from "@/lib/resend";
 
 export const maxDuration = 60;
+
+type ReminderField = "reminder24hSentAt" | "reminder1hSentAt" | "reminderStartSentAt";
 
 // Wird alle 15 Minuten von einem GitHub-Actions-Workflow aufgerufen (siehe
 // .github/workflows/send-reminders.yml) - Vercels Hobby-Plan erlaubt Cron Jobs
 // nur einmal taeglich, daher dieser externe Taktgeber.
 //
-// Zeitfenster von +/-20 Minuten um die eigentliche 24h/1h-Marke herum, damit
-// weder Timing-Ungenauigkeiten des Schedulers noch knapp verpasste
-// Durchlaeufe eine Sitzung durchrutschen lassen. reminder24hSentAt/
-// reminder1hSentAt verhindern doppelten Versand bei jedem Durchlauf.
-async function findDueSessions(hoursBefore: number, field: "reminder24hSentAt" | "reminder1hSentAt") {
-  const target = new Date(Date.now() + hoursBefore * 60 * 60 * 1000);
-  const windowMs = 20 * 60 * 1000;
+// Zeitfenster um die eigentliche Marke herum, damit weder Timing-
+// Ungenauigkeiten des Schedulers noch knapp verpasste Durchlaeufe eine
+// Sitzung durchrutschen lassen. Bei "jetzt live" ist das Fenster enger, damit
+// die Mail nicht erst 15+ Minuten nach Kursbeginn ankommt.
+// reminder24hSentAt/reminder1hSentAt/reminderStartSentAt verhindern
+// doppelten Versand bei jedem Durchlauf.
+async function findDueSessions(minutesBefore: number, windowMinutes: number, field: ReminderField) {
+  const target = new Date(Date.now() + minutesBefore * 60 * 1000);
+  const windowMs = windowMinutes * 60 * 1000;
 
   return prisma.classSession.findMany({
     where: {
@@ -37,8 +41,8 @@ async function findDueSessions(hoursBefore: number, field: "reminder24hSentAt" |
 
 async function sendRemindersFor(
   sessions: Awaited<ReturnType<typeof findDueSessions>>,
-  kind: "24h" | "1h",
-  field: "reminder24hSentAt" | "reminder1hSentAt",
+  kind: ReminderKind,
+  field: ReminderField,
 ) {
   const appUrl = getAppUrl();
   const resend = getResend();
@@ -83,15 +87,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
   }
 
-  const sessions24h = await findDueSessions(24, "reminder24hSentAt");
+  const sessions24h = await findDueSessions(24 * 60, 20, "reminder24hSentAt");
   const sent24h = await sendRemindersFor(sessions24h, "24h", "reminder24hSentAt");
 
-  const sessions1h = await findDueSessions(1, "reminder1hSentAt");
+  const sessions1h = await findDueSessions(60, 20, "reminder1hSentAt");
   const sent1h = await sendRemindersFor(sessions1h, "1h", "reminder1hSentAt");
+
+  const sessionsStart = await findDueSessions(0, 8, "reminderStartSentAt");
+  const sentStart = await sendRemindersFor(sessionsStart, "start", "reminderStartSentAt");
 
   return NextResponse.json({
     sessions24h: sessions24h.length,
     sessions1h: sessions1h.length,
-    emailsSent: sent24h + sent1h,
+    sessionsStart: sessionsStart.length,
+    emailsSent: sent24h + sent1h + sentStart,
   });
 }

@@ -2,10 +2,17 @@ function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("de-DE", { dateStyle: "full", timeStyle: "short" }).format(date);
 }
 
-export function reminderSubject(courseTitle: string, kind: "24h" | "1h") {
-  return kind === "24h"
-    ? `Erinnerung: "${courseTitle}" morgen`
-    : `Gleich geht's los: "${courseTitle}" in einer Stunde`;
+export type ReminderKind = "24h" | "1h" | "start";
+
+export function reminderSubject(courseTitle: string, kind: ReminderKind) {
+  switch (kind) {
+    case "24h":
+      return `Erinnerung: "${courseTitle}" morgen`;
+    case "1h":
+      return `Gleich geht's los: "${courseTitle}" in einer Stunde`;
+    case "start":
+      return `Jetzt live: "${courseTitle}" hat begonnen`;
+  }
 }
 
 export function reminderHtml(params: {
@@ -13,18 +20,21 @@ export function reminderHtml(params: {
   courseTitle: string;
   startsAt: Date;
   joinUrl: string;
-  kind: "24h" | "1h";
+  kind: ReminderKind;
 }) {
   const { studentName, courseTitle, startsAt, joinUrl, kind } = params;
-  const whenText = kind === "24h" ? "morgen" : "in einer Stunde";
+  const whenText =
+    kind === "24h" ? "morgen" : kind === "1h" ? "in einer Stunde" : "gerade eben";
+  const introText =
+    kind === "start"
+      ? `dein Kurs <strong>${courseTitle}</strong> hat gerade begonnen.`
+      : `dein Kurs <strong>${courseTitle}</strong> findet ${whenText} statt.`;
 
   return `
     <div style="font-family: sans-serif; color: #1f3616; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #3f6b31; font-size: 20px;">Quran Madrasa</h1>
       <p>Assalamu alaikum ${studentName},</p>
-      <p>
-        kurze Erinnerung: dein Kurs <strong>${courseTitle}</strong> findet ${whenText} statt.
-      </p>
+      <p>${introText}</p>
       <p style="margin: 16px 0;">
         <strong>Wann:</strong> ${formatDateTime(startsAt)}
       </p>

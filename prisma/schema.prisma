@@ -124,8 +124,9 @@ model ClassSession {
   createdAt      DateTime     @default(now())
   // Zeitpunkt, zu dem die jeweilige Erinnerungs-E-Mail verschickt wurde (verhindert
   // doppelten Versand bei jedem Cron-Durchlauf).
-  reminder24hSentAt DateTime?
-  reminder1hSentAt  DateTime?
+  reminder24hSentAt   DateTime?
+  reminder1hSentAt    DateTime?
+  reminderStartSentAt DateTime?
 }
 
 model Enrollment {
