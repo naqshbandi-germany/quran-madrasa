@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { BookingButton } from "@/app/booking-button";
+import { BookingButton } from "@/components/booking-button";
 import { prisma } from "@/lib/prisma";
 import { AGE_GROUP_LABELS, WEEKDAY_LABELS } from "@/lib/course-labels";
 import { SubscribeButton } from "./subscribe-button";

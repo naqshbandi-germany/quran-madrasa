@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { BookingButton } from "./booking-button";
+import { BookingButton } from "@/components/booking-button";
 
 export type CourseSlideData = {
   slug: string;
