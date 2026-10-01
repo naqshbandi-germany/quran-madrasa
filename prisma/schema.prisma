@@ -118,10 +118,14 @@ model ClassSession {
   title         String
   startsAt      DateTime
   durationMin   Int           @default(60)
-  classroomType ClassroomType @default(ZOOM)
-  // Bei ZOOM: der Meeting-Link. Bei IN_APP (zukünftig): Referenz auf den eigenen Klassenraum.
+  classroomType ClassroomType @default(JITSI)
+  // Bei JITSI/ZOOM: der Meeting-Link. Bei IN_APP (zukünftig): Referenz auf den eigenen Klassenraum.
   joinUrl        String?
   createdAt      DateTime     @default(now())
+  // Zeitpunkt, zu dem die jeweilige Erinnerungs-E-Mail verschickt wurde (verhindert
+  // doppelten Versand bei jedem Cron-Durchlauf).
+  reminder24hSentAt DateTime?
+  reminder1hSentAt  DateTime?
 }
 
 model Enrollment {

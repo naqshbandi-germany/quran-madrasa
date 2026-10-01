@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 // Leitet zum Stripe Customer Portal weiter, wo Nutzer ihr Abo selbst
 // verwalten und monatlich kündigen können, ohne dass wir das nachbauen müssen.
@@ -19,6 +19,7 @@ export async function POST() {
   }
 
   const appUrl = getAppUrl();
+  const stripe = getStripe();
 
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: user.stripeCustomerId,
