@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { reminderHtml, reminderSubject } from "@/lib/reminder-email";
-import { EMAIL_FROM, resend } from "@/lib/resend";
+import { EMAIL_FROM, getResend } from "@/lib/resend";
 import { getAppUrl } from "@/lib/app-url";
 
 export const maxDuration = 60;
@@ -41,6 +41,7 @@ async function sendRemindersFor(
   field: "reminder24hSentAt" | "reminder1hSentAt",
 ) {
   const appUrl = getAppUrl();
+  const resend = getResend();
   let emailCount = 0;
 
   for (const classSession of sessions) {

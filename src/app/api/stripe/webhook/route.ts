@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionStatus {
   switch (status) {
@@ -63,6 +63,7 @@ export async function POST(request: Request) {
   }
 
   const rawBody = await request.text();
+  const stripe = getStripe();
 
   let event: Stripe.Event;
   try {

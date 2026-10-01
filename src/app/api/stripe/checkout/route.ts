@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import { auth } from "@/auth";
 import { getAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
 
   try {
+    const stripe = getStripe();
     let stripeCustomerId = user.stripeCustomerId;
     if (!stripeCustomerId) {
       const customer = await stripe.customers.create({

@@ -11,6 +11,8 @@
 # env
 .env
 .env*.local
+keys.txt
+ZUGANG.md
 
 # misc
 .DS_Store
