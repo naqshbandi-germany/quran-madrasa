@@ -266,7 +266,14 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
                 ))}
               </div>
 
-              <h3 className="mt-3 font-semibold text-brand-700">{course.title}</h3>
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <h3 className="font-semibold text-brand-700">{course.title}</h3>
+                {course.scheduleSlots.length > 0 && (
+                  <span className="shrink-0 rounded-full bg-brand-700 px-2.5 py-1 text-xs font-semibold text-white">
+                    {course.scheduleSlots.length}× / Woche
+                  </span>
+                )}
+              </div>
               <p className="mt-1 text-sm text-brand-600">{course.description}</p>
 
               {course.scheduleSlots.length > 0 && (

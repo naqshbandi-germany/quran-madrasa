@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { CatalogCourse } from "@/lib/course-labels";
-import { BookingButton } from "./booking-button";
 import { CourseCatalog } from "./course-catalog";
+import { HeroCarousel, type CourseSlideData } from "./hero-carousel";
 
 export default async function HomePage() {
   const courses = await prisma.course.findMany({
@@ -32,23 +32,16 @@ export default async function HomePage() {
     })),
   }));
 
+  const featuredCourses: CourseSlideData[] = catalogCourses.slice(0, 3).map((c) => ({
+    slug: c.slug,
+    title: c.title,
+    description: c.description,
+    category: c.category,
+  }));
+
   return (
     <div className="space-y-8">
-      <section className="rounded-xl border border-brand-200 bg-gradient-to-br from-brand-600 to-brand-700 px-6 py-10 text-white sm:px-10">
-        <h1 className="text-3xl font-bold sm:text-4xl">
-          Online Koran-Unterricht – live, persönlich, für jeden zugänglich
-        </h1>
-        <p className="mt-3 max-w-2xl text-brand-50">
-          Nicht sicher, welcher Kurs passt? In einem kostenlosen, unverbindlichen
-          Erstgespräch schauen wir gemeinsam, welches Angebot zu dir oder deinem Kind passt.
-        </p>
-        <div className="mt-6">
-          <BookingButton
-            variant="secondary"
-            className="!border-white !text-white hover:!bg-white hover:!text-brand-700"
-          />
-        </div>
-      </section>
+      <HeroCarousel courses={featuredCourses} />
 
       <section>
         <h2 className="text-3xl font-bold text-brand-700">Unser Kursangebot</h2>
