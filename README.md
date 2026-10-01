@@ -34,6 +34,10 @@ teilnehmen.
 - Schüler-Dashboard: eigene Kurse + kommende Sitzungen + "Klasse beitreten"
 - Lehrer-Bereich: Kurse anlegen/veröffentlichen, einzelne oder wiederkehrende Sitzungen
   mit automatischem Jitsi-Link anlegen
+- E-Mail-Erinnerungen (24h und 1h vor Kursbeginn) über Resend, getaktet durch einen
+  GitHub-Actions-Workflow (`.github/workflows/send-reminders.yml`), der alle 15 Minuten
+  `/api/cron/send-reminders` aufruft (Vercels Hobby-Plan erlaubt Cron Jobs nur 1x täglich,
+  daher dieser Umweg)
 
 ## Lokales Setup
 
