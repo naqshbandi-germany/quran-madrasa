@@ -41,6 +41,10 @@ teilnehmen.
 - Lehrer können Kursmaterial (Lernmaterial, Hausaufgaben, Ankündigungen) per E-Mail an alle
   eingeschriebenen Teilnehmer eines Kurses verschicken, über einen eigenen Absender
   (`RESEND_MATERIAL_FROM_EMAIL`), getrennt von den automatischen Erinnerungen
+- Zwei getrennte Layouts: die öffentliche Marketing-Seite (`src/app/(site)/`, Nav + zentrierte
+  Spalte) für Schüler/Besucher, und eine eigene App-Shell mit linker Sidebar
+  (`src/app/(app)/`) für Lehrer- und Admin-Bereich – beide Route-Groups ändern nichts an den
+  URLs, nur am Layout
 
 ## Lokales Setup
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { BookingButton } from "@/app/booking-button";
+import { BookingButton } from "@/components/booking-button";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
 import { prisma } from "@/lib/prisma";
 import { buildTimetable, formatHour, minutesToRow } from "@/lib/timetable";

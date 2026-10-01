@@ -14,9 +14,12 @@ export function AuthNav() {
     return <Link href="/auth/signin">Anmelden</Link>;
   }
 
+  const appAreaHref =
+    session.user.role === "ADMIN" ? "/admin" : session.user.role === "TEACHER" ? "/teacher" : null;
+
   return (
     <div className="flex items-center gap-4">
-      {session.user.role === "ADMIN" && <Link href="/admin">Admin</Link>}
+      {appAreaHref && <Link href={appAreaHref}>Verwaltung</Link>}
       <span className="text-brand-600">{session.user.name}</span>
       <button onClick={() => signOut({ callbackUrl: "/" })} className="underline">
         Abmelden
