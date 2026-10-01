@@ -38,6 +38,9 @@ teilnehmen.
   GitHub-Actions-Workflow (`.github/workflows/send-reminders.yml`), der alle 15 Minuten
   `/api/cron/send-reminders` aufruft (Vercels Hobby-Plan erlaubt Cron Jobs nur 1x täglich,
   daher dieser Umweg)
+- Lehrer können Kursmaterial (Lernmaterial, Hausaufgaben, Ankündigungen) per E-Mail an alle
+  eingeschriebenen Teilnehmer eines Kurses verschicken, über einen eigenen Absender
+  (`RESEND_MATERIAL_FROM_EMAIL`), getrennt von den automatischen Erinnerungen
 
 ## Lokales Setup
 

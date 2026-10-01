@@ -13,6 +13,11 @@ export function getResend() {
   return resendInstance;
 }
 
-// z.B. "Quran Madrasa <erinnerung@islamunterfreunden.de>" - die Domain muss bei
+// z.B. "Quran Madrasa <meeting@islamunterfreunden.de>" - die Domain muss bei
 // Resend verifiziert sein (siehe README).
 export const EMAIL_FROM = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+
+// Eigener Absender fuer Kursmaterial-Mails vom Lehrer an die Kursteilnehmer, getrennt
+// von EMAIL_FROM (automatische Sitzungs-Erinnerungen), damit Schueler beide Arten von
+// Mails unterscheiden koennen. Faellt auf EMAIL_FROM zurueck, falls nicht gesetzt.
+export const MATERIAL_EMAIL_FROM = process.env.RESEND_MATERIAL_FROM_EMAIL || EMAIL_FROM;
