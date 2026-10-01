@@ -12,6 +12,7 @@
 .env
 .env*.local
 keys.txt
+api.keys.xlsx
 ZUGANG.md
 
 # misc
