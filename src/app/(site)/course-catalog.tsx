@@ -11,6 +11,7 @@ import {
   formatSchedule,
   type CatalogCourse,
 } from "@/lib/course-labels";
+import { miniatureFor } from "@/lib/miniatures";
 
 export type { CatalogCourse };
 
@@ -241,13 +242,25 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
         <p className="text-brand-600">Keine Kurse gefunden. Versuch andere Filter.</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {filtered.map((course) => (
+          {filtered.map((course) => {
+            const miniature = miniatureFor(course);
+            return (
             <Link
               key={course.id}
               href={`/courses/${course.slug}`}
-              className="flex flex-col rounded-lg border border-brand-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+              className="relative flex flex-col rounded-lg border border-brand-200 bg-white p-5 shadow-sm transition hover:border-gold-400 hover:shadow-md"
             >
-              <div className="flex flex-wrap items-center gap-2 text-xs">
+              {miniature && (
+                <span
+                  aria-hidden="true"
+                  className="absolute right-4 top-4 h-12 w-12 rounded-full border-2 border-gold-400 bg-cover shadow-sm"
+                  style={{
+                    backgroundImage: `url(${miniature.src})`,
+                    backgroundPosition: miniature.focus,
+                  }}
+                />
+              )}
+              <div className={`flex flex-wrap items-center gap-2 text-xs ${miniature ? "pr-14" : ""}`}>
                 <span className="rounded-full bg-brand-100 px-2 py-0.5 font-medium text-brand-700">
                   {course.category}
                 </span>
@@ -266,7 +279,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
                 ))}
               </div>
 
-              <div className="mt-3 flex items-center justify-between gap-2">
+              <div className={`flex items-center justify-between gap-2 ${miniature ? "mt-5" : "mt-3"}`}>
                 <h3 className="font-semibold text-brand-700">{course.title}</h3>
                 {course.scheduleSlots.length > 0 && (
                   <span className="shrink-0 rounded-full bg-brand-700 px-2.5 py-1 text-xs font-semibold text-white">
@@ -289,7 +302,8 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
                 </span>
               </div>
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

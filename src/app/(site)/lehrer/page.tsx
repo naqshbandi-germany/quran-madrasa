@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BookingButton } from "@/components/booking-button";
+import { OrnamentDivider } from "@/components/ornament";
 import { prisma } from "@/lib/prisma";
 
 export default async function TeachersPage() {
@@ -24,6 +25,7 @@ export default async function TeachersPage() {
     <div className="space-y-8">
       <section>
         <h1 className="text-3xl font-bold text-brand-700">Unsere Lehrer</h1>
+        <OrnamentDivider className="mt-3" />
         <p className="mt-2 text-brand-600">
           Lernt die Menschen kennen, die euren Unterricht geben.
         </p>
@@ -34,7 +36,11 @@ export default async function TeachersPage() {
       ) : (
         <div className="space-y-6">
           {teachers.map((teacher) => (
-            <div key={teacher.id} className="rounded-lg border border-brand-200 bg-white p-6">
+            <div
+              key={teacher.id}
+              id={`lehrer-${teacher.id}`}
+              className="scroll-mt-24 rounded-lg border border-brand-200 bg-white p-6"
+            >
               <div className="flex items-center gap-5">
                 {teacher.image ? (
                   // eslint-disable-next-line @next/next/no-img-element

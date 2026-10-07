@@ -5,6 +5,8 @@ import {
   toGermanTime,
   toGermanTimeRange,
 } from "@/lib/schedule-time";
+import { miniatureFor, type Miniature } from "@/lib/miniatures";
+import type { IconName } from "@/lib/timetable-art";
 
 export type BlockPalette = { bg: string; border: string; text: string };
 
@@ -20,10 +22,12 @@ export type TimetableBlock = {
   endTime: string;
   note: string | null;
   palette: BlockPalette;
+  icon: IconName;
+  miniature: Miniature | null;
   marked: boolean;
 };
 
-export type LegendEntry = { key: string; label: string; palette: BlockPalette };
+export type LegendEntry = { key: string; label: string; palette: BlockPalette; icon: IconName };
 
 type TimetableCourse = {
   slug: string;
@@ -34,7 +38,7 @@ type TimetableCourse = {
 
 // 5-Minuten-Raster, damit auch Termine wie 15:50 oder 17:40 exakt im Raster liegen.
 export const ROW_MINUTES = 5;
-export const ROW_HEIGHT_PX = 7;
+export const ROW_HEIGHT_PX = 8;
 
 const PALETTES: BlockPalette[] = [
   { bg: "#cfe6fa", border: "#8dc0ec", text: "#12385e" }, // blau
@@ -54,6 +58,15 @@ const FIXED_PALETTE_INDEX: Record<string, number> = {
   "shamail-und-seerah": 2,
   "einstieg-fiqh-aqidah": 3,
   "islamische-seelenlehre-charakterbildung": 4,
+};
+
+// Icon pro Farbgruppe; unbekannte (neue) Kurse bekommen das neutrale Buch.
+const ICON_BY_KEY: Record<string, IconName> = {
+  "Qur'an-Rezitation": "quran",
+  "imam-al-ghazali-kurs": "book",
+  "shamail-und-seerah": "mosque",
+  "einstieg-fiqh-aqidah": "mosque",
+  "islamische-seelenlehre-charakterbildung": "mosque",
 };
 
 // Kurse mit alternativer Uhrzeit (Ortszeit), im Stundenplan mit * markiert.
@@ -88,6 +101,8 @@ export function buildTimetable(courses: TimetableCourse[], now: Date = new Date(
       paletteIndexByKey.set(key, fixed ?? nextFreeIndex++ % PALETTES.length);
     }
     const palette = PALETTES[paletteIndexByKey.get(key)!];
+    const icon = ICON_BY_KEY[key] ?? "book";
+    const miniature = miniatureFor(course);
 
     for (const rawSlot of course.scheduleSlots) {
       const slot = toGermanTime(rawSlot, now);
@@ -105,6 +120,8 @@ export function buildTimetable(courses: TimetableCourse[], now: Date = new Date(
         endTime: slot.endTime,
         note: slot.note,
         palette,
+        icon,
+        miniature,
         marked: alternativeSlugs.has(course.slug),
       });
       minStart = Math.min(minStart, startMinutes);
@@ -122,6 +139,7 @@ export function buildTimetable(courses: TimetableCourse[], now: Date = new Date(
       key,
       label: key === course.category ? course.category : course.title,
       palette: PALETTES[paletteIndexByKey.get(key)!],
+      icon: ICON_BY_KEY[key] ?? "book",
     });
   }
   legend.sort((a, b) => PALETTES.indexOf(a.palette) - PALETTES.indexOf(b.palette));
@@ -142,7 +160,7 @@ export function buildTimetable(courses: TimetableCourse[], now: Date = new Date(
   if (blocks.length === 0) {
     return {
       days: [] as string[],
-      hourMarks: [] as number[],
+      timeMarks: [] as number[],
       gridStart: 0,
       gridEnd: 0,
       totalRows: 0,
@@ -156,12 +174,12 @@ export function buildTimetable(courses: TimetableCourse[], now: Date = new Date(
   const gridEnd = Math.ceil(maxEnd / 60) * 60;
   const totalRows = (gridEnd - gridStart) / ROW_MINUTES;
 
-  const hourMarks: number[] = [];
-  for (let m = gridStart; m <= gridEnd; m += 60) hourMarks.push(m);
+  const timeMarks: number[] = [];
+  for (let m = gridStart; m <= gridEnd; m += 30) timeMarks.push(m);
 
   const days = WEEKDAY_ORDER.filter((day) => blocks.some((b) => b.weekday === day));
 
-  return { days, hourMarks, gridStart, gridEnd, totalRows, blocks, legend, footnotes };
+  return { days, timeMarks, gridStart, gridEnd, totalRows, blocks, legend, footnotes };
 }
 
 export type Timetable = ReturnType<typeof buildTimetable>;
@@ -170,7 +188,8 @@ export function minutesToRow(minutes: number, gridStart: number) {
   return Math.floor((minutes - gridStart) / ROW_MINUTES) + 1;
 }
 
-export function formatHour(minutes: number) {
+export function formatClock(minutes: number) {
   const h = Math.floor(minutes / 60);
-  return `${h.toString().padStart(2, "0")}:00`;
+  const m = minutes % 60;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }

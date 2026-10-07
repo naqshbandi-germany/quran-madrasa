@@ -41,14 +41,21 @@ teilnehmen.
 - Lehrer können Kursmaterial (Lernmaterial, Hausaufgaben, Ankündigungen) per E-Mail an alle
   eingeschriebenen Teilnehmer eines Kurses verschicken, über einen eigenen Absender
   (`RESEND_MATERIAL_FROM_EMAIL`), getrennt von den automatischen Erinnerungen
-- Stundenplan als Wochenraster (`/stundenplan`) mit farbigen Kurs-Blöcken, Legende und
-  Fußnoten, plus PDF-Download (`/stundenplan/pdf`, erzeugt mit `pdf-lib`). Die Zeiten der
-  Stundenplan-Einträge (`ScheduleSlot`) sind in Ortszeit Nordzypern (UTC+3, ganzjährig)
+- Stundenplan (`/stundenplan`) im Stil der Vorlagen-Grafik: Wochenraster mit farbigen
+  Kurs-Blöcken und Icons (ab 1024 px Breite), auf Handy/schmalen Fenstern pro Tag eine
+  Karte mit den Terminen untereinander; dazu Legende, Fußnoten und PDF-Download
+  (`/stundenplan/pdf`, erzeugt mit `pdf-lib`). Die Zeiten der Stundenplan-Einträge (`ScheduleSlot`) sind in Ortszeit Nordzypern (UTC+3, ganzjährig)
   gespeichert und werden für die Anzeige in deutsche Zeit umgerechnet
   (`src/lib/schedule-time.ts`) – die Verschiebung wechselt daher mit der deutschen
   Zeitumstellung zwischen 1 und 2 Stunden. Seiten mit Zeitangaben werden stündlich neu
   erzeugt (`revalidate = 3600`), damit sie nach der Zeitumstellung nicht veraltet bleiben.
   Im Lehrer-Bereich sind neue Zeiten deshalb ebenfalls in Ortszeit einzutragen.
+- Klassisch-orientalische Gestaltung: Basisfarben dunkles Grün und tiefes Himmelblau mit
+  Gold-Akzenten, Serifen-Überschriften, Sternmuster und Zierleisten (Farben in
+  `tailwind.config.ts`). Die Kurse tragen persische Miniaturen (Wikimedia Commons, gemeinfrei
+  bzw. CC0), verkleinert unter `public/images/miniatures/`; Zuordnung und Quellen stehen in
+  `src/lib/miniatures.ts` und erscheinen auf `/bildnachweis` (im Footer verlinkt). Auf dem
+  Handy öffnet sich die Navigation als Burger-Menü.
 - Kurse ohne Stripe-Preis (`stripePriceId`) zeigen statt des Anmelde-Buttons den Hinweis
   „Anmeldung auf Anfrage“, ein Preis von 0 € wird als „Preis auf Anfrage“ angezeigt
 - Zwei getrennte Layouts: die öffentliche Marketing-Seite (`src/app/(site)/`, Nav + zentrierte
