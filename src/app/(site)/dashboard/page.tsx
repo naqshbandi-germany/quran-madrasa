@@ -2,12 +2,10 @@ import Link from "next/link";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { formatGermanDateTime } from "@/lib/schedule-time";
 
 function formatDateTime(date: Date) {
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
+  return `${formatGermanDateTime(date)} Uhr`;
 }
 
 export default async function DashboardPage() {

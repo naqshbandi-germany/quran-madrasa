@@ -60,6 +60,9 @@ model User {
   image         String?
   // Kurze Vita fürs Lehrer-Profil, nur für Rolle TEACHER relevant.
   bio           String?
+  // E-Mail-Adresse des Zoom-Kontos, unter dem dieser Lehrer Meetings leitet (nur
+  // relevant bei CLASSROOM_PROVIDER=zoom; sonst gilt ZOOM_HOST_EMAIL).
+  zoomEmail     String?
   createdAt     DateTime  @default(now())
 
   stripeCustomerId String? @unique
@@ -121,6 +124,8 @@ model ClassSession {
   classroomType ClassroomType @default(JITSI)
   // Bei JITSI/ZOOM: der Meeting-Link. Bei IN_APP (zukünftig): Referenz auf den eigenen Klassenraum.
   joinUrl        String?
+  // Zoom-Meeting-ID, falls der Link automatisch ueber die Zoom-API erzeugt wurde.
+  zoomMeetingId  String?
   createdAt      DateTime     @default(now())
   // Zeitpunkt, zu dem die jeweilige Erinnerungs-E-Mail verschickt wurde (verhindert
   // doppelten Versand bei jedem Cron-Durchlauf).

@@ -1,5 +1,7 @@
+import { formatGermanDateTime } from "@/lib/schedule-time";
+
 function formatDateTime(date: Date) {
-  return new Intl.DateTimeFormat("de-DE", { dateStyle: "full", timeStyle: "short" }).format(date);
+  return `${formatGermanDateTime(date, "full")} Uhr (deutsche Zeit)`;
 }
 
 export type ReminderKind = "24h" | "1h" | "start";
