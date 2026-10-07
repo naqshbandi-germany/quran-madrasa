@@ -15,12 +15,10 @@ export const revalidate = 3600;
 
 const LEVEL_SLUGS = ["quran-level-1", "quran-level-2", "quran-level-3"];
 
-// Hadith ueber den Lohn des Quranlesens (ueberliefert von Abdullah ibn Masud,
-// at-Tirmidhi Nr. 2910). Deutsche Wiedergabe sinngemaess.
-const HADITH = {
-  main: "Wer einen Buchstaben aus dem Buch Allahs liest, dem wird dafür eine gute Tat gutgeschrieben, und jede gute Tat wird zehnfach vergolten.",
-  note: "Ich sage nicht, dass „Alif Lām Mīm“ ein Buchstabe ist, sondern „Alif“ ist ein Buchstabe, „Lām“ ist ein Buchstabe und „Mīm“ ist ein Buchstabe.",
-  source: "Hadith, überliefert von ʿAbdullāh ibn Masʿūd · at-Tirmidhī, Nr. 2910",
+// Zitat von Maulana Sheikh Muhammad Adil Ar-Rabbani (Originalwortlaut, Englisch).
+const QUOTE = {
+  text: "Our Prophet says that for each letter of the Qur’ān there are ten rewards. Each word may have three letters, five letters, or seven letters. For each of those letters, there are ten rewards. Not only ten rewards, but also the forgiveness of ten sins and an elevation of ten degrees.",
+  author: "Maulana Sheikh Muhammad Adil Ar-Rabbani",
 };
 
 export default async function QuranPage() {
@@ -40,22 +38,20 @@ export default async function QuranPage() {
         <OrnamentDivider className="mx-auto mt-4" />
       </section>
 
-      <figure className="relative mx-auto max-w-4xl bg-white px-8 py-16 text-center sm:px-24 sm:py-24">
-        <CornerOrnament className="absolute left-3 top-3 sm:left-5 sm:top-5" />
-        <CornerOrnament className="absolute right-3 top-3 rotate-90 sm:right-5 sm:top-5" />
-        <CornerOrnament className="absolute bottom-3 right-3 rotate-180 sm:bottom-5 sm:right-5" />
-        <CornerOrnament className="absolute bottom-3 left-3 -rotate-90 sm:bottom-5 sm:left-5" />
+      {/* Zitat ohne Hintergrund; die Eck-Ornamente schliessen buendig mit dem Seiteninhalt ab */}
+      <figure className="relative px-6 py-24 text-center sm:px-36 sm:py-32">
+        <CornerOrnament className="absolute left-0 top-0" />
+        <CornerOrnament className="absolute right-0 top-0 rotate-90" />
+        <CornerOrnament className="absolute bottom-0 right-0 rotate-180" />
+        <CornerOrnament className="absolute bottom-0 left-0 -rotate-90" />
 
         <blockquote>
-          <p className="font-display text-2xl font-medium italic leading-snug text-brand-900 sm:text-4xl">
-            „{HADITH.main}“
-          </p>
-          <p className="mt-8 font-display text-lg italic text-brand-900/70 sm:text-xl">
-            {HADITH.note}
+          <p lang="en" className="mx-auto max-w-3xl font-display text-2xl font-medium italic leading-snug text-brand-900 sm:text-3xl">
+            „{QUOTE.text}“
           </p>
         </blockquote>
-        <figcaption className="mt-8 text-xs uppercase tracking-[0.18em] text-azure-700">
-          {HADITH.source}
+        <figcaption className="mt-10 text-xs uppercase tracking-[0.14em] text-azure-700 sm:text-sm sm:tracking-[0.2em]">
+          {QUOTE.author}
         </figcaption>
       </figure>
 

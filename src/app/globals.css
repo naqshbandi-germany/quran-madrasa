@@ -4,6 +4,8 @@
 
 body {
   @apply bg-brand-50 text-brand-900;
+  /* verhindert horizontales Scrollen durch Elemente in Bildschirmbreite (w-screen) */
+  overflow-x: clip;
 }
 
 h1,

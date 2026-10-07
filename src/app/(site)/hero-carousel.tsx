@@ -48,22 +48,32 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const background = BACKGROUNDS[index % BACKGROUNDS.length];
 
   return (
-    <section className="relative overflow-hidden rounded-lg">
+    <section className="relative overflow-hidden">
       <div
-        className={`relative flex min-h-[22rem] flex-col items-center justify-center overflow-hidden px-6 py-14 text-center text-white transition-colors sm:px-12 ${background}`}
+        className={`relative flex min-h-[26rem] flex-col items-center overflow-hidden px-6 py-14 text-center text-white transition-colors sm:min-h-[32rem] sm:px-12 ${slide.kind === "feature" ? "justify-start bg-azure-900 pt-16 sm:pt-20" : `justify-center ${background}`}`}
       >
         {slide.kind === "feature" && (
           <>
-            {/* key startet die Ken-Burns-Animation bei jedem Einblenden neu */}
+            {/* Seite des Manuskripts, schraeg von oben gesehen (Perspektive), mit Ken Burns */}
+            <div aria-hidden="true" className="absolute inset-0 overflow-hidden [perspective:1000px]">
+              <div
+                key={index}
+                className="absolute -left-[25%] bottom-[-22%] h-[210%] w-[150%] animate-kenburns bg-cover bg-center [transform-origin:50%_100%] [transform:rotateX(60deg)_scale(1.02)] motion-reduce:animate-none"
+                style={{ backgroundImage: `url(${slide.image})` }}
+              />
+            </div>
+            {/* Oben in Blau auslaufen und weich unscharf werden, damit die Schrift wirkt */}
             <div
-              key={index}
               aria-hidden="true"
-              className="absolute inset-0 animate-kenburns bg-cover bg-center motion-reduce:animate-none"
-              style={{ backgroundImage: `url(${slide.image})` }}
+              className="absolute inset-0 bg-gradient-to-b from-azure-900 from-35% via-azure-900/85 via-55% to-azure-900/0"
             />
             <div
               aria-hidden="true"
-              className="absolute inset-0 bg-gradient-to-b from-azure-900/70 via-azure-900/60 to-azure-900/75"
+              className="absolute inset-x-0 top-0 h-3/4 backdrop-blur-sm"
+              style={{
+                maskImage: "linear-gradient(to bottom, black 20%, transparent)",
+                WebkitMaskImage: "linear-gradient(to bottom, black 20%, transparent)",
+              }}
             />
           </>
         )}

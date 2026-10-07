@@ -58,12 +58,14 @@ teilnehmen.
   `/bildnachweis`. Der Stundenplan nutzt stattdessen stilisierte Icons (Buchständer mit Quran,
   Buch, Moschee) zentriert in den Blöcken. Auf dem Handy öffnet sich die Navigation als
   Burger-Menü.
-- Quran-Unterseite (`/quran`): Zitat (Hadith, at-Tirmidhī Nr. 2910) mit Eck-Ornamenten, Bildkasten
-  mit Einführungstext und drei Spalten für die Level mit Links zu den Kursen. Der Startseiten-Slide
-  „Quran-Unterricht für alle Level“ (Ken-Burns-Animation, respektiert `prefers-reduced-motion`)
-  führt dorthin. Unter „Kursangebot“ gibt es ein Untermenü mit den Kursthemen (auf dem Handy und
-  Tablets im Burger-Menü). Titelbild: Blatt aus dem „Blauen Quran“ (Met, CC0), Quellenangabe auf
-  `/bildnachweis` und im Impressum.
+- Quran-Unterseite (`/quran`): Zitat von Maulana Sheikh Muhammad Adil Ar-Rabbani ohne Hintergrund,
+  mit feingliedrigen Eck-Ornamenten bündig zum Seiteninhalt; Bildkasten mit Einführungstext und
+  drei Spalten für die Level mit Links zu den Kursen. Der Startseiten-Slide „Quran-Unterricht für
+  alle Level“ führt dorthin: Hero in voller Breite, das Manuskriptblatt liegt in Perspektive
+  schräg von oben gesehen und läuft oben in Blau und Unschärfe aus; langsame Ken-Burns-Animation
+  (respektiert `prefers-reduced-motion`). Unter „Kursangebot“ gibt es ein Untermenü mit den
+  Kursthemen (auf Handy und Tablets im Burger-Menü). Titelbild: Blatt aus dem „Blauen Quran“
+  (Met, CC0), Quellenangabe auf `/bildnachweis` und im Impressum.
 - Schreibweise: einheitlich **Quran** (nicht Qur'an/Koran), auch in Kurstiteln und Kategorien. Die
   bestehenden Kurse wurden per Migration angepasst; der Text der Lehrer-Biografie bleibt
   unverändert.
