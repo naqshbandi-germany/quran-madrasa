@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 import { BookingButton } from "@/components/booking-button";
 import { prisma } from "@/lib/prisma";
 import { AGE_GROUP_LABELS, WEEKDAY_LABELS } from "@/lib/course-labels";
+import { toGermanTime } from "@/lib/schedule-time";
 import { SubscribeButton } from "./subscribe-button";
+
+// Die angezeigten Unterrichtszeiten haengen von der deutschen Sommer-/Winterzeit
+// ab, daher stuendlich neu erzeugen.
+export const revalidate = 3600;
 
 function formatPrice(cents: number, currency: string) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(cents / 100);
@@ -54,27 +59,43 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
         <div>
           <h2 className="font-semibold text-brand-700">Wöchentlicher Unterricht</h2>
           <ul className="mt-2 space-y-1 text-sm text-brand-900">
-            {course.scheduleSlots.map((slot) => (
-              <li key={slot.id}>
-                {WEEKDAY_LABELS[slot.weekday] ?? slot.weekday}: {slot.startTime}–{slot.endTime}
-                {slot.note ? ` (${slot.note})` : ""}
-              </li>
-            ))}
+            {course.scheduleSlots.map((rawSlot) => {
+              const slot = toGermanTime(rawSlot);
+              return (
+                <li key={slot.id}>
+                  {WEEKDAY_LABELS[slot.weekday] ?? slot.weekday}: {slot.startTime}–{slot.endTime}
+                  {slot.note ? ` (${slot.note})` : ""}
+                </li>
+              );
+            })}
           </ul>
+          <p className="mt-1 text-xs text-brand-600">Alle Zeiten in deutscher Zeit.</p>
         </div>
       )}
 
       <div className="rounded-lg border border-brand-200 bg-white p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-2xl font-bold text-brand-700">
-              {formatPrice(course.priceCents, course.currency)}
-              <span className="text-base font-normal text-brand-600"> / Monat</span>
-            </p>
-            <p className="text-sm text-brand-600">Monatlich kündbar, keine Mindestlaufzeit</p>
+            {course.priceCents > 0 ? (
+              <>
+                <p className="text-2xl font-bold text-brand-700">
+                  {formatPrice(course.priceCents, course.currency)}
+                  <span className="text-base font-normal text-brand-600"> / Monat</span>
+                </p>
+                <p className="text-sm text-brand-600">Monatlich kündbar, keine Mindestlaufzeit</p>
+              </>
+            ) : (
+              <p className="text-xl font-bold text-brand-700">Preis auf Anfrage</p>
+            )}
           </div>
-          <SubscribeButton courseId={course.id} slug={course.slug} />
+          {course.stripePriceId && <SubscribeButton courseId={course.id} slug={course.slug} />}
         </div>
+        {!course.stripePriceId && (
+          <p className="mt-3 text-sm text-brand-600">
+            Die Online-Anmeldung für diesen Kurs ist noch nicht freigeschaltet. Buche gern ein
+            kostenloses Beratungsgespräch, dann klären wir alles Weitere.
+          </p>
+        )}
       </div>
 
       <div className="rounded-lg border border-brand-200 bg-brand-50 p-5 text-center">

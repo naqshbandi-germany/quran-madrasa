@@ -3,6 +3,10 @@ import type { CatalogCourse } from "@/lib/course-labels";
 import { CourseCatalog } from "./course-catalog";
 import { HeroCarousel, type CourseSlideData } from "./hero-carousel";
 
+// Die Terminanzeige auf den Kurskarten haengt von der deutschen Sommer-/Winterzeit
+// ab, daher stuendlich neu erzeugen.
+export const revalidate = 3600;
+
 export default async function HomePage() {
   const courses = await prisma.course.findMany({
     where: { isPublished: true },
