@@ -35,7 +35,9 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         <h2 className="font-semibold text-brand-700">Wöchentlicher Stundenplan</h2>
         <p className="text-sm text-brand-600">
           Feste Wochentermine für das Kursangebot (z.B. &bdquo;Mittwoch 18:00–18:40&ldquo;) –
-          unabhängig von den einzelnen Sitzungen mit Meeting-Link unten.
+          unabhängig von den einzelnen Sitzungen mit Meeting-Link unten. Uhrzeiten bitte in
+          Ortszeit Nordzypern (UTC+3) eintragen; auf der Website werden sie automatisch in
+          deutsche Zeit umgerechnet.
         </p>
 
         <ul className="space-y-2">

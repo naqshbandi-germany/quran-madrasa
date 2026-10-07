@@ -41,6 +41,16 @@ teilnehmen.
 - Lehrer können Kursmaterial (Lernmaterial, Hausaufgaben, Ankündigungen) per E-Mail an alle
   eingeschriebenen Teilnehmer eines Kurses verschicken, über einen eigenen Absender
   (`RESEND_MATERIAL_FROM_EMAIL`), getrennt von den automatischen Erinnerungen
+- Stundenplan als Wochenraster (`/stundenplan`) mit farbigen Kurs-Blöcken, Legende und
+  Fußnoten, plus PDF-Download (`/stundenplan/pdf`, erzeugt mit `pdf-lib`). Die Zeiten der
+  Stundenplan-Einträge (`ScheduleSlot`) sind in Ortszeit Nordzypern (UTC+3, ganzjährig)
+  gespeichert und werden für die Anzeige in deutsche Zeit umgerechnet
+  (`src/lib/schedule-time.ts`) – die Verschiebung wechselt daher mit der deutschen
+  Zeitumstellung zwischen 1 und 2 Stunden. Seiten mit Zeitangaben werden stündlich neu
+  erzeugt (`revalidate = 3600`), damit sie nach der Zeitumstellung nicht veraltet bleiben.
+  Im Lehrer-Bereich sind neue Zeiten deshalb ebenfalls in Ortszeit einzutragen.
+- Kurse ohne Stripe-Preis (`stripePriceId`) zeigen statt des Anmelde-Buttons den Hinweis
+  „Anmeldung auf Anfrage“, ein Preis von 0 € wird als „Preis auf Anfrage“ angezeigt
 - Zwei getrennte Layouts: die öffentliche Marketing-Seite (`src/app/(site)/`, Nav + zentrierte
   Spalte) für Schüler/Besucher, und eine eigene App-Shell mit linker Sidebar
   (`src/app/(app)/`) für Lehrer- und Admin-Bereich – beide Route-Groups ändern nichts an den

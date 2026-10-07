@@ -3,6 +3,8 @@
 // CourseCatalog importiert werden kann. Ein Import aus einer "use client"-Datei
 // heraus liefert auf dem Server nur eine Client-Referenz statt der echten Werte.
 
+import { toGermanTime } from "@/lib/schedule-time";
+
 export type ScheduleSlot = {
   weekday: string;
   startTime: string;
@@ -64,9 +66,12 @@ export function formatPrice(cents: number, currency: string) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(cents / 100);
 }
 
+// Slot-Zeiten sind in Nordzypern-Ortszeit gespeichert, angezeigt wird deutsche Zeit
+// (siehe schedule-time.ts).
 export function formatSchedule(slots: ScheduleSlot[]) {
   return slots
-    .map((s) => {
+    .map((slot) => {
+      const s = toGermanTime(slot);
       const day = WEEKDAY_SHORT[s.weekday] ?? s.weekday;
       const note = s.note ? ` (${s.note})` : "";
       return `${day} ${s.startTime}–${s.endTime}${note}`;
