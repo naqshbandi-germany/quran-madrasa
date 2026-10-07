@@ -18,7 +18,19 @@ export const DEFAULT_IMPRESSUM = [
   "[Name und Anschrift der verantwortlichen Person]",
 ].join("\n\n");
 
-export const DEFAULT_PRIVACY_POLICY = [
+const VIDEO_JITSI = [
+  "## 8. Online-Unterricht (Jitsi Meet)",
+  "Für den Unterricht nutzen wir Jitsi Meet über meet.jit.si (8x8, Inc., USA). Beim Beitritt zu einer Sitzung werden unter anderem IP-Adresse, Geräteinformationen, dein angezeigter Name sowie Audio und Video verarbeitet, soweit du Kamera und Mikrofon freigibst. Die Verbindung zu Jitsi entsteht erst, wenn du einer Sitzung beitrittst. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Eine Aufzeichnung des Unterrichts findet derzeit nicht statt; sollte sich das ändern, informieren wir vorab.",
+];
+
+const VIDEO_ZOOM = [
+  "## 8. Online-Unterricht (Zoom)",
+  "Für den Unterricht nutzen wir Zoom (Zoom Video Communications, Inc., 55 Almaden Boulevard, San Jose, CA 95113, USA). Beim Beitritt zu einer Sitzung werden unter anderem IP-Adresse, Geräteinformationen, dein angezeigter Name sowie Audio und Video verarbeitet, soweit du Kamera und Mikrofon freigibst. Zoom kann Daten auch in den USA verarbeiten; die Übermittlung erfolgt auf Grundlage des EU-US Data Privacy Framework bzw. von Standardvertragsklauseln. Mit Zoom besteht ein Vertrag zur Auftragsverarbeitung. Die Verbindung zu Zoom entsteht erst, wenn du einer Sitzung beitrittst. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Eine Aufzeichnung des Unterrichts findet derzeit nicht statt; sollte sich das ändern, informieren wir vorab.",
+];
+
+// Der Abschnitt zum Online-Unterricht nennt je nach CLASSROOM_PROVIDER Zoom oder Jitsi.
+export function defaultPrivacyPolicy(zoom: boolean) {
+  return [
   "## 1. Verantwortlicher",
   "Verantwortlich für die Datenverarbeitung auf dieser Website ist der im Impressum genannte Anbieter. Kontakt für Datenschutzfragen: admin@islamunterfreunden.de.",
 
@@ -40,8 +52,7 @@ export const DEFAULT_PRIVACY_POLICY = [
   "## 7. E-Mail-Versand",
   "Für den Versand von E-Mails nutzen wir Resend (Resend, Inc., USA). Wir senden dir Erinnerungen vor Kursterminen sowie Mitteilungen und Kursmaterial deiner Lehrer zu Kursen, in die du eingeschrieben bist. Verarbeitet werden dein Name, deine E-Mail-Adresse und der Kurs. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Werbliche E-Mails versenden wir nur mit deiner Einwilligung.",
 
-  "## 8. Online-Unterricht (Jitsi Meet)",
-  "Für den Unterricht nutzen wir Jitsi Meet über meet.jit.si (8x8, Inc., USA). Beim Beitritt zu einer Sitzung werden unter anderem IP-Adresse, Geräteinformationen, dein angezeigter Name sowie Audio und Video verarbeitet, soweit du Kamera und Mikrofon freigibst. Die Verbindung zu Jitsi entsteht erst, wenn du einer Sitzung beitrittst. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Eine Aufzeichnung des Unterrichts findet derzeit nicht statt; sollte sich das ändern, informieren wir vorab.",
+  ...(zoom ? VIDEO_ZOOM : VIDEO_JITSI),
 
   "## 9. Terminbuchung (Calendly)",
   "Kostenlose Beratungsgespräche kannst du über Calendly buchen (Calendly LLC, USA). Der Link führt auf eine Seite von Calendly; erst dort werden Daten (z. B. Name, E-Mail-Adresse, gewählter Termin) an Calendly übermittelt. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (vorvertragliche Maßnahmen). Weitere Informationen findest du in den Datenschutzhinweisen von Calendly.",
@@ -60,4 +71,5 @@ export const DEFAULT_PRIVACY_POLICY = [
 
   "## 14. Stand",
   "Oktober 2026. Wir passen diese Erklärung an, wenn sich unser Angebot oder die Rechtslage ändert.",
-].join("\n\n");
+  ].join("\n\n");
+}

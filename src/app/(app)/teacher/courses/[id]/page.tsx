@@ -9,10 +9,12 @@ import {
   deleteScheduleSlot,
   sendCourseMaterial,
 } from "@/lib/teacher-actions";
+import { isZoomProvider } from "@/lib/classroom";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
+import { formatGermanDateTime, formatTeachingDateTime } from "@/lib/schedule-time";
 
 function formatDateTime(date: Date) {
-  return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return `${formatTeachingDateTime(date)} Ortszeit (${formatGermanDateTime(date)} deutsche Zeit)`;
 }
 
 export default async function ManageCoursePage({ params }: { params: Promise<{ id: string }> }) {
@@ -26,6 +28,12 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
     },
   });
   if (!course) notFound();
+
+  const zoom = isZoomProvider();
+  const meetingKind = zoom ? "Zoom" : "Jitsi";
+  const meetingDescription = zoom
+    ? "ein Zoom-Meeting im Zoom-Konto des Lehrers"
+    : "ein kostenloser Jitsi-Meeting-Link";
 
   return (
     <div className="space-y-8">
@@ -111,7 +119,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               {formatDateTime(classSession.startsAt)} ·{" "}
               {classSession.joinUrl ? (
                 <a href={classSession.joinUrl} className="underline">
-                  {classSession.classroomType === "JITSI" ? "Jitsi-Link" : "Meeting-Link"}
+                  {classSession.classroomType === "JITSI" ? "Jitsi-Link" : "Zoom-Link"}
                 </a>
               ) : (
                 "kein Link hinterlegt"
@@ -123,7 +131,8 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         <div className="rounded-lg border border-brand-200 bg-white p-5">
           <h3 className="mb-4 font-semibold text-brand-700">Einzelne Sitzung anlegen</h3>
           <p className="mb-3 text-sm text-brand-600">
-            Ohne eigenen Link wird automatisch ein kostenloser Jitsi-Meeting-Link erzeugt.
+            Ohne eigenen Link wird automatisch {meetingDescription} erzeugt. Beginn bitte in
+            Ortszeit Nordzypern angeben.
           </p>
           <form action={createClassSession} className="grid gap-3 sm:grid-cols-2">
             <input type="hidden" name="courseId" value={course.id} />
@@ -133,17 +142,31 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               required
               className="col-span-full rounded-md border border-brand-200 px-3 py-2"
             />
-            <input
-              name="startsAt"
-              type="datetime-local"
-              required
-              className="rounded-md border border-brand-200 px-3 py-2"
-            />
+            <label className="flex flex-col text-sm text-brand-700">
+              Beginn (Ortszeit Nordzypern)
+              <input
+                name="startsAt"
+                type="datetime-local"
+                required
+                className="mt-1 rounded-md border border-brand-200 px-3 py-2"
+              />
+            </label>
+            <label className="flex flex-col text-sm text-brand-700">
+              Dauer in Minuten
+              <input
+                name="durationMin"
+                type="number"
+                min={5}
+                max={480}
+                defaultValue={60}
+                className="mt-1 rounded-md border border-brand-200 px-3 py-2"
+              />
+            </label>
             <input
               name="joinUrl"
               type="url"
-              placeholder="Eigener Link (optional, überschreibt Jitsi)"
-              className="rounded-md border border-brand-200 px-3 py-2"
+              placeholder="Eigener Link (optional, ersetzt die automatische Erzeugung)"
+              className="col-span-full rounded-md border border-brand-200 px-3 py-2"
             />
             <button className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
               Sitzung anlegen
@@ -154,8 +177,8 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         <div className="rounded-lg border border-brand-200 bg-white p-5">
           <h3 className="mb-1 font-semibold text-brand-700">Wiederkehrende Sitzungen anlegen</h3>
           <p className="mb-3 text-sm text-brand-600">
-            Legt mehrere Termine auf einmal an, jeweils mit eigenem, automatisch generiertem
-            Jitsi-Link.
+            Legt mehrere Termine auf einmal an, jeweils mit eigenem, automatisch erzeugtem
+            Meeting-Link ({meetingKind}). Datum und Uhrzeit in Ortszeit Nordzypern.
           </p>
           <form action={createRecurringSessions} className="grid gap-3 sm:grid-cols-3">
             <input type="hidden" name="courseId" value={course.id} />

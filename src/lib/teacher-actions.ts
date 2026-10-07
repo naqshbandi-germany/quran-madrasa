@@ -5,10 +5,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { auth } from "@/auth";
-import { generateJitsiUrl } from "@/lib/jitsi";
+import { createClassroomMeeting, createClassroomMeetings } from "@/lib/classroom";
 import { materialEmailHtml } from "@/lib/material-email";
 import { prisma } from "@/lib/prisma";
 import { MATERIAL_EMAIL_FROM, getResend } from "@/lib/resend";
+import { fromTeachingLocal, parseTeachingDateTime } from "@/lib/schedule-time";
 
 async function requireTeacher() {
   const session = await auth();
@@ -117,7 +118,9 @@ export async function deleteScheduleSlot(formData: FormData) {
 const createSessionSchema = z.object({
   courseId: z.string().cuid(),
   title: z.string().min(3),
-  startsAt: z.coerce.date(),
+  // Wert eines datetime-local-Feldes, in Nordzypern-Ortszeit.
+  startsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Ungültiges Datum"),
+  durationMin: z.coerce.number().int().min(5).max(480).default(60),
   joinUrl: z.string().url().optional().or(z.literal("")),
 });
 
@@ -128,23 +131,39 @@ export async function createClassSession(formData: FormData) {
     courseId: formData.get("courseId"),
     title: formData.get("title"),
     startsAt: formData.get("startsAt"),
+    durationMin: formData.get("durationMin") || undefined,
     joinUrl: formData.get("joinUrl") ?? "",
   });
 
-  const course = await prisma.course.findUniqueOrThrow({ where: { id: parsed.courseId } });
+  const course = await prisma.course.findUniqueOrThrow({
+    where: { id: parsed.courseId },
+    include: { teacher: { select: { zoomEmail: true } } },
+  });
   assertOwnsCourse(session, course.teacherId);
 
-  // Ohne manuellen Link automatisch einen Jitsi-Meeting-Link generieren.
-  const joinUrl = parsed.joinUrl || generateJitsiUrl(course.slug);
-  const classroomType = parsed.joinUrl ? ClassroomType.ZOOM : ClassroomType.JITSI;
+  const startsAt = parseTeachingDateTime(parsed.startsAt);
+
+  // Eigener Link: wird unveraendert uebernommen. Sonst wird je nach CLASSROOM_PROVIDER
+  // automatisch ein Jitsi-Link erzeugt oder ein Zoom-Meeting angelegt.
+  const meeting = parsed.joinUrl
+    ? { joinUrl: parsed.joinUrl, classroomType: ClassroomType.ZOOM, zoomMeetingId: null }
+    : await createClassroomMeeting({
+        courseSlug: course.slug,
+        title: parsed.title,
+        startsAt,
+        durationMin: parsed.durationMin,
+        teacherZoomEmail: course.teacher.zoomEmail,
+      });
 
   await prisma.classSession.create({
     data: {
       courseId: parsed.courseId,
       title: parsed.title,
-      startsAt: parsed.startsAt,
-      joinUrl,
-      classroomType,
+      startsAt,
+      durationMin: parsed.durationMin,
+      joinUrl: meeting.joinUrl,
+      classroomType: meeting.classroomType,
+      zoomMeetingId: meeting.zoomMeetingId,
     },
   });
 
@@ -157,24 +176,29 @@ const createRecurringSessionsSchema = z.object({
   weekday: z.nativeEnum(Weekday),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, "Format HH:MM"),
   endTime: z.string().regex(/^\d{2}:\d{2}$/, "Format HH:MM"),
-  firstDate: z.coerce.date(),
+  firstDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Ungültiges Datum"),
   interval: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]),
   occurrences: z.coerce.number().int().min(1).max(52),
 });
 
-function addInterval(date: Date, interval: "WEEKLY" | "BIWEEKLY" | "MONTHLY", index: number) {
-  const result = new Date(date);
+// Datum des index-ten Termins (reine Kalenderrechnung ohne Zeitzone).
+function addInterval(
+  first: { year: number; month: number; day: number },
+  interval: "WEEKLY" | "BIWEEKLY" | "MONTHLY",
+  index: number,
+) {
   if (interval === "MONTHLY") {
-    result.setMonth(result.getMonth() + index);
-  } else {
-    const days = interval === "WEEKLY" ? 7 : 14;
-    result.setDate(result.getDate() + index * days);
+    const result = new Date(Date.UTC(first.year, first.month - 1 + index, first.day));
+    return { year: result.getUTCFullYear(), month: result.getUTCMonth() + 1, day: result.getUTCDate() };
   }
-  return result;
+  const days = interval === "WEEKLY" ? 7 : 14;
+  const result = new Date(Date.UTC(first.year, first.month - 1, first.day + index * days));
+  return { year: result.getUTCFullYear(), month: result.getUTCMonth() + 1, day: result.getUTCDate() };
 }
 
-// Legt mehrere Sitzungen auf einmal an (z.B. "12x woechentlich ab dem 5.10."),
-// jede mit automatisch generiertem Jitsi-Link.
+// Legt mehrere Sitzungen auf einmal an (z.B. "12x woechentlich ab dem 5.10."), jede mit
+// eigenem Meeting-Link (Jitsi oder Zoom, je nach CLASSROOM_PROVIDER). Datum und Uhrzeit
+// sind in Nordzypern-Ortszeit angegeben.
 export async function createRecurringSessions(formData: FormData) {
   const session = await requireTeacher();
 
@@ -189,27 +213,44 @@ export async function createRecurringSessions(formData: FormData) {
     occurrences: formData.get("occurrences"),
   });
 
-  const course = await prisma.course.findUniqueOrThrow({ where: { id: parsed.courseId } });
+  const course = await prisma.course.findUniqueOrThrow({
+    where: { id: parsed.courseId },
+    include: { teacher: { select: { zoomEmail: true } } },
+  });
   assertOwnsCourse(session, course.teacherId);
 
   const [hours, minutes] = parsed.startTime.split(":").map(Number);
-  const [durationHours, durationMinutes] = parsed.endTime.split(":").map(Number);
-  const durationMin = durationHours * 60 + durationMinutes - (hours * 60 + minutes);
+  const [endHours, endMinutes] = parsed.endTime.split(":").map(Number);
+  const durationMin = endHours * 60 + endMinutes - (hours * 60 + minutes);
+  const safeDuration = durationMin > 0 ? durationMin : 60;
 
-  const sessions = Array.from({ length: parsed.occurrences }, (_, i) => {
-    const date = addInterval(parsed.firstDate, parsed.interval, i);
-    date.setHours(hours, minutes, 0, 0);
-    return {
-      courseId: parsed.courseId,
-      title: parsed.title,
-      startsAt: date,
-      durationMin: durationMin > 0 ? durationMin : 60,
-      joinUrl: generateJitsiUrl(course.slug),
-      classroomType: ClassroomType.JITSI,
-    };
+  const [year, month, day] = parsed.firstDate.split("-").map(Number);
+  const startTimes = Array.from({ length: parsed.occurrences }, (_, i) => {
+    const date = addInterval({ year, month, day }, parsed.interval, i);
+    return fromTeachingLocal(date.year, date.month, date.day, hours, minutes);
   });
 
-  await prisma.classSession.createMany({ data: sessions });
+  const meetings = await createClassroomMeetings(
+    startTimes.map((startsAt) => ({
+      courseSlug: course.slug,
+      title: parsed.title,
+      startsAt,
+      durationMin: safeDuration,
+      teacherZoomEmail: course.teacher.zoomEmail,
+    })),
+  );
+
+  await prisma.classSession.createMany({
+    data: startTimes.map((startsAt, i) => ({
+      courseId: parsed.courseId,
+      title: parsed.title,
+      startsAt,
+      durationMin: safeDuration,
+      joinUrl: meetings[i].joinUrl,
+      classroomType: meetings[i].classroomType,
+      zoomMeetingId: meetings[i].zoomMeetingId,
+    })),
+  });
 
   revalidatePath(`/teacher/courses/${parsed.courseId}`);
 }

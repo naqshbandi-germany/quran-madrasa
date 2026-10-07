@@ -5,6 +5,8 @@
 // deutschen Zeitumstellung zwischen 1 und 2 Stunden.
 const TEACHING_UTC_OFFSET_MINUTES = 180;
 const DISPLAY_TIME_ZONE = "Europe/Berlin";
+// Gleiche Ortszeit wie TEACHING_UTC_OFFSET_MINUTES (Tuerkei/Nordzypern, UTC+3 ganzjaehrig).
+const TEACHING_TIME_ZONE = "Europe/Istanbul";
 
 const WEEKDAYS_BY_UTC_DAY = [
   "SUNDAY",
@@ -91,3 +93,43 @@ export function hoursAheadOfGermany(now: Date = new Date()) {
 }
 
 export { timeToMinutes };
+
+// --- Konkrete Sitzungstermine (ClassSession.startsAt) ---------------------------
+// Lehrer geben Termine in Nordzypern-Ortszeit ein; gespeichert wird der echte
+// UTC-Zeitpunkt, angezeigt wird deutsche Zeit (Schueler) bzw. Ortszeit (Lehrer).
+
+export function fromTeachingLocal(
+  year: number,
+  month: number,
+  day: number,
+  hours: number,
+  minutes: number,
+) {
+  return new Date(
+    Date.UTC(year, month - 1, day, hours, minutes) - TEACHING_UTC_OFFSET_MINUTES * 60_000,
+  );
+}
+
+// Wert eines <input type="datetime-local">, z.B. "2026-10-14T16:00", in Ortszeit.
+export function parseTeachingDateTime(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) throw new Error("Ungültiges Datum/Uhrzeit-Format.");
+  const [, y, mo, d, h, mi] = match.map(Number);
+  return fromTeachingLocal(y, mo, d, h, mi);
+}
+
+export function formatGermanDateTime(date: Date, dateStyle: "medium" | "full" = "medium") {
+  return new Intl.DateTimeFormat("de-DE", {
+    timeZone: DISPLAY_TIME_ZONE,
+    dateStyle,
+    timeStyle: "short",
+  }).format(date);
+}
+
+export function formatTeachingDateTime(date: Date) {
+  return new Intl.DateTimeFormat("de-DE", {
+    timeZone: TEACHING_TIME_ZONE,
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}

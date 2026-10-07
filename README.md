@@ -70,6 +70,40 @@ teilnehmen.
   (`src/app/(app)/`) für Lehrer- und Admin-Bereich – beide Route-Groups ändern nichts an den
   URLs, nur am Layout
 
+## Videokonferenz: Jitsi oder Zoom
+
+Für jede Sitzung wird automatisch ein Meeting-Link erzeugt. Welcher Dienst dafür genutzt wird,
+steuert die Umgebungsvariable `CLASSROOM_PROVIDER`:
+
+- `jitsi` (Standard, kostenlos): Jitsi-Link über meet.jit.si.
+- `zoom`: Zoom-Meeting im Zoom-Konto des Lehrers (braucht mindestens den Tarif **Zoom Pro**, weil
+  Basic-Meetings nach 40 Minuten enden).
+
+Bereits angelegte Sitzungen behalten ihren Link, ein Wechsel ist jederzeit in beide Richtungen
+möglich. Ein manuell eingetragener Link überschreibt die automatische Erzeugung immer.
+
+### Zoom einrichten
+
+1. Zoom Pro buchen (zoom.us/pricing). Pro Lehrer, der Meetings leitet, wird eine Lizenz benötigt;
+   Schüler brauchen weder Konto noch Lizenz.
+2. Im [Zoom App Marketplace](https://marketplace.zoom.us) (mit dem Zoom-Konto anmelden):
+   *Develop → Build App → Server-to-Server OAuth*. Name z. B. „Quran Madrasa“. Auf der Seite
+   „App Credentials“ stehen **Account ID**, **Client ID** und **Client Secret**.
+3. Unter *Scopes* den Bereich zum Anlegen von Meetings hinzufügen (Meeting: „Create/View and
+   manage user meetings“, technisch `meeting:write:meeting:admin`), dann die App **aktivieren**.
+4. In Vercel (Settings → Environment Variables) setzen und danach neu deployen:
+   `ZOOM_ACCOUNT_ID`, `ZOOM_CLIENT_ID`, `ZOOM_CLIENT_SECRET` (als Secret),
+   `ZOOM_HOST_EMAIL` (E-Mail des Zoom-Kontos des Lehrers) und `CLASSROOM_PROVIDER=zoom`.
+5. Optional im Admin-Bereich beim jeweiligen Lehrer ein eigenes „Zoom-Konto“ eintragen. Das ist
+   nötig, sobald mehrere Lehrer eigene Zoom-Lizenzen haben; sonst gilt `ZOOM_HOST_EMAIL`.
+6. Testen: im Lehrer-Bereich eine Sitzung anlegen. Der Link sollte jetzt auf zoom.us zeigen, und
+   das Meeting erscheint in der Zoom-App des Lehrers.
+
+Zeiten von Sitzungen werden in Ortszeit Nordzypern (UTC+3) eingegeben, intern als echter
+UTC-Zeitpunkt gespeichert und Schülern in deutscher Zeit angezeigt (Dashboard, Erinnerungs-Mails).
+Datenschutz: Mit Zoom muss ein Vertrag zur Auftragsverarbeitung bestehen; der Standardtext der
+Datenschutzerklärung nennt automatisch Zoom bzw. Jitsi passend zu `CLASSROOM_PROVIDER`.
+
 ## Lokales Setup
 
 ### 1. Voraussetzungen

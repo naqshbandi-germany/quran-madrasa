@@ -7,7 +7,8 @@ import {
   updateSiteContent,
   updateTeacherProfile,
 } from "@/lib/admin-actions";
-import { DEFAULT_IMPRESSUM, DEFAULT_PRIVACY_POLICY } from "@/lib/legal-defaults";
+import { isZoomProvider } from "@/lib/classroom";
+import { DEFAULT_IMPRESSUM, defaultPrivacyPolicy } from "@/lib/legal-defaults";
 import { togglePublish } from "@/lib/teacher-actions";
 
 export default async function AdminPage() {
@@ -53,6 +54,13 @@ export default async function AdminPage() {
                     placeholder="Foto-URL (https://...)"
                     defaultValue={teacher.image ?? ""}
                     className="rounded-md border border-brand-200 px-3 py-2 text-sm"
+                  />
+                  <input
+                    name="zoomEmail"
+                    type="email"
+                    placeholder="Zoom-Konto (E-Mail, nur bei Zoom-Betrieb)"
+                    defaultValue={teacher.zoomEmail ?? ""}
+                    className="rounded-md border border-brand-200 px-3 py-2 text-sm sm:col-span-2"
                   />
                   <textarea
                     name="bio"
@@ -140,7 +148,7 @@ export default async function AdminPage() {
             Datenschutzerklärung
             <textarea
               name="privacyPolicy"
-              defaultValue={siteContent?.privacyPolicy || DEFAULT_PRIVACY_POLICY}
+              defaultValue={siteContent?.privacyPolicy || defaultPrivacyPolicy(isZoomProvider())}
               rows={24}
               className="mt-1 w-full rounded-md border border-brand-200 px-3 py-2 font-mono text-sm"
             />

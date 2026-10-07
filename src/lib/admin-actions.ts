@@ -56,6 +56,11 @@ const updateTeacherProfileSchema = z.object({
     .optional()
     .transform((v) => (v && v.trim() !== "" ? v.trim() : null))
     .refine((v) => !v || z.string().url().safeParse(v).success, "Muss eine gültige URL sein."),
+  zoomEmail: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? v.trim().toLowerCase() : null))
+    .refine((v) => !v || z.string().email().safeParse(v).success, "Muss eine gültige E-Mail sein."),
 });
 
 export async function updateTeacherProfile(formData: FormData) {
@@ -65,11 +70,12 @@ export async function updateTeacherProfile(formData: FormData) {
     teacherId: formData.get("teacherId"),
     bio: formData.get("bio"),
     image: formData.get("image"),
+    zoomEmail: formData.get("zoomEmail"),
   });
 
   await prisma.user.update({
     where: { id: parsed.teacherId, role: Role.TEACHER },
-    data: { bio: parsed.bio, image: parsed.image },
+    data: { bio: parsed.bio, image: parsed.image, zoomEmail: parsed.zoomEmail },
   });
 
   revalidatePath("/admin");

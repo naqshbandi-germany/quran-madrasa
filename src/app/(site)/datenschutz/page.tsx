@@ -1,6 +1,7 @@
 import { LegalText } from "@/components/legal-text";
 import { OrnamentDivider } from "@/components/ornament";
-import { DEFAULT_PRIVACY_POLICY } from "@/lib/legal-defaults";
+import { isZoomProvider } from "@/lib/classroom";
+import { defaultPrivacyPolicy } from "@/lib/legal-defaults";
 import { prisma } from "@/lib/prisma";
 
 export const metadata = { title: "Datenschutzerklärung – Quran Madrasa" };
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PrivacyPolicyPage() {
   const content = await prisma.siteContent.findUnique({ where: { id: "main" } });
-  const text = content?.privacyPolicy.trim() || DEFAULT_PRIVACY_POLICY;
+  const text = content?.privacyPolicy.trim() || defaultPrivacyPolicy(isZoomProvider());
 
   return (
     <div className="space-y-6">
