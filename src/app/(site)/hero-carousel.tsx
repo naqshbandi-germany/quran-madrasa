@@ -21,10 +21,10 @@ const AUTO_ADVANCE_MS = 6000;
 // Farbverlaeufe pro Slide-Index, rein funktional/Platzhalter - das finale
 // Design (echte Bilder etc.) kommt spaeter.
 const GRADIENTS = [
-  "from-brand-600 to-brand-700",
-  "from-amber-600 to-brand-700",
-  "from-sky-700 to-brand-700",
-  "from-rose-600 to-brand-700",
+  "from-azure-700 to-brand-700",
+  "from-brand-600 to-azure-800",
+  "from-azure-800 to-brand-600",
+  "from-brand-700 to-azure-700",
 ];
 
 export function HeroCarousel({ courses }: { courses: CourseSlideData[] }) {
@@ -43,7 +43,7 @@ export function HeroCarousel({ courses }: { courses: CourseSlideData[] }) {
   const gradient = GRADIENTS[index % GRADIENTS.length];
 
   return (
-    <section className="relative overflow-hidden rounded-xl border border-brand-200">
+    <section className="relative overflow-hidden rounded-xl border-2 border-gold-400 shadow-sm">
       <div className={`bg-gradient-to-br ${gradient} px-6 py-10 text-white transition-colors sm:px-10`}>
         {slide.kind === "booking" ? (
           <>

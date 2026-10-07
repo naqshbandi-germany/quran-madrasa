@@ -1,3 +1,4 @@
+import { OrnamentDivider } from "@/components/ornament";
 import { prisma } from "@/lib/prisma";
 import type { CatalogCourse } from "@/lib/course-labels";
 import { CourseCatalog } from "./course-catalog";
@@ -49,6 +50,7 @@ export default async function HomePage() {
 
       <section>
         <h2 className="text-3xl font-bold text-brand-700">Unser Kursangebot</h2>
+        <OrnamentDivider className="mt-3" />
         <p className="mt-2 text-brand-600">
           Online-Unterricht in Koran-Rezitation (Tadschwid), Hifz und islamischer Wissenschaft –
           live mit unseren Lehrern. Filtere nach Thema, Altersgruppe, Lehrer, Level oder

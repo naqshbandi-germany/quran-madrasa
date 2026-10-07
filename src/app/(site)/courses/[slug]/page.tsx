@@ -1,6 +1,10 @@
+import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BookingButton } from "@/components/booking-button";
+import { OrnamentDivider } from "@/components/ornament";
+import { miniatureFor } from "@/lib/miniatures";
 import { prisma } from "@/lib/prisma";
 import { AGE_GROUP_LABELS, WEEKDAY_LABELS } from "@/lib/course-labels";
 import { toGermanTime } from "@/lib/schedule-time";
@@ -19,7 +23,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   const course = await prisma.course.findUnique({
     where: { slug },
     include: {
-      teacher: { select: { name: true } },
+      teacher: { select: { id: true, name: true } },
       scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
     },
   });
@@ -28,8 +32,11 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
     notFound();
   }
 
+  const miniature = miniatureFor(course);
+
   return (
     <article className="space-y-6">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="rounded-full bg-brand-100 px-2 py-0.5 font-medium text-brand-700">
@@ -50,10 +57,37 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
           ))}
         </div>
         <h1 className="mt-2 text-3xl font-bold text-brand-700">{course.title}</h1>
-        <p className="mt-1 text-brand-600">Lehrer: {course.teacher.name}</p>
+        <p className="mt-1 text-brand-600">
+          Lehrer:{" "}
+          <Link
+            href={`/lehrer#lehrer-${course.teacher.id}`}
+            className="font-medium text-brand-700 underline underline-offset-2 hover:text-brand-600"
+          >
+            {course.teacher.name}
+          </Link>
+        </p>
+        <OrnamentDivider className="mt-3" />
+        <p className="mt-3 text-brand-900">{course.description}</p>
       </div>
 
-      <p className="text-brand-900">{course.description}</p>
+      {miniature && (
+        <figure className="w-44 shrink-0 self-center sm:w-52 sm:self-start">
+          <div className="relative aspect-[3/4] overflow-hidden rounded-t-full border-4 border-gold-400 bg-brand-100 shadow-md">
+            <Image
+              src={miniature.src}
+              alt={miniature.title}
+              fill
+              sizes="208px"
+              className="object-cover"
+              style={{ objectPosition: miniature.focus }}
+            />
+          </div>
+          <figcaption className="mt-1 text-center text-xs text-brand-600">
+            Persische Miniatur
+          </figcaption>
+        </figure>
+      )}
+      </div>
 
       {course.scheduleSlots.length > 0 && (
         <div>
