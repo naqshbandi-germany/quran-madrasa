@@ -18,6 +18,7 @@ const config: Config = {
       fontFamily: {
         // Ruhige Antiqua fuer Ueberschriften (siehe layout.tsx), Fliesstext bleibt serifenlos.
         display: ["var(--font-display)", "Georgia", "serif"],
+        quote: ["var(--font-quote)", "Georgia", "serif"],
       },
       colors: {
         // Dunkelgruen als Hauptfarbe; die hellen Stufen sind warme Weiss-/Cremetoene.

@@ -59,7 +59,9 @@ teilnehmen.
   Buch, Moschee) zentriert in den Blöcken. Auf dem Handy öffnet sich die Navigation als
   Burger-Menü.
 - Quran-Unterseite (`/quran`): Zitat von Maulana Sheikh Muhammad Adil Ar-Rabbani ohne Hintergrund,
-  mit feingliedrigen Eck-Ornamenten bündig zum Seiteninhalt; Bildkasten mit Einführungstext und
+  in der Kursive EB Garamond (echte Kursive) und mit goldenen Eck-Ornamenten (Bild unter
+  `public/images/ornaments/`, scharfer 90°-Winkel, für die anderen Ecken gespiegelt) bündig zum
+  Seiteninhalt; Bildkasten mit Einführungstext und
   drei Spalten für die Level mit Links zu den Kursen. Der Startseiten-Slide „Quran-Unterricht für
   alle Level“ führt dorthin: Hero in voller Breite, das Manuskriptblatt liegt in Perspektive
   schräg von oben gesehen und läuft oben in Blau und Unschärfe aus; langsame Ken-Burns-Animation

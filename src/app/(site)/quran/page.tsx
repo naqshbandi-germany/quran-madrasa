@@ -41,12 +41,12 @@ export default async function QuranPage() {
       {/* Zitat ohne Hintergrund; die Eck-Ornamente schliessen buendig mit dem Seiteninhalt ab */}
       <figure className="relative px-6 py-24 text-center sm:px-36 sm:py-32">
         <CornerOrnament className="absolute left-0 top-0" />
-        <CornerOrnament className="absolute right-0 top-0 rotate-90" />
-        <CornerOrnament className="absolute bottom-0 right-0 rotate-180" />
-        <CornerOrnament className="absolute bottom-0 left-0 -rotate-90" />
+        <CornerOrnament className="absolute right-0 top-0 -scale-x-100" />
+        <CornerOrnament className="absolute bottom-0 right-0 -scale-100" />
+        <CornerOrnament className="absolute bottom-0 left-0 -scale-y-100" />
 
         <blockquote>
-          <p lang="en" className="mx-auto max-w-3xl font-display text-2xl font-medium italic leading-snug text-brand-900 sm:text-3xl">
+          <p lang="en" className="mx-auto max-w-3xl font-quote text-2xl italic leading-relaxed text-brand-900 sm:text-3xl sm:leading-relaxed">
             „{QUOTE.text}“
           </p>
         </blockquote>
