@@ -5,10 +5,11 @@ const config: Config = {
   theme: {
     extend: {
       keyframes: {
-        // Langsames Heranzoomen mit leichter Verschiebung (Ken-Burns-Effekt)
+        // Ken-Burns-Effekt auf der schraeg liegenden Buchseite: langsames Heranzoomen und
+        // leichtes Aufrichten der Seite.
         kenburns: {
-          "0%": { transform: "scale(1.02) translate(0, 0)" },
-          "100%": { transform: "scale(1.16) translate(-2.5%, -1.5%)" },
+          "0%": { transform: "rotateX(60deg) scale(1.02) translate3d(0, 0, 0)" },
+          "100%": { transform: "rotateX(54deg) scale(1.12) translate3d(-1.5%, -2%, 0)" },
         },
       },
       animation: {
@@ -17,6 +18,7 @@ const config: Config = {
       fontFamily: {
         // Ruhige Antiqua fuer Ueberschriften (siehe layout.tsx), Fliesstext bleibt serifenlos.
         display: ["var(--font-display)", "Georgia", "serif"],
+        quote: ["var(--font-quote)", "Georgia", "serif"],
       },
       colors: {
         // Dunkelgruen als Hauptfarbe; die hellen Stufen sind warme Weiss-/Cremetoene.

@@ -61,7 +61,10 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-8">
-      <HeroCarousel slides={slides} />
+      {/* Volle Breite: aus dem zentrierten Seiteninhalt ausbrechen, direkt unter die Kopfzeile */}
+      <div className="relative left-1/2 -mt-8 w-screen -translate-x-1/2">
+        <HeroCarousel slides={slides} />
+      </div>
 
       <section>
         <h2 className="text-3xl font-bold text-brand-700">Unser Kursangebot</h2>

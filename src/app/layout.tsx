@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond } from "next/font/google";
+import { Cormorant_Garamond, EB_Garamond } from "next/font/google";
 
 import "./globals.css";
 import { AuthProvider } from "./providers";
@@ -8,6 +8,13 @@ const display = Cormorant_Garamond({
   subsets: ["latin", "latin-ext"],
   weight: ["500", "600", "700"],
   variable: "--font-display",
+});
+
+// Echte Kursive mit klassischer Buchanmutung fuer Zitate.
+const quote = EB_Garamond({
+  subsets: ["latin", "latin-ext"],
+  style: ["italic"],
+  variable: "--font-quote",
 });
 
 export const metadata: Metadata = {
@@ -20,7 +27,7 @@ export const metadata: Metadata = {
 // (site)/layout.tsx und (app)/layout.tsx festgelegt.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de" className={display.variable}>
+    <html lang="de" className={`${display.variable} ${quote.variable}`}>
       <body>
         <AuthProvider>{children}</AuthProvider>
       </body>
