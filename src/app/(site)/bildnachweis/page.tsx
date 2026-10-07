@@ -12,8 +12,9 @@ export default function ImageCreditsPage() {
         <h1 className="text-3xl font-bold text-brand-700">Bildnachweis</h1>
         <OrnamentDivider className="mt-3" />
         <p className="mt-3 max-w-2xl text-brand-600">
-          Die persischen Miniaturen auf dieser Seite sind Werke des 15. und 16. Jahrhunderts. Die
-          Abbildungen stammen von Wikimedia Commons.
+          Die Handschriften und persischen Miniaturen auf dieser Seite sind Werke aus dem 9. bis 16.
+          Jahrhundert, das Eck-Ornament ist gemeinfrei. Die Abbildungen stammen von Wikimedia
+          Commons und aus dem Open-Access-Bestand des Metropolitan Museum of Art.
         </p>
       </section>
 

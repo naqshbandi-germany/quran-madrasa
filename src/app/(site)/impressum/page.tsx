@@ -24,8 +24,8 @@ export default async function ImpressumPage() {
       <section className="max-w-3xl space-y-3 text-brand-900">
         <h2 className="pt-4 text-2xl font-semibold">Bildnachweis</h2>
         <p>
-          Die abgebildeten Handschriften und Miniaturen sind Werke aus dem 9. bis 16. Jahrhundert.
-          Die Abbildungen stammen aus folgenden Quellen:
+          Die abgebildeten Handschriften und Miniaturen sind Werke aus dem 9. bis 16. Jahrhundert,
+          das Eck-Ornament ist gemeinfrei. Die Abbildungen stammen aus folgenden Quellen:
         </p>
         <ul className="list-disc space-y-1 pl-5 text-sm">
           {Object.values(MINIATURES).map((image) => (
