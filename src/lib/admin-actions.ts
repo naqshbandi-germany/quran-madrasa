@@ -96,3 +96,27 @@ export async function updateSiteContent(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/ueber-uns");
 }
+
+const updateLegalTextsSchema = z.object({
+  impressum: z.string().max(20000),
+  privacyPolicy: z.string().max(40000),
+});
+
+export async function updateLegalTexts(formData: FormData) {
+  await requireAdmin();
+
+  const parsed = updateLegalTextsSchema.parse({
+    impressum: formData.get("impressum") ?? "",
+    privacyPolicy: formData.get("privacyPolicy") ?? "",
+  });
+
+  await prisma.siteContent.upsert({
+    where: { id: "main" },
+    create: { id: "main", ...parsed },
+    update: parsed,
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/impressum");
+  revalidatePath("/datenschutz");
+}

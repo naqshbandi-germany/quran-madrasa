@@ -24,7 +24,7 @@ export function AuthNav({ className = "" }: { className?: string }) {
   return (
     <div className={`flex flex-col gap-3 md:flex-row md:items-center md:gap-4 ${className}`}>
       {appAreaHref && <Link href={appAreaHref}>Verwaltung</Link>}
-      <span className="text-white/70">{session.user.name}</span>
+      <span className="text-brand-900/60">{session.user.name}</span>
       <button onClick={() => signOut({ callbackUrl: "/" })} className="text-left underline">
         Abmelden
       </button>

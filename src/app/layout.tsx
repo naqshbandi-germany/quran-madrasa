@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import { Cormorant_Garamond } from "next/font/google";
 
 import "./globals.css";
 import { AuthProvider } from "./providers";
+
+const display = Cormorant_Garamond({
+  subsets: ["latin", "latin-ext"],
+  weight: ["500", "600", "700"],
+  variable: "--font-display",
+});
 
 export const metadata: Metadata = {
   title: "Quran Madrasa",
@@ -13,7 +20,7 @@ export const metadata: Metadata = {
 // (site)/layout.tsx und (app)/layout.tsx festgelegt.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de">
+    <html lang="de" className={display.variable}>
       <body>
         <AuthProvider>{children}</AuthProvider>
       </body>

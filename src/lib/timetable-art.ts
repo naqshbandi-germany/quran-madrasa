@@ -1,6 +1,5 @@
-// Gemeinsame Zeichen-Daten fuer Webseite und PDF: Kurs-Icons (24x24-Raster) und
-// die Silhouetten im Kopfbereich. Reine SVG-Pfade, damit beide Ausgaben dieselben
-// Formen nutzen.
+// Gemeinsame Zeichen-Daten fuer Webseite und PDF: Kurs-Icons (24x24-Raster) als
+// reine SVG-Pfade, damit beide Ausgaben dieselben Formen nutzen.
 
 export type IconName = "quran" | "book" | "mosque";
 
@@ -59,23 +58,3 @@ export const ICONS: Record<IconName, IconPart[]> = {
     { d: "M19 21.5 V10.5 L20.4 8.5 L21.8 10.5 V21.5 Z", mode: "fill", tone: "main" },
   ],
 };
-
-export const SKYLINE_COLOR = "#cbd8e8";
-export const SKYLINE_SIZE = { width: 240, height: 64 };
-
-// Silhouetten links (Kuppelbau, Minarett, Zypressen) und rechts (Berge, Minarette)
-export const SKYLINE_LEFT = [
-  "M24 64 V40 H88 V64 Z",
-  "M32 40 C32 22 80 22 80 40 Z",
-  "M55 14 H57 V26 H55 Z",
-  "M100 64 V22 L104 10 L108 22 V64 Z",
-  "M138 64 C129 46 133 26 140 6 C147 26 151 46 142 64 Z",
-  "M160 64 C154 52 157 38 162 24 C167 38 170 52 164 64 Z",
-  "M170 64 C192 50 216 50 240 58 V64 Z",
-];
-
-export const SKYLINE_RIGHT = [
-  "M0 64 L38 26 L58 44 L92 12 L132 52 L156 38 L190 64 Z",
-  "M196 64 V24 L200 12 L204 24 V64 Z",
-  "M214 64 V30 L217 20 L220 30 V64 Z",
-];

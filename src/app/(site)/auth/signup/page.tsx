@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 export default function SignUpPage() {
@@ -75,6 +76,16 @@ export default function SignUpPage() {
             className="mt-1 w-full rounded-md border border-brand-200 px-3 py-2"
           />
         </div>
+        <label className="flex items-start gap-2 text-sm text-brand-900">
+          <input name="privacy" type="checkbox" required className="mt-1" />
+          <span>
+            Ich habe die{" "}
+            <Link href="/datenschutz" target="_blank" className="underline underline-offset-2">
+              Datenschutzerklärung
+            </Link>{" "}
+            gelesen.
+          </span>
+        </label>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"

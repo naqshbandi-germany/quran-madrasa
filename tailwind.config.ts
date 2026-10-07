@@ -4,19 +4,22 @@ const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      fontFamily: {
+        // Ruhige Antiqua fuer Ueberschriften (siehe layout.tsx), Fliesstext bleibt serifenlos.
+        display: ["var(--font-display)", "Georgia", "serif"],
+      },
       colors: {
-        // Dunkelgruen als Hauptfarbe, die helleren Stufen sind warme Sand-/Cremetoene
-        // (Seitenhintergrund, Rahmen), passend zur klassisch-orientalischen Anmutung.
+        // Dunkelgruen als Hauptfarbe; die hellen Stufen sind warme Weiss-/Cremetoene.
         brand: {
-          50: "#f8f3e6",
-          100: "#efe6cf",
-          200: "#dccfa9",
+          50: "#f8f5ef",
+          100: "#f1ebdd",
+          200: "#e3dac3",
           400: "#4f8a6e",
           600: "#1d6347",
           700: "#164a37",
-          900: "#10291f",
+          900: "#1d2a24",
         },
-        // Tiefes Himmelblau (Kopfzeile, Akzente)
+        // Tiefes Himmelblau (Akzente, Kopfflaechen)
         azure: {
           50: "#eaf2fa",
           100: "#cfe1f3",
