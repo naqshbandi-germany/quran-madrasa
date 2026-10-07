@@ -28,7 +28,7 @@ export function CornerOrnament({ className = "" }: { className?: string }) {
       alt=""
       width={420}
       height={420}
-      className={`h-20 w-20 sm:h-36 sm:w-36 ${className}`}
+      className={`h-10 w-10 opacity-50 sm:h-[4.5rem] sm:w-[4.5rem] ${className}`}
       aria-hidden="true"
     />
   );

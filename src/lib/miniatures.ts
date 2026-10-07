@@ -3,7 +3,7 @@
 // verkleinert unter public/images/miniatures/. Die Quellenangaben erscheinen auf
 // der Seite /bildnachweis.
 
-export type MiniatureKey = "quran" | "ghazali" | "shamail" | "fiqh" | "seelenlehre" | "quranHero";
+export type MiniatureKey = "quran" | "ghazali" | "shamail" | "fiqh" | "seelenlehre" | "quranHero" | "cornerOrnament";
 
 export type Miniature = {
   key: MiniatureKey;
@@ -71,6 +71,17 @@ export const MINIATURES: Record<MiniatureKey, Miniature> = {
     origin: "The Metropolitan Museum of Art, New York (2004.88)",
     license: "CC0 (Open Access)",
     sourceUrl: "https://www.metmuseum.org/art/collection/search/454662",
+  },
+  // Eck-Ornament der Quran-Seite (kein Kurs-Motiv, siehe miniatureFor).
+  cornerOrnament: {
+    key: "cornerOrnament",
+    src: "/images/ornaments/corner.png",
+    focus: "50% 50%",
+    title: "Eck-Ornament (Gold, links oben)",
+    work: "Antikes Eck-Ornament mit Blumenmotiven, Urheber unbekannt (Dingbat-Schrift), 2011",
+    origin: "Wikimedia Commons",
+    license: "CC0 (gemeinfrei)",
+    sourceUrl: "https://commons.wikimedia.org/wiki/File:Corner_Ornament_Gold_Up_Left.png",
   },
   seelenlehre: {
     key: "seelenlehre",

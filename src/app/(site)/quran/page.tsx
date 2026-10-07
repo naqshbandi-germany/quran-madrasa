@@ -39,7 +39,7 @@ export default async function QuranPage() {
       </section>
 
       {/* Zitat ohne Hintergrund; die Eck-Ornamente schliessen buendig mit dem Seiteninhalt ab */}
-      <figure className="relative px-6 py-24 text-center sm:px-36 sm:py-32">
+      <figure className="relative px-6 py-20 text-center sm:px-28 sm:py-28">
         <CornerOrnament className="absolute left-0 top-0" />
         <CornerOrnament className="absolute right-0 top-0 -scale-x-100" />
         <CornerOrnament className="absolute bottom-0 right-0 -scale-100" />
