@@ -77,7 +77,7 @@ model Course {
   slug        String   @unique
   title       String
   description String
-  // Kategorie, z.B. "Koran-Rezitation (Tadschwid)", "Hifz", "Arabisch", "Islamische Wissenschaften"
+  // Kategorie, z.B. "Quran-Rezitation (Tadschwid)", "Hifz", "Arabisch", "Islamische Wissenschaften"
   category    String
   level       String?
   // Zielgruppe(n) nach Alter, für die Filterung im Kursangebot (z.B. Kurse für Kinder).

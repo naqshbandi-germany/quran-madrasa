@@ -63,7 +63,7 @@ export default async function TeacherPage() {
           />
           <input
             name="category"
-            placeholder="Kategorie (z.B. Koran-Rezitation)"
+            placeholder="Kategorie (z.B. Quran-Rezitation)"
             required
             className="rounded-md border border-brand-200 px-3 py-2"
           />

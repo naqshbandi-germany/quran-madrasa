@@ -47,11 +47,11 @@ const PALETTES: BlockPalette[] = [
   { bg: "#cfeadb", border: "#92cfb0", text: "#14513a" }, // gruen
 ];
 
-// Feste Zuordnung wie in der Vorlagen-Grafik: alle Qur'an-Level teilen sich eine
+// Feste Zuordnung wie in der Vorlagen-Grafik: alle Quran-Level teilen sich eine
 // Farbe, die uebrigen Kurse haben je eine eigene. Neue Kurse bekommen der Reihe
 // nach die uebrigen Farben.
 const FIXED_PALETTE_INDEX: Record<string, number> = {
-  "Qur'an-Rezitation": 0,
+  "Quran-Rezitation": 0,
   "imam-al-ghazali-kurs": 1,
   "shamail-und-seerah": 2,
   "einstieg-fiqh-aqidah": 3,
@@ -60,7 +60,7 @@ const FIXED_PALETTE_INDEX: Record<string, number> = {
 
 // Icon pro Farbgruppe; unbekannte (neue) Kurse bekommen das neutrale Buch.
 const ICON_BY_KEY: Record<string, IconName> = {
-  "Qur'an-Rezitation": "quran",
+  "Quran-Rezitation": "quran",
   "imam-al-ghazali-kurs": "book",
   "shamail-und-seerah": "mosque",
   "einstieg-fiqh-aqidah": "mosque",
@@ -74,7 +74,7 @@ const ALTERNATIVE_TIMES = [
 ];
 
 function colorKey(course: TimetableCourse) {
-  return course.category === "Qur'an-Rezitation" ? course.category : course.slug;
+  return course.category === "Quran-Rezitation" ? course.category : course.slug;
 }
 
 function pluralHours(hours: number) {

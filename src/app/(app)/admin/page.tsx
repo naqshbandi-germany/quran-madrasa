@@ -115,7 +115,7 @@ export default async function AdminPage() {
               name="missionStatement"
               defaultValue={siteContent?.missionStatement ?? ""}
               rows={6}
-              placeholder="Unser Ziel ist es, hochwertigen Koran-Unterricht kostengünstig und für jeden zugänglich zu machen..."
+              placeholder="Unser Ziel ist es, hochwertigen Quran-Unterricht kostengünstig und für jeden zugänglich zu machen..."
               className="mt-1 w-full rounded-md border border-brand-200 px-3 py-2 text-sm"
             />
           </label>

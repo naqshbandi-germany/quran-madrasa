@@ -11,13 +11,13 @@ import { prisma } from "../src/lib/prisma";
 const FLYER_COURSES = [
   {
     slug: "quran-level-1",
-    title: "Qur'an Level 1 – Grundlagen",
-    category: "Qur'an-Rezitation",
+    title: "Quran Level 1 – Grundlagen",
+    category: "Quran-Rezitation",
     level: "Level 1",
     ageGroups: [AgeGroup.KIDS, AgeGroup.TEENS, AgeGroup.ADULTS],
     description:
       "Einführung ins arabische Schrift­bild (Qaidah) und stufenweiser Übergang zu den " +
-      "meistgelesenen Passagen und Surahs des Korans.",
+      "meistgelesenen Passagen und Surahs des Qurans.",
     schedule: [
       { weekday: Weekday.WEDNESDAY, startTime: "18:00", endTime: "18:40" },
       { weekday: Weekday.SATURDAY, startTime: "14:00", endTime: "14:40" },
@@ -26,12 +26,12 @@ const FLYER_COURSES = [
   },
   {
     slug: "quran-level-2",
-    title: "Qur'an Level 2 – Rezitation & Auswendiglernen",
-    category: "Qur'an-Rezitation",
+    title: "Quran Level 2 – Rezitation & Auswendiglernen",
+    category: "Quran-Rezitation",
     level: "Level 2",
     ageGroups: [AgeGroup.KIDS, AgeGroup.TEENS, AgeGroup.ADULTS],
     description:
-      "Beginn der Rezitation aus dem Heiligen Koran (Fatihah, Alif Lam Meem, Amanar Rasul, " +
+      "Beginn der Rezitation aus dem Heiligen Quran (Fatihah, Alif Lam Meem, Amanar Rasul, " +
       "Ayat al Kursi, Hu Allahu Lladhi, Quls), Auswendiglernen kurzer Surahs, stufenweise " +
       "Einführung der wichtigsten Tajwid-Regeln sowie die wichtigsten Duas für den Alltag.",
     schedule: [
@@ -42,12 +42,12 @@ const FLYER_COURSES = [
   },
   {
     slug: "quran-level-3",
-    title: "Qur'an Level 3 – Fortgeschrittene Rezitation",
-    category: "Qur'an-Rezitation",
+    title: "Quran Level 3 – Fortgeschrittene Rezitation",
+    category: "Quran-Rezitation",
     level: "Level 3",
     ageGroups: [AgeGroup.KIDS, AgeGroup.TEENS, AgeGroup.ADULTS],
     description:
-      "Fortgeschrittene Koranrezitation ab Fatihah mit dem Ziel, während des Kurses einen " +
+      "Fortgeschrittene Quran-Rezitation ab Fatihah mit dem Ziel, während des Kurses einen " +
       "Quran-Khatm zu vollenden. Auswendiglernen wichtiger Surahs (Juz Amma, Yasin, Waqiah, " +
       "Mulk, Sajdah, evtl. Kahf), systematische Tajwid-Regeln und vertiefte Alltags-Duas.",
     schedule: [

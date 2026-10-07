@@ -1,8 +1,9 @@
 import { OrnamentDivider } from "@/components/ornament";
+import { MINIATURES } from "@/lib/miniatures";
 import { prisma } from "@/lib/prisma";
 import type { CatalogCourse } from "@/lib/course-labels";
 import { CourseCatalog } from "./course-catalog";
-import { HeroCarousel, type CourseSlideData } from "./hero-carousel";
+import { HeroCarousel, type HeroSlide } from "./hero-carousel";
 
 // Die Terminanzeige auf den Kurskarten haengt von der deutschen Sommer-/Winterzeit
 // ab, daher stuendlich neu erzeugen.
@@ -37,22 +38,36 @@ export default async function HomePage() {
     })),
   }));
 
-  const featuredCourses: CourseSlideData[] = catalogCourses.slice(0, 3).map((c) => ({
-    slug: c.slug,
-    title: c.title,
-    description: c.description,
-    category: c.category,
-  }));
+  // Der Quran-Slide ersetzt den Hifz-Slide; fehlt Hifz unter den ersten Kursen, kommt er
+  // trotzdem direkt nach dem Beratungs-Slide.
+  const quranSlide: HeroSlide = {
+    kind: "feature",
+    label: "Quran-Unterricht",
+    title: "Quran-Unterricht für alle Level",
+    text: "Von den Grundlagen zur fließenden Rezitation & Auswendiglernen des Qurans mit Wiederholung.",
+    href: "/quran",
+    cta: "Zum Quran-Unterricht",
+    image: MINIATURES.quranHero.src,
+  };
+  const courseSlides: HeroSlide[] = catalogCourses.slice(0, 3).map((c) =>
+    c.category === "Hifz"
+      ? quranSlide
+      : { kind: "course", slug: c.slug, title: c.title, description: c.description, category: c.category },
+  );
+  const slides: HeroSlide[] = [
+    { kind: "booking" },
+    ...(courseSlides.includes(quranSlide) ? courseSlides : [quranSlide, ...courseSlides]),
+  ];
 
   return (
     <div className="space-y-8">
-      <HeroCarousel courses={featuredCourses} />
+      <HeroCarousel slides={slides} />
 
       <section>
         <h2 className="text-3xl font-bold text-brand-700">Unser Kursangebot</h2>
         <OrnamentDivider className="mt-3" />
         <p className="mt-2 text-brand-600">
-          Online-Unterricht in Koran-Rezitation (Tadschwid), Hifz und islamischer Wissenschaft –
+          Online-Unterricht in Quran-Rezitation (Tadschwid), Hifz und islamischer Wissenschaft –
           live mit unseren Lehrern. Filtere nach Thema, Altersgruppe, Lehrer, Level oder
           Wochentag.
         </p>

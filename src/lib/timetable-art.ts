@@ -39,7 +39,7 @@ function openBook(top: number, bottom: number): IconPart[] {
 }
 
 export const ICONS: Record<IconName, IconPart[]> = {
-  // Aufgeschlagener Koran auf dem X-foermigen Buchstaender
+  // Aufgeschlagener Quran auf dem X-foermigen Buchstaender
   quran: [
     ...openBook(3, 15),
     { d: "M6.5 21.5 L17.5 15.8", mode: "stroke", tone: "main", width: 1.8 },
