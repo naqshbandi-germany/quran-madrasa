@@ -5,7 +5,6 @@ import {
   toGermanTime,
   toGermanTimeRange,
 } from "@/lib/schedule-time";
-import { miniatureFor, type Miniature } from "@/lib/miniatures";
 import type { IconName } from "@/lib/timetable-art";
 
 export type BlockPalette = { bg: string; border: string; text: string };
@@ -23,7 +22,6 @@ export type TimetableBlock = {
   note: string | null;
   palette: BlockPalette;
   icon: IconName;
-  miniature: Miniature | null;
   marked: boolean;
 };
 
@@ -38,7 +36,7 @@ type TimetableCourse = {
 
 // 5-Minuten-Raster, damit auch Termine wie 15:50 oder 17:40 exakt im Raster liegen.
 export const ROW_MINUTES = 5;
-export const ROW_HEIGHT_PX = 8;
+export const ROW_HEIGHT_PX = 12;
 
 const PALETTES: BlockPalette[] = [
   { bg: "#cfe6fa", border: "#8dc0ec", text: "#12385e" }, // blau
@@ -102,7 +100,6 @@ export function buildTimetable(courses: TimetableCourse[], now: Date = new Date(
     }
     const palette = PALETTES[paletteIndexByKey.get(key)!];
     const icon = ICON_BY_KEY[key] ?? "book";
-    const miniature = miniatureFor(course);
 
     for (const rawSlot of course.scheduleSlots) {
       const slot = toGermanTime(rawSlot, now);
@@ -121,7 +118,6 @@ export function buildTimetable(courses: TimetableCourse[], now: Date = new Date(
         note: slot.note,
         palette,
         icon,
-        miniature,
         marked: alternativeSlugs.has(course.slug),
       });
       minStart = Math.min(minStart, startMinutes);

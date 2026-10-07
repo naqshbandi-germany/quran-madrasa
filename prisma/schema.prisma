@@ -146,6 +146,10 @@ model Enrollment {
 model SiteContent {
   id               String   @id @default("main")
   missionStatement String   @default("")
+  // Rechtstexte, im Admin-Bereich pflegbar. Leer = es wird der Standardtext aus
+  // src/lib/legal-defaults.ts angezeigt.
+  impressum        String   @default("")
+  privacyPolicy    String   @default("")
   updatedAt        DateTime @updatedAt
 }
 

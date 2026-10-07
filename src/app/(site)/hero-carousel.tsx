@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { BookingButton } from "@/components/booking-button";
+import { OrnamentDivider } from "@/components/ornament";
 
 export type CourseSlideData = {
   slug: string;
@@ -18,14 +19,8 @@ type Slide =
 
 const AUTO_ADVANCE_MS = 6000;
 
-// Farbverlaeufe pro Slide-Index, rein funktional/Platzhalter - das finale
-// Design (echte Bilder etc.) kommt spaeter.
-const GRADIENTS = [
-  "from-azure-700 to-brand-700",
-  "from-brand-600 to-azure-800",
-  "from-azure-800 to-brand-600",
-  "from-brand-700 to-azure-700",
-];
+// Ruhige, einfarbige Flaechen im Wechsel (tiefes Himmelblau / Dunkelgruen).
+const BACKGROUNDS = ["bg-azure-800", "bg-brand-700", "bg-azure-800", "bg-brand-700"];
 
 export function HeroCarousel({ courses }: { courses: CourseSlideData[] }) {
   const slides: Slide[] = [{ kind: "booking" }, ...courses.map((course) => ({ kind: "course" as const, course }))];
@@ -40,38 +35,49 @@ export function HeroCarousel({ courses }: { courses: CourseSlideData[] }) {
   }, [slides.length]);
 
   const slide = slides[index];
-  const gradient = GRADIENTS[index % GRADIENTS.length];
+  const background = BACKGROUNDS[index % BACKGROUNDS.length];
 
   return (
-    <section className="relative overflow-hidden rounded-xl border-2 border-gold-400 shadow-sm">
-      <div className={`bg-gradient-to-br ${gradient} px-6 py-10 text-white transition-colors sm:px-10`}>
+    <section className="relative overflow-hidden rounded-lg">
+      <div
+        className={`flex min-h-[22rem] flex-col items-center justify-center px-6 py-14 text-center text-white transition-colors sm:px-12 ${background}`}
+      >
         {slide.kind === "booking" ? (
           <>
-            <h1 className="text-3xl font-bold sm:text-4xl">
-              Online Koran-Unterricht – live, persönlich, für jeden zugänglich
+            <p className="text-xs uppercase tracking-[0.3em] text-gold-200">
+              Online-Unterricht · live · persönlich
+            </p>
+            <OrnamentDivider className="mt-4" />
+            <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">
+              Koran und islamisches Wissen lernen – für jeden zugänglich
             </h1>
-            <p className="mt-3 max-w-2xl text-white/90">
+            <p className="mt-4 max-w-2xl text-lg text-white/85">
               Nicht sicher, welcher Kurs passt? In einem kostenlosen, unverbindlichen
               Erstgespräch schauen wir gemeinsam, welches Angebot zu dir oder deinem Kind passt.
             </p>
-            <div className="mt-6">
+            <div className="mt-8">
               <BookingButton
                 variant="secondary"
-                className="!border-white !text-white hover:!bg-white hover:!text-brand-700"
+                className="!border-gold-200 !text-gold-200 hover:!bg-gold-200 hover:!text-azure-800"
               />
             </div>
           </>
         ) : (
           <>
-            <p className="text-sm font-medium uppercase tracking-wide text-white/80">
+            <p className="text-xs uppercase tracking-[0.3em] text-gold-200">
               {slide.course.category}
             </p>
-            <h1 className="mt-1 text-3xl font-bold sm:text-4xl">{slide.course.title}</h1>
-            <p className="mt-3 max-w-2xl text-white/90">{slide.course.description}</p>
-            <div className="mt-6">
+            <OrnamentDivider className="mt-4" />
+            <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">
+              {slide.course.title}
+            </h1>
+            <p className="mt-4 line-clamp-3 max-w-2xl text-lg text-white/85">
+              {slide.course.description}
+            </p>
+            <div className="mt-8">
               <Link
                 href={`/courses/${slide.course.slug}`}
-                className="inline-block rounded-md bg-white px-5 py-2.5 font-medium text-brand-700 transition hover:bg-brand-50"
+                className="inline-block rounded-md border border-gold-200 px-6 py-2.5 text-sm font-medium uppercase tracking-widest text-gold-200 transition hover:bg-gold-200 hover:text-azure-800"
               >
                 Jetzt anmelden
               </Link>
@@ -81,15 +87,15 @@ export function HeroCarousel({ courses }: { courses: CourseSlideData[] }) {
       </div>
 
       {slides.length > 1 && (
-        <div className="absolute bottom-4 right-6 flex gap-2">
+        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
           {slides.map((_, i) => (
             <button
               key={i}
               type="button"
               aria-label={`Folie ${i + 1} anzeigen`}
               onClick={() => setIndex(i)}
-              className={`h-2.5 w-2.5 rounded-full transition ${
-                i === index ? "bg-white" : "bg-white/40 hover:bg-white/70"
+              className={`h-2 w-2 rounded-full transition ${
+                i === index ? "bg-gold-200" : "bg-white/40 hover:bg-white/70"
               }`}
             />
           ))}

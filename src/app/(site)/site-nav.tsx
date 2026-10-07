@@ -14,7 +14,7 @@ const NAV_LINKS = [
   { href: "/dashboard", label: "Mein Bereich" },
 ];
 
-const LINK_STYLE = "text-white/90 transition hover:text-gold-200";
+const LINK_STYLE = "text-brand-900 transition hover:text-azure-700";
 
 export function SiteNav() {
   // Das Menue ist nur fuer die Seite offen, auf der es geoeffnet wurde - bei jedem
@@ -26,7 +26,7 @@ export function SiteNav() {
   return (
     <nav className="mx-auto max-w-5xl px-4">
       <div className="flex items-center justify-between py-3">
-        <Link href="/" className="font-serif text-xl font-semibold tracking-wide text-gold-200">
+        <Link href="/" className="font-display text-2xl font-semibold uppercase tracking-[0.16em] text-azure-800">
           Quran Madrasa
         </Link>
 
@@ -45,7 +45,7 @@ export function SiteNav() {
           aria-expanded={open}
           aria-controls="mobile-menu"
           onClick={() => setOpenOnPath(open ? null : pathname)}
-          className="rounded-md border border-white/30 p-2 text-white md:hidden"
+          className="rounded-md border border-brand-200 p-2 text-azure-800 md:hidden"
         >
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             {open ? (
@@ -60,13 +60,13 @@ export function SiteNav() {
       {open && (
         <div
           id="mobile-menu"
-          className="flex flex-col gap-1 border-t border-white/15 pb-4 pt-2 text-base md:hidden"
+          className="flex flex-col gap-1 border-t border-brand-200 pb-4 pt-2 text-base md:hidden"
         >
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`rounded-md px-2 py-2.5 hover:bg-white/10 ${LINK_STYLE}`}
+              className={`rounded-md px-2 py-2.5 hover:bg-brand-100 ${LINK_STYLE}`}
             >
               {link.label}
             </Link>

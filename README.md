@@ -50,12 +50,19 @@ teilnehmen.
   Zeitumstellung zwischen 1 und 2 Stunden. Seiten mit Zeitangaben werden stündlich neu
   erzeugt (`revalidate = 3600`), damit sie nach der Zeitumstellung nicht veraltet bleiben.
   Im Lehrer-Bereich sind neue Zeiten deshalb ebenfalls in Ortszeit einzutragen.
-- Klassisch-orientalische Gestaltung: Basisfarben dunkles Grün und tiefes Himmelblau mit
-  Gold-Akzenten, Serifen-Überschriften, Sternmuster und Zierleisten (Farben in
-  `tailwind.config.ts`). Die Kurse tragen persische Miniaturen (Wikimedia Commons, gemeinfrei
-  bzw. CC0), verkleinert unter `public/images/miniatures/`; Zuordnung und Quellen stehen in
-  `src/lib/miniatures.ts` und erscheinen auf `/bildnachweis` (im Footer verlinkt). Auf dem
-  Handy öffnet sich die Navigation als Burger-Menü.
+- Schlichte, klare Gestaltung (Orientierung: Adab Academy, ohne Kopie): warmes Weiß, dunkles
+  Grün und tiefes Himmelblau, Antiqua-Überschriften (Cormorant Garamond über `next/font`,
+  selbst gehostet), Zierlinien. Die Kurse tragen persische Miniaturen (Wikimedia Commons,
+  gemeinfrei bzw. CC0, verkleinert unter `public/images/miniatures/`) als quadratisches Bild
+  auf Kurskarten und Kursseite; Zuordnung und Quellen in `src/lib/miniatures.ts` und auf
+  `/bildnachweis`. Der Stundenplan nutzt stattdessen stilisierte Icons (Buchständer mit Koran,
+  Buch, Moschee) zentriert in den Blöcken. Auf dem Handy öffnet sich die Navigation als
+  Burger-Menü.
+- Rechtstexte: `/impressum` und `/datenschutz` (im Footer verlinkt). Die Texte sind im
+  Admin-Bereich pflegbar (`SiteContent.impressum` / `privacyPolicy`); ohne gespeicherten Text
+  erscheint der Standard-Entwurf aus `src/lib/legal-defaults.ts`. Angaben in [eckigen
+  Klammern] müssen ergänzt werden, und die Texte sollten juristisch geprüft werden. Bei der
+  Registrierung ist ein Häkchen für die Datenschutzerklärung Pflicht.
 - Kurse ohne Stripe-Preis (`stripePriceId`) zeigen statt des Anmelde-Buttons den Hinweis
   „Anmeldung auf Anfrage“, ein Preis von 0 € wird als „Preis auf Anfrage“ angezeigt
 - Zwei getrennte Layouts: die öffentliche Marketing-Seite (`src/app/(site)/`, Nav + zentrierte

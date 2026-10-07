@@ -1,7 +1,13 @@
 import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
-import { createTeacherAccount, updateSiteContent, updateTeacherProfile } from "@/lib/admin-actions";
+import {
+  createTeacherAccount,
+  updateLegalTexts,
+  updateSiteContent,
+  updateTeacherProfile,
+} from "@/lib/admin-actions";
+import { DEFAULT_IMPRESSUM, DEFAULT_PRIVACY_POLICY } from "@/lib/legal-defaults";
 import { togglePublish } from "@/lib/teacher-actions";
 
 export default async function AdminPage() {
@@ -107,6 +113,40 @@ export default async function AdminPage() {
           </label>
           <button className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
             Text speichern
+          </button>
+        </form>
+      </section>
+
+      <section className="rounded-lg border border-brand-200 bg-white p-5">
+        <h2 className="mb-1 font-semibold text-brand-700">Rechtstexte</h2>
+        <p className="mb-4 text-sm text-brand-600">
+          Impressum und Datenschutzerklärung der Website. Absätze durch Leerzeilen trennen,
+          Zwischenüberschriften mit &quot;## &quot; am Zeilenanfang. Angezeigt wird der hier
+          gespeicherte Text; ist nichts gespeichert, erscheint der Standard-Entwurf. Angaben in
+          [eckigen Klammern] müssen ergänzt werden, und die Texte sollten juristisch geprüft
+          werden.
+        </p>
+        <form action={updateLegalTexts} className="space-y-4">
+          <label className="block text-sm text-brand-700">
+            Impressum
+            <textarea
+              name="impressum"
+              defaultValue={siteContent?.impressum || DEFAULT_IMPRESSUM}
+              rows={14}
+              className="mt-1 w-full rounded-md border border-brand-200 px-3 py-2 font-mono text-sm"
+            />
+          </label>
+          <label className="block text-sm text-brand-700">
+            Datenschutzerklärung
+            <textarea
+              name="privacyPolicy"
+              defaultValue={siteContent?.privacyPolicy || DEFAULT_PRIVACY_POLICY}
+              rows={24}
+              className="mt-1 w-full rounded-md border border-brand-200 px-3 py-2 font-mono text-sm"
+            />
+          </label>
+          <button className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
+            Rechtstexte speichern
           </button>
         </form>
       </section>

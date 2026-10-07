@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -16,6 +17,12 @@ import { miniatureFor } from "@/lib/miniatures";
 export type { CatalogCourse };
 
 const ALL = "__all__";
+
+// Dünne farbige Oberkante der Karten, je Thema abwechselnd Blau/Gruen (stabil pro Thema).
+function accentFor(category: string) {
+  const sum = [...category].reduce((total, ch) => total + ch.charCodeAt(0), 0);
+  return sum % 2 === 0 ? "border-t-azure-700" : "border-t-brand-600";
+}
 type SortKey = "title" | "teacher" | "level" | "price" | "category";
 
 const SORT_LABELS: Record<SortKey, string> = {
@@ -241,67 +248,63 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
       {filtered.length === 0 ? (
         <p className="text-brand-600">Keine Kurse gefunden. Versuch andere Filter.</p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2">
           {filtered.map((course) => {
             const miniature = miniatureFor(course);
             return (
-            <Link
-              key={course.id}
-              href={`/courses/${course.slug}`}
-              className="relative flex flex-col rounded-lg border border-brand-200 bg-white p-5 shadow-sm transition hover:border-gold-400 hover:shadow-md"
-            >
-              {miniature && (
-                <span
-                  aria-hidden="true"
-                  className="absolute right-4 top-4 h-12 w-12 rounded-full border-2 border-gold-400 bg-cover shadow-sm"
-                  style={{
-                    backgroundImage: `url(${miniature.src})`,
-                    backgroundPosition: miniature.focus,
-                  }}
-                />
-              )}
-              <div className={`flex flex-wrap items-center gap-2 text-xs ${miniature ? "pr-14" : ""}`}>
-                <span className="rounded-full bg-brand-100 px-2 py-0.5 font-medium text-brand-700">
-                  {course.category}
-                </span>
-                {course.level && (
-                  <span className="rounded-full bg-brand-100 px-2 py-0.5 font-medium text-brand-700">
-                    {course.level}
-                  </span>
+              <Link
+                key={course.id}
+                href={`/courses/${course.slug}`}
+                className={`flex gap-4 rounded-md border border-t-[3px] border-brand-200 bg-white p-4 shadow-sm transition hover:shadow-md ${accentFor(course.category)}`}
+              >
+                {miniature && (
+                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md border border-brand-200 bg-brand-100 sm:h-28 sm:w-28">
+                    <Image
+                      src={miniature.src}
+                      alt=""
+                      fill
+                      sizes="112px"
+                      className="object-cover"
+                      style={{ objectPosition: miniature.focus }}
+                    />
+                  </div>
                 )}
-                {course.ageGroups.map((ag) => (
-                  <span
-                    key={ag}
-                    className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-800"
-                  >
-                    {AGE_GROUP_LABELS[ag] ?? ag}
-                  </span>
-                ))}
-              </div>
 
-              <div className={`flex items-center justify-between gap-2 ${miniature ? "mt-5" : "mt-3"}`}>
-                <h3 className="font-semibold text-brand-700">{course.title}</h3>
-                {course.scheduleSlots.length > 0 && (
-                  <span className="shrink-0 rounded-full bg-brand-700 px-2.5 py-1 text-xs font-semibold text-white">
-                    {course.scheduleSlots.length}× / Woche
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 text-sm text-brand-600">{course.description}</p>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-azure-700">
+                    {course.category}
+                    {course.level ? ` · ${course.level}` : ""}
+                  </p>
+                  <h3 className="mt-1 font-display text-xl font-semibold leading-snug text-brand-900">
+                    {course.title}
+                  </h3>
+                  <p className="mt-1 line-clamp-3 text-sm text-brand-900/75">{course.description}</p>
 
-              {course.scheduleSlots.length > 0 && (
-                <p className="mt-3 text-xs text-brand-600">{formatSchedule(course.scheduleSlots)}</p>
-              )}
+                  {course.ageGroups.length > 0 && (
+                    <p className="mt-2 text-xs text-brand-600">
+                      {course.ageGroups.map((ag) => AGE_GROUP_LABELS[ag] ?? ag).join(" · ")}
+                    </p>
+                  )}
 
-              <div className="mt-auto flex items-center justify-between pt-3 text-sm">
-                <span className="text-brand-600">Lehrer: {course.teacherName}</span>
-                <span className="font-semibold text-brand-700">
-                  {course.priceCents > 0
-                    ? `${formatPrice(course.priceCents, course.currency)} / Monat`
-                    : "Preis auf Anfrage"}
-                </span>
-              </div>
-            </Link>
+                  {course.scheduleSlots.length > 0 && (
+                    <p className="mt-2 text-xs text-brand-900/75">
+                      <span className="mr-1.5 rounded-full border border-azure-700/30 px-2 py-0.5 font-medium text-azure-800">
+                        {course.scheduleSlots.length}× / Woche
+                      </span>
+                      {formatSchedule(course.scheduleSlots)}
+                    </p>
+                  )}
+
+                  <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 pt-3 text-sm">
+                    <span className="text-brand-900/70">{course.teacherName}</span>
+                    <span className="font-semibold text-brand-700">
+                      {course.priceCents > 0
+                        ? `${formatPrice(course.priceCents, course.currency)} / Monat`
+                        : "Preis auf Anfrage"}
+                    </span>
+                  </div>
+                </div>
+              </Link>
             );
           })}
         </div>

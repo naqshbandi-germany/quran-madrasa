@@ -36,62 +36,50 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
 
   return (
     <article className="space-y-6">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="rounded-full bg-brand-100 px-2 py-0.5 font-medium text-brand-700">
-            {course.category}
-          </span>
-          {course.level && (
-            <span className="rounded-full bg-brand-100 px-2 py-0.5 font-medium text-brand-700">
-              {course.level}
-            </span>
-          )}
-          {course.ageGroups.map((ag) => (
-            <span
-              key={ag}
-              className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-800"
-            >
-              {AGE_GROUP_LABELS[ag] ?? ag}
-            </span>
-          ))}
-        </div>
-        <h1 className="mt-2 text-3xl font-bold text-brand-700">{course.title}</h1>
-        <p className="mt-1 text-brand-600">
-          Lehrer:{" "}
-          <Link
-            href={`/lehrer#lehrer-${course.teacher.id}`}
-            className="font-medium text-brand-700 underline underline-offset-2 hover:text-brand-600"
-          >
-            {course.teacher.name}
-          </Link>
-        </p>
-        <OrnamentDivider className="mt-3" />
-        <p className="mt-3 text-brand-900">{course.description}</p>
-      </div>
-
-      {miniature && (
-        <figure className="w-44 shrink-0 self-center sm:w-52 sm:self-start">
-          <div className="relative aspect-[3/4] overflow-hidden rounded-t-full border-4 border-gold-400 bg-brand-100 shadow-md">
+      <div className="flex gap-5 sm:gap-7">
+        {miniature && (
+          <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-md border border-brand-200 bg-brand-100 shadow-sm sm:h-44 sm:w-44">
             <Image
               src={miniature.src}
               alt={miniature.title}
               fill
-              sizes="208px"
+              sizes="176px"
               className="object-cover"
               style={{ objectPosition: miniature.focus }}
             />
           </div>
-          <figcaption className="mt-1 text-center text-xs text-brand-600">
-            Persische Miniatur
-          </figcaption>
-        </figure>
-      )}
+        )}
+
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-[0.18em] text-azure-700">
+            {course.category}
+            {course.level ? ` · ${course.level}` : ""}
+          </p>
+          <h1 className="mt-1 text-3xl font-semibold leading-tight text-brand-900 sm:text-4xl">
+            {course.title}
+          </h1>
+          <p className="mt-2 text-brand-900/75">
+            Lehrer:{" "}
+            <Link
+              href={`/lehrer#lehrer-${course.teacher.id}`}
+              className="font-medium text-azure-800 underline underline-offset-2 hover:text-azure-700"
+            >
+              {course.teacher.name}
+            </Link>
+          </p>
+          {course.ageGroups.length > 0 && (
+            <p className="mt-1 text-sm text-brand-600">
+              {course.ageGroups.map((ag) => AGE_GROUP_LABELS[ag] ?? ag).join(" · ")}
+            </p>
+          )}
+          <OrnamentDivider className="mt-4" />
+          <p className="mt-4 max-w-2xl text-brand-900">{course.description}</p>
+        </div>
       </div>
 
       {course.scheduleSlots.length > 0 && (
         <div>
-          <h2 className="font-semibold text-brand-700">Wöchentlicher Unterricht</h2>
+          <h2 className="text-2xl font-semibold text-brand-900">Wöchentlicher Unterricht</h2>
           <ul className="mt-2 space-y-1 text-sm text-brand-900">
             {course.scheduleSlots.map((rawSlot) => {
               const slot = toGermanTime(rawSlot);

@@ -2,41 +2,27 @@ import {
   LineCapStyle,
   PDFDocument,
   StandardFonts,
-  clip,
-  endPath,
-  popGraphicsState,
-  pushGraphicsState,
-  rectangle,
   rgb,
   type PDFFont,
-  type PDFImage,
   type PDFPage,
 } from "pdf-lib";
 
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
 import { formatClock, type Timetable } from "@/lib/timetable";
-import {
-  ICONS,
-  SKYLINE_COLOR,
-  SKYLINE_LEFT,
-  SKYLINE_RIGHT,
-  SKYLINE_SIZE,
-  type IconName,
-} from "@/lib/timetable-art";
+import { ICONS, type IconName } from "@/lib/timetable-art";
 
 const NAVY = "#14325c";
-const GOLD = "#c9a85c";
-const CREAM = "#fdf6e3";
-const HOUR_LINE = "#dccfa9";
-const HALF_HOUR_LINE = "#efe6cc";
+const TEXT = "#1d2a24";
 const GRAY = "#5b6470";
+const HOUR_LINE = "#ddd3bb";
+const HALF_HOUR_LINE = "#eee8d8";
+const GRID_BORDER = "#e3dac3";
 
 const PAGE_WIDTH = 841.89;
 const PAGE_HEIGHT = 595.28;
-const MARGIN = 28;
-const TIME_COLUMN_WIDTH = 56;
+const MARGIN = 30;
+const TIME_COLUMN_WIDTH = 48;
 const HEADER_HEIGHT = 26;
-const SKYLINE_HEIGHT = 44;
 
 function color(hex: string) {
   const n = parseInt(hex.slice(1), 16);
@@ -116,13 +102,6 @@ function drawIcon(
   }
 }
 
-function drawSkyline(page: PDFPage, parts: string[], x: number, topY: number) {
-  const scale = SKYLINE_HEIGHT / SKYLINE_SIZE.height;
-  for (const d of parts) {
-    page.drawSvgPath(d, { x, y: topY, scale, color: color(SKYLINE_COLOR) });
-  }
-}
-
 function drawCentered(
   page: PDFPage,
   text: string,
@@ -142,46 +121,10 @@ function drawCentered(
   });
 }
 
-// Zeichnet ein Bild wie CSS "object-fit: cover" in den Kasten, zugeschnitten am Rand.
-function drawImageCover(
-  page: PDFPage,
-  image: PDFImage,
-  box: { x: number; top: number; width: number; height: number },
-  focus: string,
-  opacity: number,
-) {
-  const [fx, fy] = focus.split(" ").map((p) => parseFloat(p) / 100);
-  const scale = Math.max(box.width / image.width, box.height / image.height);
-  const drawWidth = image.width * scale;
-  const drawHeight = image.height * scale;
-  const imageLeft = box.x + (box.width - drawWidth) * fx;
-  const imageTop = box.top + (box.height - drawHeight) * fy;
-
-  page.pushOperators(
-    pushGraphicsState(),
-    rectangle(box.x, box.top - box.height, box.width, box.height),
-    clip(),
-    endPath(),
-  );
-  page.drawImage(image, {
-    x: imageLeft,
-    y: imageTop - drawHeight,
-    width: drawWidth,
-    height: drawHeight,
-    opacity,
-  });
-  page.pushOperators(popGraphicsState());
-}
-
-// images: JPEG-Daten der Miniaturen, Schluessel ist der Bildpfad (Miniature.src).
-export async function renderTimetablePdf(
-  timetable: Timetable,
-  images: Record<string, Uint8Array> = {},
-): Promise<Uint8Array> {
+export async function renderTimetablePdf(timetable: Timetable): Promise<Uint8Array> {
   const { days, timeMarks, gridStart, gridEnd, blocks, legend, footnotes } = timetable;
 
   const doc = await PDFDocument.create();
-  const embeddedImages = new Map<string, PDFImage>();
   doc.setTitle("Wöchentlicher Stundenplan");
   const page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
   const regular = await doc.embedFont(StandardFonts.Helvetica);
@@ -189,29 +132,16 @@ export async function renderTimetablePdf(
   const serifBold = await doc.embedFont(StandardFonts.TimesRomanBold);
   const contentWidth = PAGE_WIDTH - 2 * MARGIN;
 
-  // Doppelter Rahmen (dunkelblau + gold) um die ganze Seite
-  drawRoundedRect(page, 12, PAGE_HEIGHT - 12, PAGE_WIDTH - 24, PAGE_HEIGHT - 24, 10, null, NAVY, 2.2);
-  drawRoundedRect(page, 16.5, PAGE_HEIGHT - 16.5, PAGE_WIDTH - 33, PAGE_HEIGHT - 33, 7, null, GOLD, 0.8);
-
-  const gridTop = PAGE_HEIGHT - 84;
-
-  // Kopfbereich: Silhouetten links/rechts, Titel in der Mitte
-  const skylineWidth = (SKYLINE_SIZE.width / SKYLINE_SIZE.height) * SKYLINE_HEIGHT;
-  drawSkyline(page, SKYLINE_LEFT, MARGIN, gridTop + SKYLINE_HEIGHT + 3);
-  drawSkyline(page, SKYLINE_RIGHT, PAGE_WIDTH - MARGIN - skylineWidth, gridTop + SKYLINE_HEIGHT + 3);
-
-  drawCentered(page, "WÖCHENTLICHER STUNDENPLAN", serifBold, 24, PAGE_WIDTH / 2, PAGE_HEIGHT - 50, NAVY);
-
-  const subtitle = pdfSafe("UNTERRICHT & VERFÜGBARKEIT");
-  const letterSpacing = 3;
-  const subtitleWidth =
-    [...subtitle].reduce((sum, ch) => sum + regular.widthOfTextAtSize(ch, 10) + letterSpacing, 0) -
-    letterSpacing;
-  let subtitleX = (PAGE_WIDTH - subtitleWidth) / 2;
-  for (const ch of subtitle) {
-    page.drawText(ch, { x: subtitleX, y: PAGE_HEIGHT - 68, size: 10, font: regular, color: color(NAVY) });
-    subtitleX += regular.widthOfTextAtSize(ch, 10) + letterSpacing;
-  }
+  drawCentered(page, "Wöchentlicher Stundenplan", serifBold, 24, PAGE_WIDTH / 2, PAGE_HEIGHT - 50, NAVY);
+  drawCentered(
+    page,
+    "Unterricht  ·  alle Zeiten in deutscher Zeit",
+    regular,
+    9,
+    PAGE_WIDTH / 2,
+    PAGE_HEIGHT - 66,
+    GRAY,
+  );
 
   const stand = new Intl.DateTimeFormat("de-DE", {
     timeZone: "Europe/Berlin",
@@ -223,10 +153,10 @@ export async function renderTimetablePdf(
   ];
 
   // Legende: Zeilenumbruch, falls die Eintraege nicht in eine Zeile passen.
-  const legendFontSize = 7.5;
+  const legendFontSize = 8;
   const legendItems = legend.map((entry) => {
     const label = pdfSafe(entry.label);
-    return { entry, label, width: 18 + regular.widthOfTextAtSize(label, legendFontSize) + 16 };
+    return { entry, label, width: 19 + regular.widthOfTextAtSize(label, legendFontSize) + 16 };
   });
   const legendRows: (typeof legendItems)[] = [[]];
   let rowWidth = 0;
@@ -241,6 +171,7 @@ export async function renderTimetablePdf(
 
   const footnotesHeight = footnoteLines.length * 9 + 4;
   const legendHeight = legendRows.length * 17 + 6;
+  const gridTop = PAGE_HEIGHT - 82;
   const bodyTop = gridTop - HEADER_HEIGHT;
   const bodyBottom = MARGIN + footnotesHeight + legendHeight + 6;
   const bodyHeight = bodyTop - bodyBottom;
@@ -263,20 +194,11 @@ export async function renderTimetablePdf(
     y: bodyBottom,
     width: contentWidth,
     height: bodyHeight,
-    color: color(CREAM),
-    borderColor: color(NAVY),
-    borderWidth: 1.5,
+    color: color("#ffffff"),
+    borderColor: color(GRID_BORDER),
+    borderWidth: 1,
   });
-  drawCentered(page, "Uhrzeit", regular, 8, MARGIN + TIME_COLUMN_WIDTH / 2, bodyTop + 15, "#ffffff");
-  drawCentered(
-    page,
-    "(deutsche Zeit)",
-    regular,
-    6.5,
-    MARGIN + TIME_COLUMN_WIDTH / 2,
-    bodyTop + 6,
-    "#cbd5e1",
-  );
+  drawCentered(page, "Uhrzeit", regular, 7.5, MARGIN + TIME_COLUMN_WIDTH / 2, bodyTop + 9, "#cbd5e1");
   days.forEach((day, i) => {
     drawCentered(
       page,
@@ -300,11 +222,11 @@ export async function renderTimetablePdf(
     });
     if (mark < gridEnd) {
       page.drawText(formatClock(mark), {
-        x: MARGIN + 12,
+        x: MARGIN + 9,
         y: y - 9,
         size: 7.5,
         font: regular,
-        color: color(NAVY),
+        color: color(GRAY),
       });
     }
   }
@@ -314,12 +236,13 @@ export async function renderTimetablePdf(
       start: { x, y: bodyTop },
       end: { x, y: bodyBottom },
       thickness: 0.5,
-      color: color(HOUR_LINE),
+      color: color(HALF_HOUR_LINE),
     });
   }
 
-  // Kurs-Bloecke: Icon links, Text rechts daneben (wie in der Vorlagen-Grafik)
-  const ICON_SIZE = 15;
+  // Kurs-Bloecke: Icon, Titel und Uhrzeit zentriert im Block
+  const ICON_SIZE = 20;
+  const PADDING = 5;
   for (const block of blocks) {
     const dayIndex = days.indexOf(block.weekday);
     if (dayIndex === -1) continue;
@@ -328,82 +251,60 @@ export async function renderTimetablePdf(
     const width = dayWidth - 6;
     const top = yOf(block.startMinutes) - 1.5;
     const height = top - (yOf(block.endMinutes) + 1.5);
-    drawRoundedRect(page, x, top, width, height, 4, block.palette.bg, block.palette.border);
+    drawRoundedRect(page, x, top, width, height, 3, block.palette.bg, block.palette.border);
 
-    const imageBytes = block.miniature ? images[block.miniature.src] : undefined;
-    if (block.miniature && imageBytes) {
-      let image = embeddedImages.get(block.miniature.src);
-      if (!image) {
-        image = await doc.embedJpg(imageBytes);
-        embeddedImages.set(block.miniature.src, image);
-      }
-      drawImageCover(
-        page,
-        image,
-        { x: x + width * 0.45, top: top - 1, width: width * 0.55 - 1, height: height - 2 },
-        block.miniature.focus,
-        0.38,
-      );
-    }
-
-    drawIcon(page, block.icon, x + 5, top - 6, ICON_SIZE, block.palette.text, block.palette.bg);
-
-    const textLeft = x + 5 + ICON_SIZE + 4;
-    const textWidth = width - (5 + ICON_SIZE + 4) - 4;
+    const textWidth = width - 2 * PADDING;
     const title = `${block.shortTitle}${block.marked ? "*" : ""}`;
     const timeText = `${block.startTime} – ${block.endTime}`;
+    const contentHeight = (lines: number, size: number) =>
+      ICON_SIZE + 3 + lines * (size + 2) + (size + 1) + (block.note ? size + 2 : 0);
+
     let fontSize = 9;
     let titleLines = wrapText(title, serifBold, fontSize, textWidth);
-    let lineCount = titleLines.length + 1 + (block.note ? 1 : 0);
-    if (lineCount * (fontSize + 2) > height - 8) {
-      fontSize = 7.5;
+    if (contentHeight(titleLines.length, fontSize) > height - 2 * PADDING) {
+      fontSize = 8;
       titleLines = wrapText(title, serifBold, fontSize, textWidth);
-      lineCount = titleLines.length + 1 + (block.note ? 1 : 0);
     }
+
+    const centerX = x + width / 2;
+    let cursor = top - Math.max(PADDING, (height - contentHeight(titleLines.length, fontSize)) / 2);
+    drawIcon(
+      page,
+      block.icon,
+      centerX - ICON_SIZE / 2,
+      cursor,
+      ICON_SIZE,
+      block.palette.text,
+      block.palette.bg,
+    );
+    cursor -= ICON_SIZE + 3;
+
     const lineHeight = fontSize + 2;
-    let baseline = top - 6 - fontSize + 1;
+    let baseline = cursor - fontSize + 1;
     for (const line of titleLines) {
-      page.drawText(line, {
-        x: textLeft,
-        y: baseline,
-        size: fontSize,
-        font: serifBold,
-        color: color(block.palette.text),
-      });
+      drawCentered(page, line, serifBold, fontSize, centerX, baseline, block.palette.text);
       baseline -= lineHeight;
     }
-    page.drawText(timeText, {
-      x: textLeft,
-      y: baseline,
-      size: fontSize - 0.5,
-      font: serif,
-      color: color(block.palette.text),
-    });
+    drawCentered(page, timeText, serif, fontSize - 0.5, centerX, baseline, block.palette.text);
     if (block.note) {
       baseline -= lineHeight;
-      page.drawText(pdfSafe(block.note), {
-        x: textLeft,
-        y: baseline,
-        size: fontSize - 0.5,
-        font: serif,
-        color: color(block.palette.text),
-      });
+      drawCentered(page, block.note, serif, fontSize - 0.5, centerX, baseline, block.palette.text);
     }
   }
 
   // Legende mit Icons
-  let legendY = bodyBottom - 6;
+  let legendY = bodyBottom - 8;
   for (const row of legendRows) {
     let x = MARGIN;
     for (const { entry, label, width } of row) {
-      drawRoundedRect(page, x, legendY, 12, 12, 3, entry.palette.bg, entry.palette.border);
+      drawRoundedRect(page, x, legendY, 12, 12, 3, entry.palette.bg, entry.palette.border, 0.6);
       drawIcon(page, entry.icon, x + 1.5, legendY - 1.5, 9, entry.palette.text, entry.palette.bg);
       page.drawText(label, {
         x: x + 17,
         y: legendY - 9,
         size: legendFontSize,
         font: regular,
-        color: color(NAVY),
+        color: color(TEXT),
       });
       x += width;
     }
@@ -411,7 +312,7 @@ export async function renderTimetablePdf(
   }
 
   // Fussnoten
-  let noteY = legendY - 4;
+  let noteY = legendY - 2;
   for (const line of footnoteLines) {
     page.drawText(line, { x: MARGIN, y: noteY - 6, size: 7, font: regular, color: color(GRAY) });
     noteY -= 9;
