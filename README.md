@@ -1,6 +1,6 @@
 # Quran Madrasa (Arbeitstitel)
 
-Online-Plattform für Koran-Unterricht (Tadschwid, Hifz) und islamische Wissenschaften:
+Online-Plattform für Quran-Unterricht (Tadschwid, Hifz) und islamische Wissenschaften:
 Kursangebot durchstöbern, monatlich kündbares Abo abschließen, per Jitsi Meet am Unterricht
 teilnehmen.
 
@@ -55,9 +55,18 @@ teilnehmen.
   selbst gehostet), Zierlinien. Die Kurse tragen persische Miniaturen (Wikimedia Commons,
   gemeinfrei bzw. CC0, verkleinert unter `public/images/miniatures/`) als quadratisches Bild
   auf Kurskarten und Kursseite; Zuordnung und Quellen in `src/lib/miniatures.ts` und auf
-  `/bildnachweis`. Der Stundenplan nutzt stattdessen stilisierte Icons (Buchständer mit Koran,
+  `/bildnachweis`. Der Stundenplan nutzt stattdessen stilisierte Icons (Buchständer mit Quran,
   Buch, Moschee) zentriert in den Blöcken. Auf dem Handy öffnet sich die Navigation als
   Burger-Menü.
+- Quran-Unterseite (`/quran`): Zitat (Hadith, at-Tirmidhī Nr. 2910) mit Eck-Ornamenten, Bildkasten
+  mit Einführungstext und drei Spalten für die Level mit Links zu den Kursen. Der Startseiten-Slide
+  „Quran-Unterricht für alle Level“ (Ken-Burns-Animation, respektiert `prefers-reduced-motion`)
+  führt dorthin. Unter „Kursangebot“ gibt es ein Untermenü mit den Kursthemen (auf dem Handy und
+  Tablets im Burger-Menü). Titelbild: Blatt aus dem „Blauen Quran“ (Met, CC0), Quellenangabe auf
+  `/bildnachweis` und im Impressum.
+- Schreibweise: einheitlich **Quran** (nicht Qur'an/Koran), auch in Kurstiteln und Kategorien. Die
+  bestehenden Kurse wurden per Migration angepasst; der Text der Lehrer-Biografie bleibt
+  unverändert.
 - Rechtstexte: `/impressum` und `/datenschutz` (im Footer verlinkt). Die Texte sind im
   Admin-Bereich pflegbar (`SiteContent.impressum` / `privacyPolicy`); ohne gespeicherten Text
   erscheint der Standard-Entwurf aus `src/lib/legal-defaults.ts`. Angaben in [eckigen

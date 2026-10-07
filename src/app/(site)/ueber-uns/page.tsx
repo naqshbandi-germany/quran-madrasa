@@ -18,7 +18,7 @@ export default async function AboutPage() {
       ) : (
         <p className="max-w-2xl text-brand-600">
           Hier folgt in Kürze unser Statement of Purpose. Unser Ziel: hochwertigen
-          Koran-Unterricht kostengünstig und für jeden zugänglich zu machen.
+          Quran-Unterricht kostengünstig und für jeden zugänglich zu machen.
         </p>
       )}
 

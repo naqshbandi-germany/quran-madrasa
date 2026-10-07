@@ -22,7 +22,7 @@ export function AuthNav({ className = "" }: { className?: string }) {
     session.user.role === "ADMIN" ? "/admin" : session.user.role === "TEACHER" ? "/teacher" : null;
 
   return (
-    <div className={`flex flex-col gap-3 md:flex-row md:items-center md:gap-4 ${className}`}>
+    <div className={`flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4 ${className}`}>
       {appAreaHref && <Link href={appAreaHref}>Verwaltung</Link>}
       <span className="text-brand-900/60">{session.user.name}</span>
       <button onClick={() => signOut({ callbackUrl: "/" })} className="text-left underline">

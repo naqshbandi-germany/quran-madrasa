@@ -3,7 +3,7 @@
 // verkleinert unter public/images/miniatures/. Die Quellenangaben erscheinen auf
 // der Seite /bildnachweis.
 
-export type MiniatureKey = "quran" | "ghazali" | "shamail" | "fiqh" | "seelenlehre";
+export type MiniatureKey = "quran" | "ghazali" | "shamail" | "fiqh" | "seelenlehre" | "quranHero";
 
 export type Miniature = {
   key: MiniatureKey;
@@ -61,6 +61,17 @@ export const MINIATURES: Record<MiniatureKey, Miniature> = {
     sourceUrl:
       "https://commons.wikimedia.org/wiki/File:Building_of_the_Great_Mosque_in_Samarkand_(right).jpg",
   },
+  // Titelbild fuer Startseiten-Slide und Quran-Seite (kein Kurs-Motiv, siehe miniatureFor).
+  quranHero: {
+    key: "quranHero",
+    src: "/images/hero/blue-quran.jpg",
+    focus: "35% 45%",
+    title: "Blatt aus dem „Blauen Quran“",
+    work: "Gold und Silber auf indigogefärbtem Pergament, 2. Hälfte 9. bis Mitte 10. Jahrhundert",
+    origin: "The Metropolitan Museum of Art, New York (2004.88)",
+    license: "CC0 (Open Access)",
+    sourceUrl: "https://www.metmuseum.org/art/collection/search/454662",
+  },
   seelenlehre: {
     key: "seelenlehre",
     src: "/images/miniatures/seelenlehre-dervish.jpg",
@@ -80,8 +91,8 @@ const KEY_BY_SLUG: Record<string, MiniatureKey> = {
   "islamische-seelenlehre-charakterbildung": "seelenlehre",
 };
 
-// Alle Kurse rund um Koran, Rezitation und Hifz teilen sich die Schulszene.
-const QURAN_CATEGORIES = new Set(["Qur'an-Rezitation", "Koran-Rezitation (Tadschwid)", "Hifz"]);
+// Alle Kurse rund um Quran, Rezitation und Hifz teilen sich die Schulszene.
+const QURAN_CATEGORIES = new Set(["Quran-Rezitation", "Quran-Rezitation (Tadschwid)", "Hifz"]);
 
 export function miniatureFor(course: { slug: string; category: string }): Miniature | null {
   const key = KEY_BY_SLUG[course.slug] ?? (QURAN_CATEGORIES.has(course.category) ? "quran" : null);

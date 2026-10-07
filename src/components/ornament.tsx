@@ -15,3 +15,24 @@ export function OrnamentDivider({ className = "" }: { className?: string }) {
     </svg>
   );
 }
+
+// Dezentes Eck-Ornament (Doppelwinkel mit Raute); Standard = linke obere Ecke, Drehung
+// per className (z. B. rotate-90).
+export function CornerOrnament({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      className={`h-12 w-12 text-gold-400 sm:h-16 sm:w-16 ${className}`}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      aria-hidden="true"
+    >
+      <path d="M2 62 V16 Q2 2 16 2 H62" />
+      <path d="M10 62 V24 Q10 10 24 10 H62" opacity="0.5" />
+      <path d="M16 9 L23 16 L16 23 L9 16 Z" fill="currentColor" stroke="none" />
+      <circle cx="34" cy="2" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="2" cy="34" r="1.6" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}

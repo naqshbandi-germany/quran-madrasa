@@ -12,7 +12,7 @@ const display = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: "Quran Madrasa",
-  description: "Online-Unterricht für Koran-Rezitation und islamische Wissenschaften",
+  description: "Online-Unterricht für Quran-Rezitation und islamische Wissenschaften",
 };
 
 // Enthaelt nur noch das HTML-Grundgeruest. Das sichtbare Layout (Marketing-Nav

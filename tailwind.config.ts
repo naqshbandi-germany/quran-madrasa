@@ -4,6 +4,16 @@ const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      keyframes: {
+        // Langsames Heranzoomen mit leichter Verschiebung (Ken-Burns-Effekt)
+        kenburns: {
+          "0%": { transform: "scale(1.02) translate(0, 0)" },
+          "100%": { transform: "scale(1.16) translate(-2.5%, -1.5%)" },
+        },
+      },
+      animation: {
+        kenburns: "kenburns 9s ease-out forwards",
+      },
       fontFamily: {
         // Ruhige Antiqua fuer Ueberschriften (siehe layout.tsx), Fliesstext bleibt serifenlos.
         display: ["var(--font-display)", "Georgia", "serif"],
