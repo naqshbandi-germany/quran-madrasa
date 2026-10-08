@@ -11,9 +11,19 @@ const config: Config = {
           "0%": { transform: "rotateX(60deg) scale(1.02) translate3d(0, 0, 0)" },
           "100%": { transform: "rotateX(54deg) scale(1.12) translate3d(-1.5%, -2%, 0)" },
         },
+        // Wie kenburns, aber die Seite ist zusaetzlich seitlich gekippt und in der Ebene gedreht.
+        "kenburns-side": {
+          "0%": {
+            transform: "rotateX(55deg) rotateY(-20deg) rotateZ(-10deg) scale(1.02) translate3d(0, 0, 0)",
+          },
+          "100%": {
+            transform: "rotateX(51deg) rotateY(-16deg) rotateZ(-8deg) scale(1.1) translate3d(2%, -2%, 0)",
+          },
+        },
       },
       animation: {
         kenburns: "kenburns 9s ease-out forwards",
+        "kenburns-side": "kenburns-side 9s ease-out forwards",
       },
       fontFamily: {
         // Ruhige Antiqua fuer Ueberschriften (siehe layout.tsx), Fliesstext bleibt serifenlos.

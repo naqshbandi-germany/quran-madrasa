@@ -1,9 +1,9 @@
 import { OrnamentDivider } from "@/components/ornament";
-import { MINIATURES } from "@/lib/miniatures";
+import { bookingSlide, quranSlide, type HeroSlide } from "@/lib/hero-slides";
 import { prisma } from "@/lib/prisma";
 import type { CatalogCourse } from "@/lib/course-labels";
 import { CourseCatalog } from "./course-catalog";
-import { HeroCarousel, type HeroSlide } from "./hero-carousel";
+import { HeroCarousel } from "./hero-carousel";
 
 // Die Terminanzeige auf den Kurskarten haengt von der deutschen Sommer-/Winterzeit
 // ab, daher stuendlich neu erzeugen.
@@ -40,23 +40,15 @@ export default async function HomePage() {
 
   // Der Quran-Slide ersetzt den Hifz-Slide; fehlt Hifz unter den ersten Kursen, kommt er
   // trotzdem direkt nach dem Beratungs-Slide.
-  const quranSlide: HeroSlide = {
-    kind: "feature",
-    label: "Quran-Unterricht",
-    title: "Quran-Unterricht für alle Level",
-    text: "Von den Grundlagen zur fließenden Rezitation & Auswendiglernen des Qurans mit Wiederholung.",
-    href: "/quran",
-    cta: "Zum Quran-Unterricht",
-    image: MINIATURES.quranHero.src,
-  };
+  const quran = quranSlide("center");
   const courseSlides: HeroSlide[] = catalogCourses.slice(0, 3).map((c) =>
     c.category === "Hifz"
-      ? quranSlide
+      ? quran
       : { kind: "course", slug: c.slug, title: c.title, description: c.description, category: c.category },
   );
   const slides: HeroSlide[] = [
-    { kind: "booking" },
-    ...(courseSlides.includes(quranSlide) ? courseSlides : [quranSlide, ...courseSlides]),
+    bookingSlide("center"),
+    ...(courseSlides.includes(quran) ? courseSlides : [quran, ...courseSlides]),
   ];
 
   return (
