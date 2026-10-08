@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { AuthNav } from "./auth-nav";
+import { UserMenu } from "./user-menu";
 
 const COURSE_LINKS = [
   { href: "/quran", label: "Quran-Rezitation" },
@@ -18,7 +18,6 @@ const OTHER_LINKS = [
   { href: "/stundenplan", label: "Stundenplan" },
   { href: "/lehrer", label: "Lehrer" },
   { href: "/ueber-uns", label: "Ziel & Zweck" },
-  { href: "/dashboard", label: "Mein Bereich" },
 ];
 
 const LINK_STYLE = "text-brand-900 transition hover:text-azure-700";
@@ -70,7 +69,10 @@ export function SiteNav() {
               {link.label}
             </Link>
           ))}
-          <AuthNav className={LINK_STYLE} />
+          {/* Konto-Bereich getrennt vom Hauptmenue */}
+          <div className="ml-1 border-l border-brand-200 pl-5">
+            <UserMenu />
+          </div>
         </div>
 
         <button
@@ -123,7 +125,7 @@ export function SiteNav() {
               {link.label}
             </Link>
           ))}
-          <AuthNav className={`px-2 py-2.5 ${LINK_STYLE}`} />
+          <UserMenu inline />
         </div>
       )}
     </nav>
