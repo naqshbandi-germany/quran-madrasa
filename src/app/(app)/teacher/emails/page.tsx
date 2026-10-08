@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { EmailComposer, type ComposerCourse } from "@/components/email-composer";
-import { shouldSendAsLink } from "@/lib/media";
+import { blobAccess, isBlobConfigured } from "@/lib/blob";
+import { toMediaItem } from "@/lib/media-items";
 import { prisma } from "@/lib/prisma";
 
 export const metadata = { title: "E-Mails – Quran Madrasa" };
@@ -33,12 +34,17 @@ export default async function EmailsPage({
   const files = await prisma.mediaFile.findMany({
     where: isAdmin ? {} : { ownerId: session.user.id },
     orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, fileName: true, sizeBytes: true, blobPathname: true },
+    select: {
+      id: true,
+      title: true,
+      fileName: true,
+      mimeType: true,
+      sizeBytes: true,
+      createdAt: true,
+      blobPathname: true,
+    },
   });
-  const composerFiles = files.map(({ blobPathname, ...file }) => ({
-    ...file,
-    asLink: shouldSendAsLink({ blobPathname, sizeBytes: file.sizeBytes }),
-  }));
+  const composerFiles = files.map((file) => toMediaItem(file));
 
   const composerCourses: ComposerCourse[] = courses.map((course) => ({
     id: course.id,
@@ -65,6 +71,7 @@ export default async function EmailsPage({
       <EmailComposer
         courses={composerCourses}
         files={composerFiles}
+        upload={{ blobEnabled: isBlobConfigured(), blobAccess: blobAccess(), userId: session.user.id }}
         initialCourseId={composerCourses.find((c) => c.id === requestedCourse)?.id}
       />
     </div>

@@ -19,7 +19,8 @@ import {
   updateScheduleSlot,
 } from "@/lib/teacher-actions";
 import { isZoomProvider } from "@/lib/classroom";
-import { shouldSendAsLink } from "@/lib/media";
+import { blobAccess, isBlobConfigured } from "@/lib/blob";
+import { toMediaItem } from "@/lib/media-items";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
 import { formatGermanDateTime, formatTeachingDateTime, toTeachingInputValue } from "@/lib/schedule-time";
 
@@ -179,12 +180,17 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
   const mediaFiles = await prisma.mediaFile.findMany({
     where: session?.user.role === "ADMIN" ? {} : { ownerId: session?.user.id },
     orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, fileName: true, sizeBytes: true, blobPathname: true },
+    select: {
+      id: true,
+      title: true,
+      fileName: true,
+      mimeType: true,
+      sizeBytes: true,
+      createdAt: true,
+      blobPathname: true,
+    },
   });
-  const composerFiles = mediaFiles.map(({ blobPathname, ...file }) => ({
-    ...file,
-    asLink: shouldSendAsLink({ blobPathname, sizeBytes: file.sizeBytes }),
-  }));
+  const composerFiles = mediaFiles.map((file) => toMediaItem(file));
 
   const now = new Date();
   const upcomingSessions = course.sessions.filter((s) => s.startsAt >= now);
@@ -496,6 +502,11 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
             },
           ]}
           files={composerFiles}
+          upload={{
+            blobEnabled: isBlobConfigured(),
+            blobAccess: blobAccess(),
+            userId: session?.user.id ?? "",
+          }}
         />
       </section>
 

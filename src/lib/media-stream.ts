@@ -11,10 +11,10 @@ type StreamableFile = {
 };
 
 // Liefert eine Mediathek-Datei als Download aus (aus der Datenbank oder aus Vercel Blob).
-export async function streamMediaFile(file: StreamableFile) {
+export async function streamMediaFile(file: StreamableFile, options: { inline?: boolean } = {}) {
   const headers: Record<string, string> = {
     "Content-Type": file.mimeType,
-    "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
+    "Content-Disposition": `${options.inline ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
     "Cache-Control": "private, no-store",
     "X-Content-Type-Options": "nosniff",
   };

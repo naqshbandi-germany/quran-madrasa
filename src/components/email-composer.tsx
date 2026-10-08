@@ -1,12 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
-import { FileIcon } from "@/components/icons";
-import { sendCourseEmail } from "@/lib/email-actions";
+import { FileIcon, XIcon } from "@/components/icons";
+import { MediaBrowser } from "@/components/media-browser";
+import { UploadForm } from "@/components/media-upload-form";
 import type { ActionResult } from "@/lib/account-actions";
+import { sendCourseEmail } from "@/lib/email-actions";
 import { formatBytes } from "@/lib/media";
+import type { MediaItem } from "@/lib/media-items";
 
 export type ComposerCourse = {
   id: string;
@@ -14,20 +17,98 @@ export type ComposerCourse = {
   participants: { id: string; name: string; detail: string }[];
 };
 
-export type ComposerFile = { id: string; title: string; fileName: string; sizeBytes: number; asLink: boolean };
+// Angaben fuer den Datei-Upload im Auswahlfenster (siehe UploadForm)
+export type ComposerUpload = { blobEnabled: boolean; blobAccess: "public" | "private"; userId: string };
 
 const INITIAL: ActionResult = { ok: false };
 const INPUT = "w-full rounded-md border border-brand-200 bg-white px-3 py-2";
 
+// Auswahlfenster ("Pop-up") mit der Mediathek: Dateien anhaken, bei Bedarf eine neue hochladen.
+// Wird per Portal an das Seitenende gehaengt, weil der Upload ein eigenes Formular ist und nicht
+// im E-Mail-Formular stehen darf.
+function MediaPicker({
+  files,
+  upload,
+  attached,
+  onToggle,
+  onClose,
+}: {
+  files: MediaItem[];
+  upload: ComposerUpload;
+  attached: Set<string>;
+  onToggle: (id: string) => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    ref.current?.showModal();
+  }, []);
+
+  return createPortal(
+    <dialog
+      ref={ref}
+      onClose={onClose}
+      onClick={(event) => {
+        if (event.target === ref.current) onClose();
+      }}
+      aria-label="Mediathek"
+      className="m-auto h-[min(46rem,92vh)] w-[min(64rem,96vw)] rounded-lg border border-brand-200 bg-white p-0 shadow-xl backdrop:bg-black/60"
+    >
+      <div className="flex h-full flex-col">
+        <div className="flex items-center justify-between gap-4 border-b border-brand-100 px-5 py-3">
+          <h2 className="text-lg font-semibold text-brand-900">Mediathek: Dateien für die E-Mail auswählen</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fenster schließen"
+            className="rounded-md p-1.5 text-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-azure-700"
+          >
+            <XIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          <details className="rounded-lg border border-brand-200 bg-brand-50">
+            <summary className="cursor-pointer px-4 py-2.5 text-sm font-medium text-azure-800">
+              Neue Datei hochladen
+            </summary>
+            <div className="px-4 pb-4">
+              <UploadForm {...upload} />
+            </div>
+          </details>
+          <MediaBrowser items={files} mode="select" selected={attached} onToggle={onToggle} />
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-brand-100 px-5 py-3">
+          <p className="text-sm text-brand-700" aria-live="polite">
+            {attached.size === 0 ? "Noch keine Datei ausgewählt" : `${attached.size} Datei(en) ausgewählt`}
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md bg-brand-600 px-5 py-2 font-medium text-white hover:bg-brand-700"
+          >
+            Fertig
+          </button>
+        </div>
+      </div>
+    </dialog>,
+    document.body,
+  );
+}
+
 // E-Mail an Kursteilnehmer: Kurs waehlen (oder fest vorgegeben), an alle oder einzelne
-// Teilnehmer, Betreff und Text, Dateien aus der Mediathek als Anhang.
+// Teilnehmer, Betreff und Text, Dateien aus der Mediathek als Anhang (Auswahl im Pop-up).
 export function EmailComposer({
   courses,
   files,
+  upload,
   initialCourseId,
 }: {
   courses: ComposerCourse[];
-  files: ComposerFile[];
+  files: MediaItem[];
+  upload: ComposerUpload;
   initialCourseId?: string;
 }) {
   // Vorauswahl: gewuenschter Kurs, sonst der erste Kurs mit Teilnehmern.
@@ -39,6 +120,7 @@ export function EmailComposer({
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [attached, setAttached] = useState<Set<string>>(new Set());
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [state, action, pending] = useActionState(async (prev: ActionResult, formData: FormData) => {
     const result = await sendCourseEmail(prev, formData);
     // Nach dem Versand das Formular leeren, damit nichts versehentlich doppelt rausgeht.
@@ -53,10 +135,9 @@ export function EmailComposer({
   const course = courses.find((c) => c.id === courseId);
   const participants = course?.participants ?? [];
   const recipientCount = mode === "all" ? participants.length : selected.size;
-  const attachedBytes = files
-    .filter((f) => attached.has(f.id) && !f.asLink)
-    .reduce((sum, f) => sum + f.sizeBytes, 0);
-  const linkCount = files.filter((f) => attached.has(f.id) && f.asLink).length;
+  const attachedFiles = files.filter((f) => attached.has(f.id));
+  const attachedBytes = attachedFiles.filter((f) => !f.asLink).reduce((sum, f) => sum + f.sizeBytes, 0);
+  const linkCount = attachedFiles.filter((f) => f.asLink).length;
 
   function toggle(set: Set<string>, id: string) {
     const next = new Set(set);
@@ -199,54 +280,52 @@ export function EmailComposer({
       </div>
 
       {/* Anhaenge aus der Mediathek */}
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-brand-700">Anhänge aus der Mediathek</legend>
-        {files.length === 0 ? (
-          <p className="text-sm text-brand-600">
-            Noch keine Dateien in deiner Mediathek.{" "}
-            <Link href="/teacher/mediathek" className="font-medium text-azure-800 underline">
-              Datei hochladen
-            </Link>
-          </p>
-        ) : (
-          <>
-            <ul className="space-y-1.5">
-              {files.map((f) => (
-                <li key={f.id}>
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      name="fileIds"
-                      value={f.id}
-                      checked={attached.has(f.id)}
-                      onChange={() => setAttached((current) => toggle(current, f.id))}
-                      className="h-4 w-4 accent-brand-600"
-                    />
-                    <FileIcon className="h-4 w-4 text-brand-600" />
-                    <span className="font-medium">{f.title}</span>
-                    <span className="text-brand-600">
-                      {f.fileName} · {formatBytes(f.sizeBytes)}
-                      {f.asLink ? " · wird als Download-Link verschickt" : ""}
-                    </span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-            <p className="text-xs text-brand-600">
-              {attached.size - linkCount > 0
-                ? `${attached.size - linkCount} Anhang (${formatBytes(attachedBytes)}). `
-                : ""}
-              {linkCount > 0 ? `${linkCount} Datei(en) als Download-Link. ` : ""}
-              Weitere Dateien lädst du in der{" "}
-              <Link href="/teacher/mediathek" className="font-medium text-azure-800 underline">
-                Mediathek
-              </Link>{" "}
-              hoch.
-            </p>
-          </>
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-brand-700">Anhänge aus der Mediathek</p>
+        {attachedFiles.length > 0 && (
+          <ul className="space-y-1.5">
+            {attachedFiles.map((f) => (
+              <li
+                key={f.id}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-brand-200 bg-brand-50 px-3 py-2 text-sm"
+              >
+                <input type="hidden" name="fileIds" value={f.id} />
+                <FileIcon className="h-4 w-4 shrink-0 text-brand-600" />
+                <span className="font-medium">{f.title}</span>
+                <span className="text-brand-600">
+                  {f.fileName} · {formatBytes(f.sizeBytes)}
+                  {f.asLink ? " · wird als Download-Link verschickt" : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAttached((current) => toggle(current, f.id))}
+                  aria-label={`${f.title} entfernen`}
+                  className="ml-auto inline-flex items-center gap-1 text-red-800 hover:text-red-700"
+                >
+                  <XIcon className="h-4 w-4" />
+                  Entfernen
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="rounded-md border border-azure-800 px-4 py-2 text-sm font-medium text-azure-800 transition hover:bg-azure-800 hover:text-white"
+          >
+            {attachedFiles.length > 0 ? "Auswahl ändern …" : "Aus der Mediathek wählen …"}
+          </button>
+          {attachedFiles.length > 0 && (
+            <span className="text-xs text-brand-600">
+              {attachedFiles.length - linkCount > 0 ? `Anhänge: ${formatBytes(attachedBytes)}. ` : ""}
+              {linkCount > 0 ? `${linkCount} Datei(en) als Download-Link.` : ""}
+            </span>
+          )}
+        </div>
         {state.errors?.fileIds && <p className="text-sm text-red-700">{state.errors.fileIds}</p>}
-      </fieldset>
+      </div>
 
       {state.message && (
         <p
@@ -264,6 +343,16 @@ export function EmailComposer({
       >
         {pending ? "Wird gesendet …" : `An ${recipientCount} Teilnehmer senden`}
       </button>
+
+      {pickerOpen && (
+        <MediaPicker
+          files={files}
+          upload={upload}
+          attached={attached}
+          onToggle={(id) => setAttached((current) => toggle(current, id))}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
     </form>
   );
 }
