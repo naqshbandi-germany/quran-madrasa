@@ -518,12 +518,14 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                 </li>
               ))}
             </ul>
-            <div className="mt-3 border-t border-brand-100 pt-3">
-              <CopyButton
-                text={whatsappMembers.map((m) => m.whatsapp).join("\n")}
-                label={`Alle ${whatsappMembers.length} Nummern kopieren`}
-              />
-            </div>
+            {whatsappMembers.length > 1 && (
+              <div className="mt-3 border-t border-brand-100 pt-3">
+                <CopyButton
+                  text={whatsappMembers.map((m) => m.whatsapp).join("\n")}
+                  label={`Alle ${whatsappMembers.length} Nummern kopieren`}
+                />
+              </div>
+            )}
           </div>
         )}
       </section>
