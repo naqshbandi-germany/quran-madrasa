@@ -61,8 +61,9 @@ export function UploadForm({
       if (result.ok) formRef.current?.reset();
       return result;
     } catch (err) {
-      console.error(err);
-      return { ok: false, message: "Der Upload hat nicht geklappt. Bitte versuche es noch einmal." };
+      console.error("Upload fehlgeschlagen:", err);
+      const detail = err instanceof Error && err.message ? ` (${err.message})` : "";
+      return { ok: false, message: `Der Upload hat nicht geklappt. Bitte versuche es noch einmal.${detail}` };
     }
   }, INITIAL);
 
