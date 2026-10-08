@@ -6,7 +6,6 @@ import { preload } from "react-dom";
 
 import { BookingButton } from "@/components/booking-button";
 import { OrnamentDivider } from "@/components/ornament";
-import { ThinkingMan } from "@/components/thinking-man";
 import type { HeroSlide } from "@/lib/hero-slides";
 
 const AUTO_ADVANCE_MS = 6000;
@@ -59,7 +58,13 @@ export function HeroCarousel({
               <div
                 key={index}
                 className={`absolute bg-cover bg-center [transform-origin:50%_100%] motion-reduce:animate-none ${PLANE_CLASSES}`}
-                style={{ backgroundImage: `url(${slide.image})` }}
+                style={{
+                  backgroundImage: `url(${slide.image})`,
+                  // Seitenraender weich ausblenden, damit die Kanten der schraegen Bildebene
+                  // nie sichtbar werden (die Flaeche dahinter ist einfarbig blau).
+                  maskImage: "linear-gradient(to right, transparent, black 14%, black 86%, transparent)",
+                  WebkitMaskImage: "linear-gradient(to right, transparent, black 14%, black 86%, transparent)",
+                }}
               />
             </div>
             {/* Unten leicht abdunkeln, damit helle Bilder (Stundenplan) nicht ausbrennen */}
@@ -81,10 +86,6 @@ export function HeroCarousel({
               }}
             />
           </>
-        )}
-
-        {slide.kind === "feature" && slide.figure === "thinking-man" && (
-          <ThinkingMan className="pointer-events-none absolute bottom-0 right-[4%] hidden h-[78%] w-auto lg:block xl:right-[9%]" />
         )}
 
         <div className="relative flex flex-col items-center">

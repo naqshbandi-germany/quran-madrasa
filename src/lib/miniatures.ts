@@ -3,7 +3,7 @@
 // verkleinert unter public/images/miniatures/. Die Quellenangaben erscheinen auf
 // der Seite /bildnachweis.
 
-export type MiniatureKey = "quran" | "ghazali" | "shamail" | "fiqh" | "seelenlehre" | "quranHero" | "teppichHero" | "cornerOrnament";
+export type MiniatureKey = "quran" | "ghazali" | "shamail" | "fiqh" | "seelenlehre" | "quranHero" | "fliesenHero" | "cornerOrnament";
 
 export type Miniature = {
   key: MiniatureKey;
@@ -72,16 +72,16 @@ export const MINIATURES: Record<MiniatureKey, Miniature> = {
     license: "CC0 (Open Access)",
     sourceUrl: "https://www.metmuseum.org/art/collection/search/454662",
   },
-  // Alternatives Titelbild fuer den Beratungs-Slide (Teppich-Ausschnitt).
-  teppichHero: {
-    key: "teppichHero",
-    src: "/images/hero/teppich.jpg",
+  // Titelbild des Beratungs-Slides auf der Startseite (kein Kurs-Motiv, siehe miniatureFor).
+  fliesenHero: {
+    key: "fliesenHero",
+    src: "/images/hero/alhambra-fliesen.jpg",
     focus: "50% 50%",
-    title: "Teppich mit Blütenranken (Ausschnitt)",
-    work: "Teppich, Pakistan, Mitte 17. Jahrhundert (Wolle auf Baumwolle)",
-    origin: "The Metropolitan Museum of Art, New York (17.190.857), Gift of J. Pierpont Morgan, 1917",
-    license: "CC0 (Open Access)",
-    sourceUrl: "https://www.metmuseum.org/art/collection/search/446998",
+    title: "Fliesenmosaik mit Sechsecken und Sternen",
+    work: "Wandmosaik (Azulejos), Nasridenpaläste, 14. Jahrhundert",
+    origin: "Alhambra, Granada. Foto: Toniflap, Dreamstime (ID 26376694), Lizenz erworben",
+    license: "Dreamstime Royalty-free-Lizenz",
+    sourceUrl: "https://www.dreamstime.com/stock-photo-moisaic-alhambra-granada-image26376694",
   },
   // Eck-Ornament der Quran-Seite (kein Kurs-Motiv, siehe miniatureFor).
   cornerOrnament: {
