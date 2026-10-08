@@ -5,22 +5,22 @@ const config: Config = {
   theme: {
     extend: {
       keyframes: {
-        // Ken-Burns-Effekt der Hero-Slides: sehr langsames, dezentes Heranzoomen. Beide
-        // Varianten laufen gleich lang und mit aehnlicher Staerke (nur ca. 5 % Zoom).
+        // Ken-Burns-Effekt der Hero-Slides: ruhiges Heranzoomen um 8 %, ueber die gesamte Zeit,
+        // die ein Slide zu sehen ist (AUTO_ADVANCE_MS in hero-carousel.tsx, gleich lang halten).
         // Schraeg liegende Buchseite (Quran-Slide): zusaetzlich richtet sie sich minimal auf.
         kenburns: {
           "0%": { transform: "rotateX(60deg) scale(1.02) translate3d(0, 0, 0)" },
-          "100%": { transform: "rotateX(58.5deg) scale(1.07) translate3d(-0.6%, -0.8%, 0)" },
+          "100%": { transform: "rotateX(58.5deg) scale(1.10) translate3d(-0.8%, -1%, 0)" },
         },
         // Frontal gesehenes Foto (Beratungs-Slide)
         "kenburns-flat": {
           "0%": { transform: "scale(1) translate3d(0, 0, 0)" },
-          "100%": { transform: "scale(1.05) translate3d(-0.8%, -0.6%, 0)" },
+          "100%": { transform: "scale(1.08) translate3d(-1%, -0.8%, 0)" },
         },
       },
       animation: {
-        kenburns: "kenburns 24s linear forwards",
-        "kenburns-flat": "kenburns-flat 24s linear forwards",
+        kenburns: "kenburns 12s linear forwards",
+        "kenburns-flat": "kenburns-flat 12s linear forwards",
       },
       fontFamily: {
         // Ruhige Antiqua fuer Ueberschriften (siehe layout.tsx), Fliesstext bleibt serifenlos.

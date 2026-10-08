@@ -8,7 +8,8 @@ import { BookingButton } from "@/components/booking-button";
 import { OrnamentDivider } from "@/components/ornament";
 import type { HeroSlide } from "@/lib/hero-slides";
 
-const AUTO_ADVANCE_MS = 6000;
+// Zeit pro Slide; die Ken-Burns-Animation (tailwind.config.ts) ist genauso lang.
+const AUTO_ADVANCE_MS = 12000;
 
 // Ruhige, einfarbige Flaechen im Wechsel (tiefes Himmelblau / Dunkelgruen) fuer Kurs-Slides.
 const BACKGROUNDS = ["bg-azure-800", "bg-brand-700", "bg-azure-800", "bg-brand-700"];
