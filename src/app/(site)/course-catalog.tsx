@@ -125,7 +125,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Kurs suchen…"
-            className="mt-1 rounded-md border border-brand-200 px-3 py-1.5"
+            className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
           />
         </label>
 
@@ -134,7 +134,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="mt-1 rounded-md border border-brand-200 px-3 py-1.5"
+            className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
           >
             <option value={ALL}>Alle Themen</option>
             {categories.map((c) => (
@@ -151,7 +151,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
             <select
               value={ageGroup}
               onChange={(e) => setAgeGroup(e.target.value)}
-              className="mt-1 rounded-md border border-brand-200 px-3 py-1.5"
+              className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
             >
               <option value={ALL}>Alle Altersgruppen</option>
               {ageGroupsPresent.map((ag) => (
@@ -168,7 +168,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
           <select
             value={teacher}
             onChange={(e) => setTeacher(e.target.value)}
-            className="mt-1 rounded-md border border-brand-200 px-3 py-1.5"
+            className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
           >
             <option value={ALL}>Alle Lehrer</option>
             {teachers.map((t) => (
@@ -185,7 +185,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
             <select
               value={level}
               onChange={(e) => setLevel(e.target.value)}
-              className="mt-1 rounded-md border border-brand-200 px-3 py-1.5"
+              className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
             >
               <option value={ALL}>Alle Level</option>
               {levels.map((l) => (
@@ -203,7 +203,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
             <select
               value={weekday}
               onChange={(e) => setWeekday(e.target.value)}
-              className="mt-1 rounded-md border border-brand-200 px-3 py-1.5"
+              className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
             >
               <option value={ALL}>Alle Wochentage</option>
               {weekdays.map((d) => (
@@ -220,7 +220,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortKey)}
-            className="mt-1 rounded-md border border-brand-200 px-3 py-1.5"
+            className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
           >
             {Object.entries(SORT_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -234,7 +234,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
           <button
             type="button"
             onClick={resetFilters}
-            className="ml-auto self-end rounded-md border border-brand-200 px-3 py-1.5 text-sm text-brand-700 hover:bg-brand-50"
+            className="ml-auto self-end rounded-md border border-brand-300 px-3 py-1.5 text-sm text-brand-700 hover:bg-brand-50"
           >
             Filter zurücksetzen
           </button>

@@ -24,7 +24,7 @@ import { toMediaItem } from "@/lib/media-items";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
 import { formatGermanDateTime, formatTeachingDateTime, toTeachingInputValue } from "@/lib/schedule-time";
 
-const INPUT = "rounded-md border border-brand-200 px-3 py-2";
+const INPUT = "rounded-md border border-brand-300 px-3 py-2";
 const SAVE_BUTTON = "rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700";
 
 // Entfernen-Aktion mit Papierkorb-Symbol und Text, fragt vor dem Loeschen nach.
@@ -291,7 +291,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
           <select
             name="weekday"
             required
-            className="rounded-md border border-brand-200 px-3 py-2"
+            className="rounded-md border border-brand-300 px-3 py-2"
             defaultValue=""
           >
             <option value="" disabled>
@@ -307,18 +307,18 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
             name="startTime"
             type="time"
             required
-            className="rounded-md border border-brand-200 px-3 py-2"
+            className="rounded-md border border-brand-300 px-3 py-2"
           />
           <input
             name="endTime"
             type="time"
             required
-            className="rounded-md border border-brand-200 px-3 py-2"
+            className="rounded-md border border-brand-300 px-3 py-2"
           />
           <input
             name="note"
             placeholder="Hinweis (optional, z.B. Morgens)"
-            className="rounded-md border border-brand-200 px-3 py-2"
+            className="rounded-md border border-brand-300 px-3 py-2"
           />
           <button className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 sm:col-span-1">
             Termin hinzufügen
@@ -361,7 +361,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               name="title"
               placeholder="Titel (z.B. Sure Al-Baqara, Vers 1-10)"
               required
-              className="col-span-full rounded-md border border-brand-200 px-3 py-2"
+              className="col-span-full rounded-md border border-brand-300 px-3 py-2"
             />
             <label className="flex flex-col text-sm text-brand-700">
               Beginn (Ortszeit Nordzypern)
@@ -369,7 +369,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                 name="startsAt"
                 type="datetime-local"
                 required
-                className="mt-1 rounded-md border border-brand-200 px-3 py-2"
+                className="mt-1 rounded-md border border-brand-300 px-3 py-2"
               />
             </label>
             <label className="flex flex-col text-sm text-brand-700">
@@ -380,14 +380,14 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                 min={5}
                 max={480}
                 defaultValue={60}
-                className="mt-1 rounded-md border border-brand-200 px-3 py-2"
+                className="mt-1 rounded-md border border-brand-300 px-3 py-2"
               />
             </label>
             <input
               name="joinUrl"
               type="url"
               placeholder="Eigener Link (optional, ersetzt die automatische Erzeugung)"
-              className="col-span-full rounded-md border border-brand-200 px-3 py-2"
+              className="col-span-full rounded-md border border-brand-300 px-3 py-2"
             />
             <button className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
               Sitzung anlegen
@@ -407,13 +407,13 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               name="title"
               placeholder="Titel (für alle Termine)"
               required
-              className="col-span-full rounded-md border border-brand-200 px-3 py-2"
+              className="col-span-full rounded-md border border-brand-300 px-3 py-2"
             />
             <select
               name="weekday"
               required
               defaultValue=""
-              className="rounded-md border border-brand-200 px-3 py-2"
+              className="rounded-md border border-brand-300 px-3 py-2"
             >
               <option value="" disabled>
                 Wochentag
@@ -428,13 +428,13 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               name="startTime"
               type="time"
               required
-              className="rounded-md border border-brand-200 px-3 py-2"
+              className="rounded-md border border-brand-300 px-3 py-2"
             />
             <input
               name="endTime"
               type="time"
               required
-              className="rounded-md border border-brand-200 px-3 py-2"
+              className="rounded-md border border-brand-300 px-3 py-2"
             />
             <label className="flex flex-col text-sm text-brand-700">
               Erster Termin
@@ -442,7 +442,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                 name="firstDate"
                 type="date"
                 required
-                className="mt-1 rounded-md border border-brand-200 px-3 py-2"
+                className="mt-1 rounded-md border border-brand-300 px-3 py-2"
               />
             </label>
             <label className="flex flex-col text-sm text-brand-700">
@@ -450,7 +450,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               <select
                 name="interval"
                 defaultValue="WEEKLY"
-                className="mt-1 rounded-md border border-brand-200 px-3 py-2"
+                className="mt-1 rounded-md border border-brand-300 px-3 py-2"
               >
                 <option value="WEEKLY">Wöchentlich</option>
                 <option value="BIWEEKLY">Alle 2 Wochen</option>
@@ -466,7 +466,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                 max={52}
                 defaultValue={12}
                 required
-                className="mt-1 rounded-md border border-brand-200 px-3 py-2"
+                className="mt-1 rounded-md border border-brand-300 px-3 py-2"
               />
             </label>
             <button className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">

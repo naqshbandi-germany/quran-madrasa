@@ -259,7 +259,7 @@ export function MediaBrowser({
           aria-label="Dateityp"
           value={filter}
           onChange={(event) => setFilter(event.target.value as "all" | MediaKind)}
-          className="rounded-md border border-brand-200 bg-white px-3 py-2 text-sm"
+          className="rounded-md border border-brand-300 bg-white px-3 py-2 text-sm"
         >
           {FILTERS.map((f) => (
             <option key={f.value} value={f.value}>
@@ -276,7 +276,7 @@ export function MediaBrowser({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Dateien durchsuchen"
-            className="w-full rounded-md border border-brand-200 bg-white py-2 pl-9 pr-3 text-sm"
+            className="w-full rounded-md border border-brand-300 bg-white py-2 pl-9 pr-3 text-sm"
           />
         </label>
       </div>

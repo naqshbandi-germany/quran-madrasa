@@ -25,7 +25,7 @@ export const CheckboxField = forwardRef<HTMLInputElement, CheckboxFieldProps>(fu
           type="checkbox"
           aria-invalid={error ? true : undefined}
           aria-describedby={errorId}
-          className="mt-0.5 h-5 w-5 shrink-0 rounded border-brand-200 accent-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700"
+          className="mt-0.5 h-5 w-5 shrink-0 rounded border-brand-300 accent-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700"
           {...input}
         />
         <label htmlFor={id} className="text-sm leading-snug text-brand-900">

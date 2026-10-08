@@ -38,7 +38,7 @@ export const FloatingField = forwardRef<HTMLInputElement, FloatingFieldProps>(
             aria-invalid={error ? true : undefined}
             aria-describedby={describedByIds}
             className={`peer block h-14 w-full rounded-md border bg-white px-3 pb-1.5 pt-5 text-base text-brand-900 outline-none transition focus:border-azure-700 focus:ring-2 focus:ring-azure-700/30 ${
-              error ? "border-red-700" : "border-brand-200"
+              error ? "border-red-700" : "border-brand-300"
             } ${endAdornment ? "pr-12" : ""}`}
             {...input}
           />

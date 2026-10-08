@@ -45,7 +45,7 @@ function formatPrice(cents: number, currency: string) {
 const PRIMARY_BUTTON =
   "h-12 rounded-md bg-brand-600 px-6 font-medium text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60";
 const SECONDARY_BUTTON =
-  "h-12 rounded-md border border-brand-200 bg-white px-6 font-medium text-brand-900 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700";
+  "h-12 rounded-md border border-brand-300 bg-white px-6 font-medium text-brand-900 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700";
 
 export function EnrollWizard({ course, account, participants }: Props) {
   const [step, setStep] = useState<1 | 2>(1);

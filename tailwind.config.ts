@@ -33,6 +33,8 @@ const config: Config = {
           50: "#f8f5ef",
           100: "#f1ebdd",
           200: "#e3dac3",
+          // Rand von Eingabefeldern und Checkboxen: >= 3:1 gegen Weiss (WCAG 1.4.11)
+          300: "#8f8668",
           400: "#4f8a6e",
           600: "#1d6347",
           700: "#164a37",

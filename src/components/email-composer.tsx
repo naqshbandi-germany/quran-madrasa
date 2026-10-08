@@ -21,7 +21,7 @@ export type ComposerCourse = {
 export type ComposerUpload = { blobEnabled: boolean; blobAccess: "public" | "private"; userId: string };
 
 const INITIAL: ActionResult = { ok: false };
-const INPUT = "w-full rounded-md border border-brand-200 bg-white px-3 py-2";
+const INPUT = "w-full rounded-md border border-brand-300 bg-white px-3 py-2";
 
 // Auswahlfenster ("Pop-up") mit der Mediathek: Dateien anhaken, bei Bedarf eine neue hochladen.
 // Wird per Portal an das Seitenende gehaengt, weil der Upload ein eigenes Formular ist und nicht

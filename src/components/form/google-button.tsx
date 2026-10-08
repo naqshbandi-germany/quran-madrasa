@@ -19,7 +19,7 @@ export function GoogleButton({ callbackUrl, label }: { callbackUrl: string; labe
     <button
       type="button"
       onClick={() => signIn("google", { callbackUrl })}
-      className="flex h-12 w-full items-center justify-center gap-3 rounded-md border border-brand-200 bg-white px-4 font-medium text-brand-900 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700"
+      className="flex h-12 w-full items-center justify-center gap-3 rounded-md border border-brand-300 bg-white px-4 font-medium text-brand-900 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700"
     >
       <GoogleLogo />
       {label}

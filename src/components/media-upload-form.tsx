@@ -8,7 +8,7 @@ import { MAX_BLOB_FILE_BYTES, MAX_FILE_BYTES, formatBytes, mimeTypeFor, safeFile
 import { registerBlobFile, uploadMediaFile } from "@/lib/media-actions";
 
 const INITIAL: ActionResult = { ok: false };
-const INPUT = "mt-1 w-full rounded-md border border-brand-200 bg-white px-3 py-2";
+const INPUT = "mt-1 w-full rounded-md border border-brand-300 bg-white px-3 py-2";
 
 // Mit Blob-Speicher (blobEnabled) geht die Datei direkt vom Browser in den Speicher und wird
 // danach eingetragen; ohne ihn laeuft der Upload ueber den Server (nur bis 4 MB).
