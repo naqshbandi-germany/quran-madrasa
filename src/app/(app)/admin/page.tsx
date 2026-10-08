@@ -8,6 +8,7 @@ import {
   updateTeacherProfile,
 } from "@/lib/admin-actions";
 import { isZoomProvider } from "@/lib/classroom";
+import { isGoogleAuthConfigured } from "@/lib/auth-providers";
 import { DEFAULT_IMPRESSUM, defaultPrivacyPolicy } from "@/lib/legal-defaults";
 import { togglePublish } from "@/lib/teacher-actions";
 
@@ -148,7 +149,7 @@ export default async function AdminPage() {
             Datenschutzerklärung
             <textarea
               name="privacyPolicy"
-              defaultValue={siteContent?.privacyPolicy || defaultPrivacyPolicy(isZoomProvider())}
+              defaultValue={siteContent?.privacyPolicy || defaultPrivacyPolicy(isZoomProvider(), isGoogleAuthConfigured())}
               rows={24}
               className="mt-1 w-full rounded-md border border-brand-200 px-3 py-2 font-mono text-sm"
             />

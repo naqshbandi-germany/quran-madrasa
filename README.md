@@ -117,6 +117,32 @@ UTC-Zeitpunkt gespeichert und Schülern in deutscher Zeit angezeigt (Dashboard, 
 Datenschutz: Mit Zoom muss ein Vertrag zur Auftragsverarbeitung bestehen; der Standardtext der
 Datenschutzerklärung nennt automatisch Zoom bzw. Jitsi passend zu `CLASSROOM_PROVIDER`.
 
+## Anmeldung mit Google (optional)
+
+Registrierung und Anmeldung funktionieren mit E-Mail und Passwort. Zusätzlich kann ein Button
+„Mit Google fortfahren“ angeboten werden. Er erscheint automatisch, sobald die beiden Variablen
+`AUTH_GOOGLE_ID` und `AUTH_GOOGLE_SECRET` gesetzt sind:
+
+1. In der [Google Cloud Console](https://console.cloud.google.com) ein Projekt anlegen (oder ein
+   bestehendes nutzen) und unter *APIs & Dienste → OAuth-Zustimmungsbildschirm* die App
+   einrichten (Name, Support-E-Mail, Links zu Datenschutzerklärung und Impressum, Bereiche
+   `email`, `profile`, `openid`).
+2. Unter *Anmeldedaten → Anmeldedaten erstellen → OAuth-Client-ID* den Typ „Webanwendung“ wählen
+   und als **autorisierte Weiterleitungs-URI** eintragen:
+   `https://quran-madrasa.vercel.app/api/auth/callback/google` (bei eigener Domain entsprechend,
+   lokal `http://localhost:3000/api/auth/callback/google`).
+3. Client-ID und Client-Secret in Vercel als `AUTH_GOOGLE_ID` und `AUTH_GOOGLE_SECRET` setzen und
+   neu deployen. Den Zustimmungsbildschirm auf „In Produktion“ stellen, sonst können nur
+   Testnutzer sich anmelden.
+
+Wer sich zum ersten Mal mit Google anmeldet, bekommt automatisch ein Konto (Rolle Schüler).
+Die Datenschutzerklärung nennt Google automatisch, sobald die Anmeldung aktiv ist.
+
+Passwörter müssen mindestens 10 Zeichen lang sein und dürfen nicht zu den häufigen Passwörtern
+gehören (Empfehlung des NIST statt Pflicht-Sonderzeichen). „Passwort vergessen“ verschickt einen
+60 Minuten gültigen Einmal-Link per E-Mail; ohne `RESEND_API_KEY` wird er lokal in der Konsole
+ausgegeben.
+
 ## Lokales Setup
 
 ### 1. Voraussetzungen
