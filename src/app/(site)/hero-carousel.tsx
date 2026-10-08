@@ -6,7 +6,8 @@ import { preload } from "react-dom";
 
 import { BookingButton } from "@/components/booking-button";
 import { OrnamentDivider } from "@/components/ornament";
-import type { HeroPerspective, HeroSlide } from "@/lib/hero-slides";
+import { ThinkingMan } from "@/components/thinking-man";
+import type { HeroSlide } from "@/lib/hero-slides";
 
 const AUTO_ADVANCE_MS = 6000;
 
@@ -16,13 +17,10 @@ const BACKGROUNDS = ["bg-azure-800", "bg-brand-700", "bg-azure-800", "bg-brand-7
 const OUTLINE_LINK =
   "inline-block rounded-md border border-gold-200 px-6 py-2.5 text-sm font-medium uppercase tracking-widest text-gold-200 transition hover:bg-gold-200 hover:text-azure-800";
 
-// Lage der Bildebene. Die Ken-Burns-Animation (tailwind.config.ts) startet jeweils aus
-// derselben Lage. "side": Seite zusaetzlich in der Ebene gedreht (Zeilen steigen nach rechts
-// an) und seitlich gekippt (rechts nah, nach links oben in der Ferne).
-const PLANE_CLASSES: Record<HeroPerspective, string> = {
-  center: "-left-[25%] bottom-[-26%] h-[210%] w-[150%] animate-kenburns [transform:rotateX(60deg)_scale(1.02)]",
-  side: "-left-[45%] bottom-[-50%] h-[270%] w-[200%] animate-kenburns-side [transform:rotateX(55deg)_rotateY(-20deg)_rotateZ(-10deg)_scale(1.02)]",
-};
+// Lage der Bildebene: Seite liegt mittig, schraeg von oben gesehen. Die Ken-Burns-Animation
+// (tailwind.config.ts) startet aus derselben Lage.
+const PLANE_CLASSES =
+  "-left-[25%] bottom-[-26%] h-[210%] w-[150%] animate-kenburns [transform:rotateX(60deg)_scale(1.02)]";
 
 export function HeroCarousel({
   slides,
@@ -59,8 +57,8 @@ export function HeroCarousel({
             {/* Bild als Seite eines aufgeschlagenen Buchs in Perspektive, mit Ken Burns */}
             <div aria-hidden="true" className="absolute inset-0 overflow-hidden [perspective:1000px]">
               <div
-                key={`${index}-${slide.perspective}`}
-                className={`absolute bg-cover bg-center [transform-origin:50%_100%] motion-reduce:animate-none ${PLANE_CLASSES[slide.perspective]}`}
+                key={index}
+                className={`absolute bg-cover bg-center [transform-origin:50%_100%] motion-reduce:animate-none ${PLANE_CLASSES}`}
                 style={{ backgroundImage: `url(${slide.image})` }}
               />
             </div>
@@ -83,6 +81,10 @@ export function HeroCarousel({
               }}
             />
           </>
+        )}
+
+        {slide.kind === "feature" && slide.figure === "thinking-man" && (
+          <ThinkingMan className="pointer-events-none absolute bottom-0 right-[4%] hidden h-[78%] w-auto lg:block xl:right-[9%]" />
         )}
 
         <div className="relative flex flex-col items-center">

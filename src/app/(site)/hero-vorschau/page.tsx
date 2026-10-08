@@ -1,14 +1,13 @@
-import { bookingSlide, quranSlide, type HeroSlide } from "@/lib/hero-slides";
+import { bookingSlide, type HeroSlide } from "@/lib/hero-slides";
 import { HeroCarousel } from "../hero-carousel";
 
-// Temporaere Vergleichsseite fuer die Hero-Perspektiven; wird nach der Entscheidung entfernt.
+// Temporaere Vergleichsseite fuer die Motive von Slide 1; wird nach der Entscheidung entfernt.
 export const metadata = { title: "Hero-Vorschau", robots: { index: false, follow: false } };
 
 const VARIANTS: { label: string; slide: HeroSlide }[] = [
-  { label: "Slide 1 (Beratung) · Variante A: zentral", slide: bookingSlide("center") },
-  { label: "Slide 1 (Beratung) · Variante B: seitlich", slide: bookingSlide("side") },
-  { label: "Slide 2 (Quran) · Variante A: zentral", slide: quranSlide("center") },
-  { label: "Slide 2 (Quran) · Variante B: seitlich", slide: quranSlide("side") },
+  { label: "Slide 1 (Beratung) · A: Stundenplan", slide: bookingSlide("stundenplan") },
+  { label: "Slide 1 (Beratung) · B: Teppich mit Blütenranken", slide: bookingSlide("teppich") },
+  { label: "Slide 1 (Beratung) · C: Kufi-Labyrinth mit Fragezeichen", slide: bookingSlide("labyrinth") },
 ];
 
 export default function HeroPreviewPage() {

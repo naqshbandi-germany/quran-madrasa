@@ -40,14 +40,14 @@ export default async function HomePage() {
 
   // Der Quran-Slide ersetzt den Hifz-Slide; fehlt Hifz unter den ersten Kursen, kommt er
   // trotzdem direkt nach dem Beratungs-Slide.
-  const quran = quranSlide("center");
+  const quran = quranSlide();
   const courseSlides: HeroSlide[] = catalogCourses.slice(0, 3).map((c) =>
     c.category === "Hifz"
       ? quran
       : { kind: "course", slug: c.slug, title: c.title, description: c.description, category: c.category },
   );
   const slides: HeroSlide[] = [
-    bookingSlide("center"),
+    bookingSlide(),
     ...(courseSlides.includes(quran) ? courseSlides : [quran, ...courseSlides]),
   ];
 
