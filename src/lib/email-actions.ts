@@ -5,7 +5,10 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import type { ActionResult } from "@/lib/account-actions";
 import { groupRecipients } from "@/lib/enrollment-recipients";
-import { MAX_ATTACHMENT_TOTAL_BYTES, formatBytes } from "@/lib/media";
+import { getAppUrl } from "@/lib/app-url";
+import { openBlob } from "@/lib/blob";
+import { MAX_ATTACHMENT_TOTAL_BYTES, formatBytes, shouldSendAsLink } from "@/lib/media";
+import { signedMediaPath } from "@/lib/media-links";
 import { materialEmailHtml } from "@/lib/material-email";
 import { prisma } from "@/lib/prisma";
 import { MATERIAL_EMAIL_FROM, deliverEmail } from "@/lib/resend";
@@ -68,9 +71,16 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
       })
     : [];
   if (files.length !== fileIds.length) errors.fileIds = "Eine ausgewählte Datei wurde nicht gefunden.";
-  const total = files.reduce((sum, f) => sum + f.sizeBytes, 0);
-  if (total > MAX_ATTACHMENT_TOTAL_BYTES) {
-    errors.fileIds = `Die Anhänge sind zusammen zu groß (${formatBytes(total)}). Erlaubt sind höchstens ${formatBytes(MAX_ATTACHMENT_TOTAL_BYTES)}.`;
+  // Grosse Dateien aus dem Blob-Speicher gehen als Link, kleine als Anhang. Passen die Anhaenge
+  // zusammen nicht in die Mail, werden weitere Blob-Dateien (die groessten zuerst) zu Links.
+  const asLink = new Set(files.filter((f) => shouldSendAsLink(f)).map((f) => f.id));
+  const attachedBytes = () => files.filter((f) => !asLink.has(f.id)).reduce((sum, f) => sum + f.sizeBytes, 0);
+  for (const f of [...files].sort((a, b) => b.sizeBytes - a.sizeBytes)) {
+    if (attachedBytes() <= MAX_ATTACHMENT_TOTAL_BYTES) break;
+    if (f.blobPathname) asLink.add(f.id);
+  }
+  if (attachedBytes() > MAX_ATTACHMENT_TOTAL_BYTES) {
+    errors.fileIds = `Die Anhänge sind zusammen zu groß (${formatBytes(attachedBytes())}). Erlaubt sind höchstens ${formatBytes(MAX_ATTACHMENT_TOTAL_BYTES)}.`;
   }
 
   if (Object.keys(errors).length > 0 || !course) {
@@ -78,8 +88,25 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
   }
 
   const recipients = groupRecipients(enrollments);
-  const attachments = files.map((f) => ({ filename: f.fileName, content: Buffer.from(f.data) }));
-  const attachmentNames = files.map((f) => f.fileName);
+  const attachments: { filename: string; content: Buffer }[] = [];
+  for (const f of files.filter((file) => !asLink.has(file.id))) {
+    if (f.data) {
+      attachments.push({ filename: f.fileName, content: Buffer.from(f.data) });
+    } else if (f.blobPathname) {
+      try {
+        const blob = await openBlob(f.blobPathname);
+        if (!blob?.stream) throw new Error("nicht gefunden");
+        attachments.push({ filename: f.fileName, content: Buffer.from(await new Response(blob.stream).arrayBuffer()) });
+      } catch (err) {
+        console.error(`Anhang ${f.fileName} konnte nicht geladen werden:`, err);
+        return { ok: false, message: `Die Datei „${f.title}“ konnte nicht geladen werden. Es wurde nichts verschickt.` };
+      }
+    }
+  }
+  const attachmentNames = attachments.map((a) => a.filename);
+  const links = files
+    .filter((f) => asLink.has(f.id))
+    .map((f) => ({ name: f.title, url: `${getAppUrl()}${signedMediaPath(f.id)}` }));
 
   const failed: string[] = [];
   for (const recipient of recipients) {
@@ -93,6 +120,7 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
           courseTitle: course.title,
           message,
           attachmentNames,
+          links,
         }),
         attachments: attachments.length > 0 ? attachments : undefined,
       });
@@ -108,6 +136,7 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
     return { ok: false, message: "Die E-Mail konnte nicht verschickt werden. Bitte versuche es später erneut." };
   }
   const parts = [`${enrollments.length} Teilnehmer`];
+  if (links.length > 0) parts.push(`${links.length} ${links.length === 1 ? "Download-Link" : "Download-Links"}`);
   if (attachmentNames.length > 0) {
     parts.push(`${attachmentNames.length} ${attachmentNames.length === 1 ? "Anhang" : "Anhänge"}`);
   }

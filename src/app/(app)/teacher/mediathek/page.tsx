@@ -1,7 +1,8 @@
 import { auth } from "@/auth";
 import { ConfirmButton } from "@/components/confirm-button";
 import { DownloadIcon, FileIcon, TrashIcon } from "@/components/icons";
-import { ALLOWED_EXTENSIONS, MAX_FILE_BYTES, formatBytes } from "@/lib/media";
+import { blobAccess, isBlobConfigured } from "@/lib/blob";
+import { ALLOWED_EXTENSIONS, MAX_BLOB_FILE_BYTES, MAX_FILE_BYTES, formatBytes } from "@/lib/media";
 import { deleteMediaFile } from "@/lib/media-actions";
 import { prisma } from "@/lib/prisma";
 import { UploadForm } from "./upload-form";
@@ -13,6 +14,7 @@ export default async function MediaLibraryPage() {
   const session = await auth();
   if (!session) return null;
   const isAdmin = session.user.role === "ADMIN";
+  const blobEnabled = isBlobConfigured();
 
   // Den Dateiinhalt ("data") nie fuer die Liste laden.
   const files = await prisma.mediaFile.findMany({
@@ -42,9 +44,10 @@ export default async function MediaLibraryPage() {
         <h2 id="hochladen" className="font-semibold text-brand-700">
           Datei hochladen
         </h2>
-        <UploadForm />
+        <UploadForm blobEnabled={blobEnabled} blobAccess={blobAccess()} userId={session.user.id} />
         <p className="text-xs text-brand-600">
-          Erlaubt sind {ALLOWED_EXTENSIONS.join(", ")} bis {formatBytes(MAX_FILE_BYTES)} je Datei.
+          Erlaubt sind {ALLOWED_EXTENSIONS.join(", ")} bis {formatBytes(blobEnabled ? MAX_BLOB_FILE_BYTES : MAX_FILE_BYTES)} je Datei.
+          {!blobEnabled && " Für größere Dateien muss der Blob-Speicher eingerichtet werden (siehe README)."}
         </p>
       </section>
 

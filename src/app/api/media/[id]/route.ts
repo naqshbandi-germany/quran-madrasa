@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { streamMediaFile } from "@/lib/media-stream";
 import { prisma } from "@/lib/prisma";
 
 // Download einer Datei aus der Mediathek. Nur fuer Lehrer (eigene Dateien) und Admins.
@@ -16,13 +17,5 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
   }
 
-  return new Response(new Uint8Array(file.data), {
-    headers: {
-      "Content-Type": file.mimeType,
-      "Content-Length": String(file.sizeBytes),
-      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
-      "Cache-Control": "private, no-store",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+  return streamMediaFile(file);
 }

@@ -1,32 +1,67 @@
 "use client";
 
+import { upload } from "@vercel/blob/client";
 import { useActionState, useRef } from "react";
 
 import type { ActionResult } from "@/lib/account-actions";
-import { MAX_FILE_BYTES, formatBytes } from "@/lib/media";
-import { uploadMediaFile } from "@/lib/media-actions";
+import { MAX_BLOB_FILE_BYTES, MAX_FILE_BYTES, formatBytes, mimeTypeFor, safeFileName } from "@/lib/media";
+import { registerBlobFile, uploadMediaFile } from "@/lib/media-actions";
 
 const INITIAL: ActionResult = { ok: false };
 const INPUT = "mt-1 w-full rounded-md border border-brand-200 bg-white px-3 py-2";
 
-export function UploadForm() {
+// Mit Blob-Speicher (blobEnabled) geht die Datei direkt vom Browser in den Speicher und wird
+// danach eingetragen; ohne ihn laeuft der Upload ueber den Server (nur bis 4 MB).
+export function UploadForm({
+  blobEnabled,
+  blobAccess,
+  userId,
+}: {
+  blobEnabled: boolean;
+  blobAccess: "public" | "private";
+  userId: string;
+}) {
   const formRef = useRef<HTMLFormElement>(null);
+  const maxBytes = blobEnabled ? MAX_BLOB_FILE_BYTES : MAX_FILE_BYTES;
+
   const [state, action, pending] = useActionState(async (prev: ActionResult, formData: FormData) => {
-    // Zu grosse Dateien gar nicht erst senden (der Server wuerde sie ohne Meldung abweisen).
     const file = formData.get("file");
-    if (file instanceof File && file.size > MAX_FILE_BYTES) {
+    if (file instanceof File && file.size > maxBytes) {
       return {
         ok: false,
-        errors: {
-          file: `Die Datei ist zu groß (${formatBytes(file.size)}). Erlaubt sind höchstens ${formatBytes(MAX_FILE_BYTES)}.`,
-        },
+        errors: { file: `Die Datei ist zu groß (${formatBytes(file.size)}). Erlaubt sind höchstens ${formatBytes(maxBytes)}.` },
       };
     }
+
     try {
+      if (blobEnabled && file instanceof File && file.size > 0) {
+        const fileName = safeFileName(file.name);
+        const contentType = mimeTypeFor(fileName);
+        if (!contentType) return await uploadMediaFile(prev, formData); // liefert die passende Fehlermeldung
+        // PDFs schon im Browser auf die Kopfzeile pruefen (der Server prueft sie nochmals).
+        if (contentType === "application/pdf" && (await file.slice(0, 5).text()) !== "%PDF-") {
+          return { ok: false, errors: { file: "Diese Datei ist keine gültige PDF-Datei." } };
+        }
+        const uploaded = await upload(`media/${userId}/${fileName}`, file, {
+          access: blobAccess,
+          contentType,
+          handleUploadUrl: "/api/media/upload",
+          multipart: file.size > 100 * 1024 * 1024,
+        });
+        const result = await registerBlobFile({
+          pathname: uploaded.pathname,
+          fileName,
+          title: String(formData.get("title") ?? ""),
+        });
+        if (result.ok) formRef.current?.reset();
+        return result;
+      }
+
       const result = await uploadMediaFile(prev, formData);
       if (result.ok) formRef.current?.reset();
       return result;
-    } catch {
+    } catch (err) {
+      console.error(err);
       return { ok: false, message: "Der Upload hat nicht geklappt. Bitte versuche es noch einmal." };
     }
   }, INITIAL);

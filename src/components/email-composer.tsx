@@ -14,7 +14,7 @@ export type ComposerCourse = {
   participants: { id: string; name: string; detail: string }[];
 };
 
-export type ComposerFile = { id: string; title: string; fileName: string; sizeBytes: number };
+export type ComposerFile = { id: string; title: string; fileName: string; sizeBytes: number; asLink: boolean };
 
 const INITIAL: ActionResult = { ok: false };
 const INPUT = "w-full rounded-md border border-brand-200 bg-white px-3 py-2";
@@ -53,7 +53,10 @@ export function EmailComposer({
   const course = courses.find((c) => c.id === courseId);
   const participants = course?.participants ?? [];
   const recipientCount = mode === "all" ? participants.length : selected.size;
-  const attachedBytes = files.filter((f) => attached.has(f.id)).reduce((sum, f) => sum + f.sizeBytes, 0);
+  const attachedBytes = files
+    .filter((f) => attached.has(f.id) && !f.asLink)
+    .reduce((sum, f) => sum + f.sizeBytes, 0);
+  const linkCount = files.filter((f) => attached.has(f.id) && f.asLink).length;
 
   function toggle(set: Set<string>, id: string) {
     const next = new Set(set);
@@ -223,13 +226,17 @@ export function EmailComposer({
                     <span className="font-medium">{f.title}</span>
                     <span className="text-brand-600">
                       {f.fileName} · {formatBytes(f.sizeBytes)}
+                      {f.asLink ? " · wird als Download-Link verschickt" : ""}
                     </span>
                   </label>
                 </li>
               ))}
             </ul>
             <p className="text-xs text-brand-600">
-              {attached.size > 0 ? `${attached.size} Datei(en), zusammen ${formatBytes(attachedBytes)}. ` : ""}
+              {attached.size - linkCount > 0
+                ? `${attached.size - linkCount} Anhang (${formatBytes(attachedBytes)}). `
+                : ""}
+              {linkCount > 0 ? `${linkCount} Datei(en) als Download-Link. ` : ""}
               Weitere Dateien lädst du in der{" "}
               <Link href="/teacher/mediathek" className="font-medium text-azure-800 underline">
                 Mediathek

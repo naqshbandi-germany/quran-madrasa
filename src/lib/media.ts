@@ -1,7 +1,14 @@
 // Regeln fuer die Mediathek (Upload, Anhang an E-Mails).
 
-// Vercel nimmt pro Anfrage hoechstens ca. 4,5 MB an, daher die Obergrenze je Datei.
+// Ohne Blob-Speicher liegen Dateien in der Datenbank. Vercel nimmt pro Anfrage hoechstens
+// ca. 4,5 MB an, daher die Obergrenze je Datei.
 export const MAX_FILE_BYTES = 4 * 1024 * 1024;
+// Mit Vercel Blob geht der Upload direkt vom Browser in den Speicher.
+export const MAX_BLOB_FILE_BYTES = 200 * 1024 * 1024;
+// Bis zu dieser Groesse haengen wir Blob-Dateien an die E-Mail an, groessere gehen als Link.
+export const ATTACH_MAX_BYTES = 5 * 1024 * 1024;
+// Download-Links in E-Mails sind so viele Tage gueltig.
+export const LINK_VALID_DAYS = 90;
 // Gesamtgroesse aller Anhaenge einer E-Mail (viele Postfaecher lehnen groessere Mails ab).
 export const MAX_ATTACHMENT_TOTAL_BYTES = 10 * 1024 * 1024;
 
@@ -22,6 +29,12 @@ const ALLOWED: Record<string, string> = {
 };
 
 export const ALLOWED_EXTENSIONS = Object.keys(ALLOWED);
+export const ALLOWED_MIME_TYPES = [...new Set(Object.values(ALLOWED))];
+
+// Dateien im Blob-Speicher ueber ATTACH_MAX_BYTES werden als Link statt als Anhang verschickt.
+export function shouldSendAsLink(file: { blobPathname: string | null; sizeBytes: number }) {
+  return Boolean(file.blobPathname) && file.sizeBytes > ATTACH_MAX_BYTES;
+}
 
 export function extensionOf(fileName: string) {
   const match = /\.([A-Za-z0-9]{2,5})$/.exec(fileName);

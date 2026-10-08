@@ -19,6 +19,7 @@ import {
   updateScheduleSlot,
 } from "@/lib/teacher-actions";
 import { isZoomProvider } from "@/lib/classroom";
+import { shouldSendAsLink } from "@/lib/media";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
 import { formatGermanDateTime, formatTeachingDateTime, toTeachingInputValue } from "@/lib/schedule-time";
 
@@ -178,8 +179,12 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
   const mediaFiles = await prisma.mediaFile.findMany({
     where: session?.user.role === "ADMIN" ? {} : { ownerId: session?.user.id },
     orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, fileName: true, sizeBytes: true },
+    select: { id: true, title: true, fileName: true, sizeBytes: true, blobPathname: true },
   });
+  const composerFiles = mediaFiles.map(({ blobPathname, ...file }) => ({
+    ...file,
+    asLink: shouldSendAsLink({ blobPathname, sizeBytes: file.sizeBytes }),
+  }));
 
   const now = new Date();
   const upcomingSessions = course.sessions.filter((s) => s.startsAt >= now);
@@ -490,7 +495,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               })),
             },
           ]}
-          files={mediaFiles}
+          files={composerFiles}
         />
       </section>
 

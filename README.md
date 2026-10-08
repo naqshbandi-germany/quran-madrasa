@@ -137,6 +137,27 @@ Angaben und startet mit „Zahlungspflichtig anmelden“ die Stripe-Zahlung.
   Einstellungen → Kundenportal → Abos), sonst ändert sich die Teilnehmerzahl nur in Stripe und nicht
   in der Datenbank. Abos lassen sich als Ganzes kündigen.
 
+## Mediathek und E-Mails an Teilnehmer
+
+Lehrer legen unter `/teacher/mediathek` Lehrmaterial ab (PDF, Bilder, Office-Dateien u. a.) und
+schreiben unter `/teacher/emails` (oder auf der Kursseite) an alle oder einzelne Teilnehmer eines
+Kurses, optional mit Dateien aus der Mediathek.
+
+- **Ohne Blob-Speicher** liegen die Dateien in der Datenbank (Tabelle `MediaFile`), höchstens
+  4 MB je Datei (Vercel nimmt pro Anfrage nur ca. 4,5 MB an).
+- **Mit Vercel Blob** lädt der Browser die Datei direkt in den Speicher (bis 200 MB). So richtest
+  du es ein:
+  1. Im Vercel-Projekt *Storage → Create Database → Blob*, einen Speicher anlegen und mit dem
+     Projekt verbinden. Vercel setzt `BLOB_READ_WRITE_TOKEN` automatisch.
+  2. Wenn der Speicher als **privat** angelegt wird (empfohlen), nichts weiter tun. Bei einem
+     öffentlichen Speicher zusätzlich `BLOB_ACCESS=public` setzen.
+  3. Neu deployen. Die Mediathek schaltet selbst auf Blob um. Bereits in der Datenbank liegende
+     Dateien funktionieren weiter.
+- Dateien bis 5 MB gehen als **Anhang** mit der E-Mail, größere als **Download-Link**, der 90 Tage
+  gültig ist (signiert, ohne Anmeldung nutzbar). Alle Anhänge zusammen: höchstens 10 MB.
+- Im Hobby-Tarif von Vercel ist Blob nur begrenzt kostenlos (u. a. 1 GB Speicher); bei
+  Überschreitung ist der Speicher bis zum nächsten Monat gesperrt.
+
 ## Anmeldung mit Google (optional)
 
 Registrierung und Anmeldung funktionieren mit E-Mail und Passwort. Zusätzlich kann ein Button

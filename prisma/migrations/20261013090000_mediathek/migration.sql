@@ -8,7 +8,9 @@ CREATE TABLE "MediaFile" (
     "fileName" TEXT NOT NULL,
     "mimeType" TEXT NOT NULL,
     "sizeBytes" INTEGER NOT NULL,
-    "data" BYTEA NOT NULL,
+    "data" BYTEA,
+    "blobPathname" TEXT,
+    "blobUrl" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "MediaFile_pkey" PRIMARY KEY ("id")
