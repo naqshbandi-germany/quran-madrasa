@@ -1,58 +1,8 @@
-import { SubscriptionStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
-
-function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionStatus {
-  switch (status) {
-    case "active":
-    case "trialing":
-      return SubscriptionStatus.ACTIVE;
-    case "past_due":
-    case "unpaid":
-      return SubscriptionStatus.PAST_DUE;
-    case "canceled":
-      return SubscriptionStatus.CANCELED;
-    default:
-      return SubscriptionStatus.INCOMPLETE;
-  }
-}
-
-async function upsertSubscriptionFromStripe(subscription: Stripe.Subscription) {
-  const userId = subscription.metadata.userId;
-  const courseId = subscription.metadata.courseId;
-  if (!userId || !courseId) return;
-
-  // Seit neueren Stripe-API-Versionen liegt current_period_end nicht mehr
-  // direkt am Abo, sondern an dessen Items (ein Abo kann theoretisch
-  // mehrere Items mit unterschiedlichen Abrechnungszeitraeumen haben). Wir
-  // haben immer genau ein Item pro Kurs-Abo.
-  const currentPeriodEnd = subscription.items.data[0]?.current_period_end;
-
-  const data = {
-    userId,
-    courseId,
-    status: mapStripeStatus(subscription.status),
-    currentPeriodEnd: new Date((currentPeriodEnd ?? 0) * 1000),
-    cancelAtPeriodEnd: subscription.cancel_at_period_end,
-  };
-
-  await prisma.subscription.upsert({
-    where: { stripeSubscriptionId: subscription.id },
-    create: { stripeSubscriptionId: subscription.id, ...data },
-    update: data,
-  });
-
-  if (data.status === "ACTIVE") {
-    await prisma.enrollment.upsert({
-      where: { userId_courseId: { userId, courseId } },
-      create: { userId, courseId },
-      update: {},
-    });
-  }
-}
+import { syncSubscription } from "@/lib/subscription-sync";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -80,14 +30,14 @@ export async function POST(request: Request) {
         const subscription = await stripe.subscriptions.retrieve(
           checkoutSession.subscription as string,
         );
-        await upsertSubscriptionFromStripe(subscription);
+        await syncSubscription(subscription);
       }
       break;
     }
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
-      await upsertSubscriptionFromStripe(subscription);
+      await syncSubscription(subscription);
       break;
     }
     default:

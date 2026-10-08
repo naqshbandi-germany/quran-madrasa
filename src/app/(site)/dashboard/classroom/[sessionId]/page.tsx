@@ -22,8 +22,10 @@ export default async function ClassroomPage({
   });
   if (!classSession) notFound();
 
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { userId_courseId: { userId: session.user.id, courseId: classSession.courseId } },
+  // Der Konto-Inhaber darf in die Sitzung, sobald mindestens ein Teilnehmer seines Kontos im
+  // Kurs ist (Eltern begleiten ihre Kinder).
+  const enrollment = await prisma.enrollment.findFirst({
+    where: { userId: session.user.id, courseId: classSession.courseId },
   });
   if (!enrollment && session.user.role === "STUDENT") {
     redirect("/dashboard");

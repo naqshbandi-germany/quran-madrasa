@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getAppUrl } from "@/lib/app-url";
+import { groupRecipients } from "@/lib/enrollment-recipients";
 import { prisma } from "@/lib/prisma";
 import { reminderHtml, reminderSubject, type ReminderKind } from "@/lib/reminder-email";
 import { EMAIL_FROM, getResend } from "@/lib/resend";
@@ -32,7 +33,12 @@ async function findDueSessions(minutesBefore: number, windowMinutes: number, fie
     include: {
       course: {
         include: {
-          enrollments: { include: { user: { select: { id: true, name: true, email: true } } } },
+          enrollments: {
+            include: {
+              user: { select: { name: true, email: true } },
+              participant: { select: { name: true, email: true } },
+            },
+          },
         },
       },
     },
@@ -51,15 +57,14 @@ async function sendRemindersFor(
   for (const classSession of sessions) {
     const joinUrl = `${appUrl}/dashboard/classroom/${classSession.id}`;
 
-    for (const enrollment of classSession.course.enrollments) {
-      const { user } = enrollment;
+    for (const recipient of groupRecipients(classSession.course.enrollments)) {
       try {
         await resend.emails.send({
           from: EMAIL_FROM,
-          to: user.email,
+          to: recipient.email,
           subject: reminderSubject(classSession.course.title, kind),
           html: reminderHtml({
-            studentName: user.name,
+            studentName: recipient.greetingName,
             courseTitle: classSession.course.title,
             startsAt: classSession.startsAt,
             joinUrl,
@@ -68,7 +73,7 @@ async function sendRemindersFor(
         });
         emailCount++;
       } catch (err) {
-        console.error(`Reminder-E-Mail (${kind}) an ${user.email} fehlgeschlagen:`, err);
+        console.error(`Reminder-E-Mail (${kind}) an ${recipient.email} fehlgeschlagen:`, err);
       }
     }
 

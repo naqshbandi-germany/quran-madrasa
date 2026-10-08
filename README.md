@@ -117,6 +117,26 @@ UTC-Zeitpunkt gespeichert und Schülern in deutscher Zeit angezeigt (Dashboard, 
 Datenschutz: Mit Zoom muss ein Vertrag zur Auftragsverarbeitung bestehen; der Standardtext der
 Datenschutzerklärung nennt automatisch Zoom bzw. Jitsi passend zu `CLASSROOM_PROVIDER`.
 
+## Anmeldung zu Kursen: Teilnehmer und Abos
+
+Wer sich anmeldet, legt zuerst ein Konto an (nur Erwachsene). Beim Klick auf „Jetzt anmelden“ im
+Kurs folgt ein Assistent unter `/courses/<kurs>/anmelden`: Wen meldest du an – dich selbst, Kinder
+(unter 18, mit Bestätigung der Sorgeberechtigung) oder andere Erwachsene? Danach prüft man die
+Angaben und startet mit „Zahlungspflichtig anmelden“ die Stripe-Zahlung.
+
+- Ein Konto kann mehrere **Teilnehmer** haben (Tabelle `Participant`). Der Konto-Inhaber bezahlt,
+  muss aber nicht selbst teilnehmen. Pro Kurs und Zahlung gibt es **ein** Stripe-Abo, dessen Menge
+  der Zahl der Teilnehmer entspricht.
+- Eingeschrieben wird erst nach erfolgreicher Zahlung, durch den Stripe-Webhook
+  (`src/lib/subscription-sync.ts`). Endet oder wird das Abo gekündigt, entfallen die Einschreibungen
+  dieses Abos.
+- Mails (Erinnerungen, Kursmaterial) gehen an die E-Mail-Adresse des Teilnehmers, bei Kindern ohne
+  eigene Adresse an den Konto-Inhaber. Optionale WhatsApp-Nummern werden nur mit Einwilligung
+  gespeichert und erscheinen der Lehrkraft im Kurs unter „WhatsApp-Gruppe des Kurses“.
+- Im **Stripe-Kundenportal** sollte die Änderung der Menge ausgeschaltet bleiben (Dashboard →
+  Einstellungen → Kundenportal → Abos), sonst ändert sich die Teilnehmerzahl nur in Stripe und nicht
+  in der Datenbank. Abos lassen sich als Ganzes kündigen.
+
 ## Anmeldung mit Google (optional)
 
 Registrierung und Anmeldung funktionieren mit E-Mail und Passwort. Zusätzlich kann ein Button

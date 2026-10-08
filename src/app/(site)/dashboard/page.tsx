@@ -14,7 +14,9 @@ export default async function DashboardPage() {
 
   const enrollments = await prisma.enrollment.findMany({
     where: { userId: session.user.id },
+    orderBy: { createdAt: "asc" },
     include: {
+      participant: { select: { name: true } },
       course: {
         include: {
           sessions: {
@@ -26,6 +28,14 @@ export default async function DashboardPage() {
       },
     },
   });
+
+  // Mehrere Teilnehmer desselben Kontos im selben Kurs zu einer Karte zusammenfassen.
+  const byCourse = new Map<string, { course: (typeof enrollments)[number]["course"]; names: string[] }>();
+  for (const { course, participant } of enrollments) {
+    const entry = byCourse.get(course.id) ?? { course, names: [] };
+    entry.names.push(participant.name);
+    byCourse.set(course.id, entry);
+  }
 
   return (
     <div className="space-y-8">
@@ -47,9 +57,10 @@ export default async function DashboardPage() {
       )}
 
       <div className="space-y-6">
-        {enrollments.map(({ course }) => (
+        {[...byCourse.values()].map(({ course, names }) => (
           <div key={course.id} className="rounded-lg border border-brand-200 bg-white p-5">
             <h2 className="font-semibold text-brand-700">{course.title}</h2>
+            <p className="mt-1 text-sm text-brand-600">Teilnehmer: {names.join(", ")}</p>
             {course.sessions.length === 0 ? (
               <p className="mt-2 text-sm text-brand-600">
                 Noch keine kommenden Sitzungen geplant.
