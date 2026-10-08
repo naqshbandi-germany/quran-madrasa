@@ -84,6 +84,7 @@ model User {
   subscriptions Subscription[]
   passwordResetTokens PasswordResetToken[]
   participants  Participant[]
+  mediaFiles    MediaFile[]
 }
 
 model Course {
@@ -237,4 +238,26 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+// Datei der Mediathek (Lehrmaterial wie PDFs). Mit Vercel Blob (BLOB_READ_WRITE_TOKEN gesetzt)
+// liegt die Datei im Blob-Speicher (blobPathname), sonst als Bytes in der Datenbank (nur bis
+// ca. 4 MB, siehe src/lib/media.ts). Listen laden "data" nie mit.
+model MediaFile {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  // Angezeigter Name, z. B. "Arbeitsblatt Sure Al-Fatiha"
+  title     String
+  // Dateiname fuer Download und E-Mail-Anhang, z. B. "arbeitsblatt.pdf"
+  fileName  String
+  mimeType  String
+  sizeBytes Int
+  data      Bytes?
+  // Vercel Blob: Pfad der Datei im Speicher und deren Adresse
+  blobPathname String?
+  blobUrl      String?
+  createdAt DateTime @default(now())
+
+  @@index([ownerId, createdAt])
 }

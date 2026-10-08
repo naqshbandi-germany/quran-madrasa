@@ -1,9 +1,11 @@
 import { Weekday } from "@prisma/client";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ConfirmButton } from "@/components/confirm-button";
+import { EmailComposer } from "@/components/email-composer";
 import { CopyButton } from "@/components/copy-button";
 import { EditableRow } from "@/components/editable-row";
 import { TrashIcon } from "@/components/icons";
@@ -13,11 +15,11 @@ import {
   createScheduleSlot,
   deleteClassSession,
   deleteScheduleSlot,
-  sendCourseMaterial,
   updateClassSession,
   updateScheduleSlot,
 } from "@/lib/teacher-actions";
 import { isZoomProvider } from "@/lib/classroom";
+import { shouldSendAsLink } from "@/lib/media";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
 import { formatGermanDateTime, formatTeachingDateTime, toTeachingInputValue } from "@/lib/schedule-time";
 
@@ -173,6 +175,16 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
     if (existing) existing.name += `, ${participant.name}`;
     else whatsappMembers.push({ id: participant.id, name: participant.name, whatsapp: participant.whatsapp });
   }
+
+  const mediaFiles = await prisma.mediaFile.findMany({
+    where: session?.user.role === "ADMIN" ? {} : { ownerId: session?.user.id },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, title: true, fileName: true, sizeBytes: true, blobPathname: true },
+  });
+  const composerFiles = mediaFiles.map(({ blobPathname, ...file }) => ({
+    ...file,
+    asLink: shouldSendAsLink({ blobPathname, sizeBytes: file.sizeBytes }),
+  }));
 
   const now = new Date();
   const upcomingSessions = course.sessions.filter((s) => s.startsAt >= now);
@@ -458,43 +470,33 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         </div>
       </section>
 
-      <section className="space-y-4">
-        <h2 className="font-semibold text-brand-700">Kursmaterial per E-Mail verschicken</h2>
+      <section aria-labelledby="mail" className="space-y-4">
+        <h2 id="mail" className="font-semibold text-brand-700">
+          E-Mail an Teilnehmer (Kursmaterial, Ankündigungen)
+        </h2>
         <p className="text-sm text-brand-600">
-          Schickt eine Nachricht (z.B. Lernmaterial, Hausaufgaben, Ankündigungen) an alle
-          eingeschriebenen Teilnehmer dieses Kurses – getrennt von den automatischen
-          Sitzungs-Erinnerungen.
+          Schreibe an alle Teilnehmer dieses Kurses oder an einzelne und hänge Dateien aus deiner{" "}
+          <Link href="/teacher/mediathek" className="font-medium text-azure-800 underline">
+            Mediathek
+          </Link>{" "}
+          an. Die Nachricht wird getrennt von den automatischen Sitzungs-Erinnerungen verschickt.
         </p>
-
-        {course.enrollments.length === 0 ? (
-          <p className="text-sm text-brand-600">Noch keine Teilnehmer eingeschrieben.</p>
-        ) : (
-          <div className="rounded-lg border border-brand-200 bg-white p-5">
-            <p className="mb-4 text-sm text-brand-600">
-              Empfänger: {course.enrollments.map((e) => e.participant.name).join(", ")} (
-              {course.enrollments.length} Teilnehmer)
-            </p>
-            <form action={sendCourseMaterial} className="space-y-3">
-              <input type="hidden" name="courseId" value={course.id} />
-              <input
-                name="subject"
-                placeholder="Betreff"
-                required
-                className="w-full rounded-md border border-brand-200 px-3 py-2"
-              />
-              <textarea
-                name="message"
-                placeholder="Nachricht an die Teilnehmer…"
-                required
-                rows={6}
-                className="w-full rounded-md border border-brand-200 px-3 py-2"
-              />
-              <button className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
-                An {course.enrollments.length} Teilnehmer senden
-              </button>
-            </form>
-          </div>
-        )}
+        <EmailComposer
+          courses={[
+            {
+              id: course.id,
+              title: course.title,
+              participants: course.enrollments.map(({ participant, user }) => ({
+                id: participant.id,
+                name: participant.name,
+                detail: participant.email
+                  ? `(${participant.email})`
+                  : `(Mail an ${user.name}, ${user.email})`,
+              })),
+            },
+          ]}
+          files={composerFiles}
+        />
       </section>
 
       <section className="space-y-4">
