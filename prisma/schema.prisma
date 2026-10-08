@@ -63,6 +63,10 @@ model User {
   // E-Mail-Adresse des Zoom-Kontos, unter dem dieser Lehrer Meetings leitet (nur
   // relevant bei CLASSROOM_PROVIDER=zoom; sonst gilt ZOOM_HOST_EMAIL).
   zoomEmail     String?
+  // Zeitpunkte der Bestaetigungen bei der Registrierung (Nachweis fuer die Datenschutz-
+  // Kenntnisnahme und die Bestaetigung "mindestens 18 Jahre alt").
+  privacyAcknowledgedAt DateTime?
+  adultConfirmedAt      DateTime?
   createdAt     DateTime  @default(now())
 
   stripeCustomerId String? @unique
@@ -70,6 +74,7 @@ model User {
   taughtCourses Course[]       @relation("TeacherCourses")
   enrollments   Enrollment[]
   subscriptions Subscription[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Course {
@@ -171,4 +176,18 @@ model Subscription {
   cancelAtPeriodEnd    Boolean            @default(false)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
+}
+
+// Einmal-Link zum Zuruecksetzen des Passworts. Gespeichert wird nur der Hash des Tokens,
+// der Klartext steht ausschliesslich im E-Mail-Link.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }

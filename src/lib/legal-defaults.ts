@@ -29,7 +29,7 @@ const VIDEO_ZOOM = [
 ];
 
 // Der Abschnitt zum Online-Unterricht nennt je nach CLASSROOM_PROVIDER Zoom oder Jitsi.
-export function defaultPrivacyPolicy(zoom: boolean) {
+export function defaultPrivacyPolicy(zoom: boolean, google = false) {
   return [
   "## 1. Verantwortlicher",
   "Verantwortlich für die Datenverarbeitung auf dieser Website ist der im Impressum genannte Anbieter. Kontakt für Datenschutzfragen: admin@islamunterfreunden.de.",
@@ -45,6 +45,14 @@ export function defaultPrivacyPolicy(zoom: boolean) {
 
   "## 5. Benutzerkonto und Anmeldung",
   "Bei der Registrierung verarbeiten wir deinen Namen, deine E-Mail-Adresse und dein Passwort (nur in verschlüsselter Form als Hash). Zweck ist die Bereitstellung des geschützten Bereichs und des Zugangs zu deinen Kursen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Die Daten werden bis zur Löschung des Kontos gespeichert.\n\nFür die Anmeldung setzen wir ein technisch notwendiges Cookie (Sitzungs-Cookie) ein. Es dient ausschließlich dazu, dich eingeloggt zu halten; dafür ist nach § 25 Abs. 2 Nr. 2 TDDDG keine Einwilligung erforderlich. Weitere Cookies, insbesondere zu Analyse- oder Werbezwecken, setzen wir nicht.",
+
+  "Wenn du dein Passwort vergisst, senden wir dir auf Anfrage einen zeitlich begrenzten Link zum Zurücksetzen an deine E-Mail-Adresse (Versand über Resend, siehe Abschnitt 7). Bei der Registrierung speichern wir außerdem, dass du die Datenschutzerklärung zur Kenntnis genommen und bestätigt hast, dass du volljährig bist, jeweils mit Zeitpunkt (Nachweis nach Art. 7 Abs. 1 DSGVO).",
+
+  ...(google
+    ? [
+        "Anmeldung mit Google: Du kannst dich alternativ mit deinem Google-Konto anmelden (Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland). Dabei wirst du zu Google weitergeleitet; wir erhalten nur deinen Namen und deine E-Mail-Adresse. Google verarbeitet beim Anmelden eigene Daten nach seiner Datenschutzerklärung, unter anderem deine IP-Adresse. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO; die Nutzung ist freiwillig, du kannst stattdessen ein Konto mit E-Mail und Passwort anlegen.",
+      ]
+    : []),
 
   "## 6. Kursanmeldung und Zahlung",
   "Kurse werden als Abonnement über Stripe abgewickelt (Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Grand Canal Dock, Dublin, Irland, ggf. Stripe, Inc., USA). Deine Zahlungsdaten gibst du direkt bei Stripe ein; wir erhalten keine Kartendaten, sondern nur Angaben wie den Abo-Status. Rechtsgrundlage sind Art. 6 Abs. 1 lit. b DSGVO (Vertrag) und lit. c DSGVO (steuer- und handelsrechtliche Aufbewahrungspflichten).",

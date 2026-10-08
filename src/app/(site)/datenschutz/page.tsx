@@ -1,6 +1,7 @@
 import { LegalText } from "@/components/legal-text";
 import { OrnamentDivider } from "@/components/ornament";
 import { isZoomProvider } from "@/lib/classroom";
+import { isGoogleAuthConfigured } from "@/lib/auth-providers";
 import { defaultPrivacyPolicy } from "@/lib/legal-defaults";
 import { prisma } from "@/lib/prisma";
 
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PrivacyPolicyPage() {
   const content = await prisma.siteContent.findUnique({ where: { id: "main" } });
-  const text = content?.privacyPolicy.trim() || defaultPrivacyPolicy(isZoomProvider());
+  const text = content?.privacyPolicy.trim() || defaultPrivacyPolicy(isZoomProvider(), isGoogleAuthConfigured());
 
   return (
     <div className="space-y-6">
