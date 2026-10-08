@@ -33,6 +33,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(result);
   } catch (error) {
+    console.error("Upload-Freigabe fehlgeschlagen:", error);
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }
 }

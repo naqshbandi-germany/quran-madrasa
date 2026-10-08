@@ -68,7 +68,7 @@ export async function uploadMediaFile(_prev: ActionResult, formData: FormData): 
 
 // Traegt eine Datei ein, die der Browser bereits direkt in den Blob-Speicher geladen hat. Die
 // Angaben des Browsers werden gegen den Speicher geprueft (Pfad, Typ, Groesse).
-export async function registerBlobFile(input: {
+async function registerBlobFileUnsafe(input: {
   pathname: string;
   fileName: string;
   title: string;
@@ -131,6 +131,20 @@ export async function registerBlobFile(input: {
   revalidatePath("/teacher/mediathek");
   revalidatePath("/teacher/emails");
   return { ok: true, message: `„${title}“ wurde hochgeladen.` };
+}
+
+export async function registerBlobFile(input: {
+  pathname: string;
+  fileName: string;
+  title: string;
+}): Promise<ActionResult> {
+  try {
+    return await registerBlobFileUnsafe(input);
+  } catch (err) {
+    console.error("Eintragen der Blob-Datei fehlgeschlagen:", err);
+    const detail = err instanceof Error && err.message ? ` (${err.message})` : "";
+    return { ok: false, message: `Die Datei wurde hochgeladen, konnte aber nicht eingetragen werden.${detail}` };
+  }
 }
 
 export async function deleteMediaFile(formData: FormData) {
