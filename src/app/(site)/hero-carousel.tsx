@@ -6,7 +6,6 @@ import { preload } from "react-dom";
 
 import { BookingButton } from "@/components/booking-button";
 import { OrnamentDivider } from "@/components/ornament";
-import { ThinkingMan } from "@/components/thinking-man";
 import type { HeroSlide } from "@/lib/hero-slides";
 
 const AUTO_ADVANCE_MS = 6000;
@@ -19,6 +18,19 @@ const OUTLINE_LINK =
 
 // Lage der Bildebene: Seite liegt mittig, schraeg von oben gesehen. Die Ken-Burns-Animation
 // (tailwind.config.ts) startet aus derselben Lage.
+const TONES = {
+  blue: {
+    bg: "bg-azure-900",
+    floor: "from-azure-900/20",
+    fade: "from-azure-900 from-38% via-azure-900/85 via-58% to-azure-900/0",
+  },
+  warm: {
+    bg: "bg-[#3b2714]",
+    floor: "from-[#3b2714]/30",
+    fade: "from-[#3b2714] from-38% via-[#3b2714]/85 via-58% to-[#3b2714]/0",
+  },
+};
+
 const PLANE_CLASSES =
   "-left-[25%] bottom-[-26%] h-[210%] w-[150%] animate-kenburns [transform:rotateX(60deg)_scale(1.02)]";
 
@@ -46,11 +58,12 @@ export function HeroCarousel({
 
   const slide = slides[index];
   const background = BACKGROUNDS[index % BACKGROUNDS.length];
+  const tone = TONES[slide.kind === "feature" && slide.theme ? slide.theme : "blue"];
 
   return (
     <section className="relative overflow-hidden">
       <div
-        className={`relative flex min-h-[28rem] flex-col items-center overflow-hidden px-6 py-14 text-center text-white transition-colors sm:min-h-[37rem] sm:px-12 ${slide.kind === "feature" ? "justify-start bg-azure-900 pt-16 sm:pt-20" : `justify-center ${background}`}`}
+        className={`relative flex min-h-[28rem] flex-col items-center overflow-hidden px-6 py-14 text-center text-white transition-colors sm:min-h-[37rem] sm:px-12 ${slide.kind === "feature" ? `justify-start ${tone.bg} pt-16 sm:pt-20` : `justify-center ${background}`}`}
       >
         {slide.kind === "feature" && (
           <>
@@ -58,19 +71,31 @@ export function HeroCarousel({
             <div aria-hidden="true" className="absolute inset-0 overflow-hidden [perspective:1000px]">
               <div
                 key={index}
-                className={`absolute bg-cover bg-center [transform-origin:50%_100%] motion-reduce:animate-none ${PLANE_CLASSES}`}
-                style={{ backgroundImage: `url(${slide.image})` }}
+                className={`absolute bg-cover [transform-origin:50%_100%] motion-reduce:animate-none ${
+                  slide.flat ? "inset-0 bg-bottom" : `bg-center ${PLANE_CLASSES}`
+                }`}
+                style={{
+                  backgroundImage: `url(${slide.image})`,
+                  // Seitenraender weich ausblenden, damit die Kanten der schraegen Bildebene
+                  // nie sichtbar werden (die Flaeche dahinter ist einfarbig).
+                  ...(slide.flat
+                    ? {}
+                    : {
+                        maskImage: "linear-gradient(to right, transparent, black 14%, black 86%, transparent)",
+                        WebkitMaskImage: "linear-gradient(to right, transparent, black 14%, black 86%, transparent)",
+                      }),
+                }}
               />
             </div>
             {/* Unten leicht abdunkeln, damit helle Bilder (Stundenplan) nicht ausbrennen */}
             <div
               aria-hidden="true"
-              className="absolute inset-0 bg-gradient-to-t from-azure-900/20 via-transparent to-transparent"
+              className={`absolute inset-0 bg-gradient-to-t ${tone.floor} via-transparent to-transparent`}
             />
             {/* Oben in Blau auslaufen und weich unscharf werden, damit die Schrift wirkt */}
             <div
               aria-hidden="true"
-              className="absolute inset-0 bg-gradient-to-b from-azure-900 from-38% via-azure-900/85 via-58% to-azure-900/0"
+              className={`absolute inset-0 bg-gradient-to-b ${tone.fade}`}
             />
             <div
               aria-hidden="true"
@@ -81,10 +106,6 @@ export function HeroCarousel({
               }}
             />
           </>
-        )}
-
-        {slide.kind === "feature" && slide.figure === "thinking-man" && (
-          <ThinkingMan className="pointer-events-none absolute bottom-0 right-[4%] hidden h-[78%] w-auto lg:block xl:right-[9%]" />
         )}
 
         <div className="relative flex flex-col items-center">
