@@ -56,3 +56,42 @@ export function CheckIcon(props: IconProps) {
     </Svg>
   );
 }
+
+export function FileIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 13h6M9 17h6" />
+    </Svg>
+  );
+}
+
+export function DownloadIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M12 3v12" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M5 21h14" />
+    </Svg>
+  );
+}
+
+export function MailIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 7 9 6 9-6" />
+    </Svg>
+  );
+}
+
+export function LibraryIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 4v16" />
+      <path d="M9 4v16" />
+      <path d="m14 5 4-1 3 15-4 1Z" />
+    </Svg>
+  );
+}

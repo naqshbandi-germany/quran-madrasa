@@ -84,6 +84,7 @@ model User {
   subscriptions Subscription[]
   passwordResetTokens PasswordResetToken[]
   participants  Participant[]
+  mediaFiles    MediaFile[]
 }
 
 model Course {
@@ -237,4 +238,23 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+// Datei der Mediathek (Lehrmaterial wie PDFs). Der Inhalt liegt direkt in der Datenbank
+// (Bytes), damit keine zusaetzliche Datei-Ablage noetig ist; Dateien sind auf wenige MB begrenzt
+// (siehe src/lib/media.ts). Listen laden "data" nie mit, nur Download und E-Mail-Anhang.
+model MediaFile {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  // Angezeigter Name, z. B. "Arbeitsblatt Sure Al-Fatiha"
+  title     String
+  // Dateiname fuer Download und E-Mail-Anhang, z. B. "arbeitsblatt.pdf"
+  fileName  String
+  mimeType  String
+  sizeBytes Int
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@index([ownerId, createdAt])
 }
