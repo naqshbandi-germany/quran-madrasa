@@ -11,6 +11,7 @@ import { materialEmailHtml } from "@/lib/material-email";
 import { prisma } from "@/lib/prisma";
 import { MATERIAL_EMAIL_FROM, getResend } from "@/lib/resend";
 import { fromTeachingLocal, parseTeachingDateTime } from "@/lib/schedule-time";
+import { deleteZoomMeeting, updateZoomMeeting } from "@/lib/zoom";
 
 async function requireTeacher() {
   const session = await auth();
@@ -84,6 +85,8 @@ export async function createScheduleSlot(formData: FormData) {
     endTime: formData.get("endTime"),
     note: formData.get("note"),
   });
+
+  if (parsed.endTime <= parsed.startTime) throw new Error("Das Ende muss nach dem Beginn liegen.");
 
   const course = await prisma.course.findUniqueOrThrow({ where: { id: parsed.courseId } });
   assertOwnsCourse(session, course.teacherId);
@@ -328,4 +331,127 @@ export async function sendCourseMaterial(formData: FormData) {
   }
 
   revalidatePath(`/teacher/courses/${parsed.courseId}`);
+}
+
+const updateScheduleSlotSchema = createScheduleSlotSchema.extend({ slotId: z.string().cuid() });
+
+export async function updateScheduleSlot(formData: FormData) {
+  const session = await requireTeacher();
+
+  const parsed = updateScheduleSlotSchema.parse({
+    slotId: formData.get("slotId"),
+    courseId: formData.get("courseId"),
+    weekday: formData.get("weekday"),
+    startTime: formData.get("startTime"),
+    endTime: formData.get("endTime"),
+    note: formData.get("note"),
+  });
+
+  if (parsed.endTime <= parsed.startTime) throw new Error("Das Ende muss nach dem Beginn liegen.");
+
+  const slot = await prisma.scheduleSlot.findUniqueOrThrow({
+    where: { id: parsed.slotId },
+    include: { course: true },
+  });
+  assertOwnsCourse(session, slot.course.teacherId);
+
+  await prisma.scheduleSlot.update({
+    where: { id: slot.id },
+    data: {
+      weekday: parsed.weekday,
+      startTime: parsed.startTime,
+      endTime: parsed.endTime,
+      note: parsed.note,
+    },
+  });
+
+  revalidatePath(`/teacher/courses/${slot.courseId}`);
+  revalidatePath("/");
+  revalidatePath("/stundenplan");
+}
+
+const updateSessionSchema = z.object({
+  sessionId: z.string().cuid(),
+  title: z.string().min(3),
+  startsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Ungültiges Datum"),
+  durationMin: z.coerce.number().int().min(5).max(480),
+  joinUrl: z.string().url().optional().or(z.literal("")),
+});
+
+// Aendert eine bestehende Sitzung (Titel, Beginn in Ortszeit, Dauer, Link). Bei einem
+// automatisch erzeugten Zoom-Meeting wird das Meeting mit angepasst. Wurde der Beginn
+// verschoben, werden die Erinnerungen neu ausgeloest.
+export async function updateClassSession(formData: FormData) {
+  const session = await requireTeacher();
+
+  const parsed = updateSessionSchema.parse({
+    sessionId: formData.get("sessionId"),
+    title: formData.get("title"),
+    startsAt: formData.get("startsAt"),
+    durationMin: formData.get("durationMin"),
+    joinUrl: formData.get("joinUrl") ?? "",
+  });
+
+  const existing = await prisma.classSession.findUniqueOrThrow({
+    where: { id: parsed.sessionId },
+    include: { course: true },
+  });
+  assertOwnsCourse(session, existing.course.teacherId);
+
+  const startsAt = parseTeachingDateTime(parsed.startsAt);
+  const data: {
+    title: string;
+    startsAt: Date;
+    durationMin: number;
+    joinUrl?: string;
+    classroomType?: ClassroomType;
+    zoomMeetingId?: string | null;
+    reminder24hSentAt?: null;
+    reminder1hSentAt?: null;
+    reminderStartSentAt?: null;
+  } = { title: parsed.title, startsAt, durationMin: parsed.durationMin };
+
+  if (startsAt.getTime() !== existing.startsAt.getTime()) {
+    data.reminder24hSentAt = null;
+    data.reminder1hSentAt = null;
+    data.reminderStartSentAt = null;
+  }
+
+  if (parsed.joinUrl && parsed.joinUrl !== existing.joinUrl) {
+    // Eigener Link ersetzt den automatisch erzeugten (ein altes Zoom-Meeting wird entfernt).
+    if (existing.zoomMeetingId) await deleteZoomMeeting(existing.zoomMeetingId);
+    data.joinUrl = parsed.joinUrl;
+    data.classroomType = ClassroomType.ZOOM;
+    data.zoomMeetingId = null;
+  } else if (existing.zoomMeetingId) {
+    await updateZoomMeeting(existing.zoomMeetingId, {
+      topic: parsed.title,
+      startsAt,
+      durationMin: parsed.durationMin,
+    });
+  }
+
+  await prisma.classSession.update({ where: { id: existing.id }, data });
+
+  revalidatePath(`/teacher/courses/${existing.courseId}`);
+  revalidatePath("/dashboard");
+}
+
+const deleteSessionSchema = z.object({ sessionId: z.string().cuid() });
+
+export async function deleteClassSession(formData: FormData) {
+  const session = await requireTeacher();
+  const { sessionId } = deleteSessionSchema.parse({ sessionId: formData.get("sessionId") });
+
+  const existing = await prisma.classSession.findUniqueOrThrow({
+    where: { id: sessionId },
+    include: { course: true },
+  });
+  assertOwnsCourse(session, existing.course.teacherId);
+
+  if (existing.zoomMeetingId) await deleteZoomMeeting(existing.zoomMeetingId);
+  await prisma.classSession.delete({ where: { id: existing.id } });
+
+  revalidatePath(`/teacher/courses/${existing.courseId}`);
+  revalidatePath("/dashboard");
 }

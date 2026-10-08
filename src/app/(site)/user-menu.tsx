@@ -18,6 +18,7 @@ const ROLE_LABELS: Record<Role, string> = {
 function menuLinksFor(role: Role): MenuLink[] {
   const links: MenuLink[] = [
     { href: "/dashboard", label: "Meine Kurse", description: "Termine und Zugang zum Unterricht" },
+    { href: "/konto", label: "Mein Konto", description: "Profil, Passwort, Teilnehmer" },
     { href: "/dashboard/billing", label: "Abo verwalten", description: "Zahlung und Kündigung" },
   ];
   if (role === "TEACHER") {

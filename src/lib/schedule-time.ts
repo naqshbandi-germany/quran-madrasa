@@ -133,3 +133,21 @@ export function formatTeachingDateTime(date: Date) {
     timeStyle: "short",
   }).format(date);
 }
+
+// Wert fuer ein <input type="datetime-local"> in Ortszeit (Gegenstueck zu parseTeachingDateTime).
+export function toTeachingInputValue(date: Date) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: TEACHING_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(date)
+      .map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}

@@ -34,7 +34,11 @@ export const authConfig: NextAuthConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isTeacherArea = nextUrl.pathname.startsWith("/teacher");
       const isAdminArea = nextUrl.pathname.startsWith("/admin");
-      const isProtected = nextUrl.pathname.startsWith("/dashboard") || isTeacherArea || isAdminArea;
+      const isProtected =
+        nextUrl.pathname.startsWith("/dashboard") ||
+        nextUrl.pathname.startsWith("/konto") ||
+        isTeacherArea ||
+        isAdminArea;
       if (!isProtected) return true;
 
       if (!auth?.user) return false;

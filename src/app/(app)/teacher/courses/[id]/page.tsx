@@ -3,19 +3,147 @@ import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { ConfirmButton } from "@/components/confirm-button";
+import { CopyButton } from "@/components/copy-button";
+import { EditableRow } from "@/components/editable-row";
+import { TrashIcon } from "@/components/icons";
 import {
   createClassSession,
   createRecurringSessions,
   createScheduleSlot,
+  deleteClassSession,
   deleteScheduleSlot,
   sendCourseMaterial,
+  updateClassSession,
+  updateScheduleSlot,
 } from "@/lib/teacher-actions";
 import { isZoomProvider } from "@/lib/classroom";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
-import { formatGermanDateTime, formatTeachingDateTime } from "@/lib/schedule-time";
+import { formatGermanDateTime, formatTeachingDateTime, toTeachingInputValue } from "@/lib/schedule-time";
+
+const INPUT = "rounded-md border border-brand-200 px-3 py-2";
+const SAVE_BUTTON = "rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700";
+
+// Entfernen-Aktion mit Papierkorb-Symbol und Text, fragt vor dem Loeschen nach.
+function RemoveForm({
+  action,
+  fields,
+  message,
+}: {
+  action: (formData: FormData) => void | Promise<void>;
+  fields: Record<string, string>;
+  message: string;
+}) {
+  return (
+    <form action={action}>
+      {Object.entries(fields).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
+      <ConfirmButton
+        message={message}
+        className="inline-flex items-center gap-1.5 rounded-md font-medium text-red-800 hover:text-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+      >
+        <TrashIcon />
+        Entfernen
+      </ConfirmButton>
+    </form>
+  );
+}
 
 function formatDateTime(date: Date) {
   return `${formatTeachingDateTime(date)} Ortszeit (${formatGermanDateTime(date)} deutsche Zeit)`;
+}
+
+type SessionData = {
+  id: string;
+  title: string;
+  startsAt: Date;
+  durationMin: number;
+  joinUrl: string | null;
+  classroomType: string;
+};
+
+// Aendert sich ein Wert, wird die Zeile neu aufgebaut und das Bearbeiten-Formular klappt zu.
+function sessionKey(s: SessionData) {
+  return `${s.id}-${s.startsAt.getTime()}-${s.title}-${s.durationMin}-${s.joinUrl ?? ""}`;
+}
+
+function SessionRow({ classSession, courseId }: { classSession: SessionData; courseId: string }) {
+  const linkLabel = classSession.classroomType === "JITSI" ? "Jitsi-Link" : "Zoom-Link";
+  return (
+    <EditableRow
+      summary={
+        <div>
+          <p className="font-medium">{classSession.title}</p>
+          <p className="text-brand-600">
+            {formatDateTime(classSession.startsAt)} · {classSession.durationMin} Min. ·{" "}
+            {classSession.joinUrl ? (
+              <a href={classSession.joinUrl} className="underline">
+                {linkLabel}
+              </a>
+            ) : (
+              "kein Link hinterlegt"
+            )}
+          </p>
+        </div>
+      }
+      removeAction={
+        <RemoveForm
+          action={deleteClassSession}
+          fields={{ sessionId: classSession.id }}
+          message="Diese Sitzung wirklich entfernen? Ein automatisch erzeugtes Zoom-Meeting wird dabei ebenfalls gelöscht."
+        />
+      }
+    >
+      <form action={updateClassSession} className="grid gap-3 sm:grid-cols-2">
+        <input type="hidden" name="sessionId" value={classSession.id} />
+        <input type="hidden" name="courseId" value={courseId} />
+        <input
+          name="title"
+          required
+          defaultValue={classSession.title}
+          aria-label="Titel"
+          className={`col-span-full ${INPUT}`}
+        />
+        <label className="flex flex-col text-brand-700">
+          Beginn (Ortszeit Nordzypern)
+          <input
+            name="startsAt"
+            type="datetime-local"
+            required
+            defaultValue={toTeachingInputValue(classSession.startsAt)}
+            className={`mt-1 ${INPUT}`}
+          />
+        </label>
+        <label className="flex flex-col text-brand-700">
+          Dauer in Minuten
+          <input
+            name="durationMin"
+            type="number"
+            min={5}
+            max={480}
+            required
+            defaultValue={classSession.durationMin}
+            className={`mt-1 ${INPUT}`}
+          />
+        </label>
+        <label className="col-span-full flex flex-col text-brand-700">
+          Link (ändern ersetzt den automatisch erzeugten)
+          <input
+            name="joinUrl"
+            type="url"
+            defaultValue={classSession.joinUrl ?? ""}
+            className={`mt-1 ${INPUT}`}
+          />
+        </label>
+        <p className="col-span-full text-xs text-brand-600">
+          Wird der Beginn verschoben, passen wir ein automatisch erzeugtes Zoom-Meeting an und
+          verschicken die Erinnerungen neu.
+        </p>
+        <button className={`col-span-full ${SAVE_BUTTON}`}>Speichern</button>
+      </form>
+    </EditableRow>
+  );
 }
 
 export default async function ManageCoursePage({ params }: { params: Promise<{ id: string }> }) {
@@ -25,7 +153,10 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
     include: {
       sessions: { orderBy: { startsAt: "asc" } },
       scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
-      enrollments: { include: { participant: true }, orderBy: { createdAt: "asc" } },
+      enrollments: {
+        include: { participant: true, user: { select: { name: true, email: true } } },
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
   if (!course) notFound();
@@ -43,6 +174,10 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
     else whatsappMembers.push({ id: participant.id, name: participant.name, whatsapp: participant.whatsapp });
   }
 
+  const now = new Date();
+  const upcomingSessions = course.sessions.filter((s) => s.startsAt >= now);
+  const pastSessions = course.sessions.filter((s) => s.startsAt < now).reverse();
+
   const zoom = isZoomProvider();
   const meetingKind = zoom ? "Zoom" : "Jitsi";
   const meetingDescription = zoom
@@ -52,6 +187,40 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-brand-700">{course.title}</h1>
+
+      <section aria-labelledby="teilnehmer" className="space-y-4">
+        <h2 id="teilnehmer" className="font-semibold text-brand-700">
+          Teilnehmer ({course.enrollments.length})
+        </h2>
+        {course.enrollments.length === 0 ? (
+          <p className="text-sm text-brand-600">Noch keine Teilnehmer eingeschrieben.</p>
+        ) : (
+          <ul className="divide-y divide-brand-100 rounded-lg border border-brand-200 bg-white text-sm">
+            {course.enrollments.map(({ id, participant, user, createdAt }) => (
+              <li key={id} className="px-4 py-3">
+                <p className="font-medium text-brand-900">
+                  {participant.name}{" "}
+                  {participant.relation === "CHILD" && (
+                    <span className="font-normal text-brand-600">
+                      (Kind{participant.birthYear ? `, Jahrgang ${participant.birthYear}` : ""})
+                    </span>
+                  )}
+                </p>
+                <p className="text-brand-600">
+                  {participant.email ? (
+                    <>E-Mail: {participant.email}</>
+                  ) : (
+                    <>
+                      Kontakt über {user.name}: {user.email}
+                    </>
+                  )}
+                  {" · "}angemeldet am {new Intl.DateTimeFormat("de-DE").format(createdAt)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="space-y-4">
         <h2 className="font-semibold text-brand-700">Wöchentlicher Stundenplan</h2>
@@ -64,20 +233,38 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
 
         <ul className="space-y-2">
           {course.scheduleSlots.map((slot) => (
-            <li
-              key={slot.id}
-              className="flex items-center justify-between rounded-md border border-brand-200 bg-white px-4 py-2 text-sm"
+            <EditableRow
+              key={`${slot.id}-${slot.weekday}-${slot.startTime}-${slot.endTime}-${slot.note ?? ""}`}
+              summary={
+                <span className="font-medium">
+                  {WEEKDAY_LABELS[slot.weekday] ?? slot.weekday}: {slot.startTime}–{slot.endTime}
+                  {slot.note ? <span className="font-normal text-brand-600"> ({slot.note})</span> : ""}
+                </span>
+              }
+              removeAction={
+                <RemoveForm
+                  action={deleteScheduleSlot}
+                  fields={{ slotId: slot.id, courseId: course.id }}
+                  message="Diesen Wochentermin wirklich entfernen?"
+                />
+              }
             >
-              <span>
-                {WEEKDAY_LABELS[slot.weekday] ?? slot.weekday}: {slot.startTime}–{slot.endTime}
-                {slot.note ? ` (${slot.note})` : ""}
-              </span>
-              <form action={deleteScheduleSlot}>
+              <form action={updateScheduleSlot} className="grid gap-3 sm:grid-cols-4">
                 <input type="hidden" name="slotId" value={slot.id} />
                 <input type="hidden" name="courseId" value={course.id} />
-                <button className="text-brand-600 underline">entfernen</button>
+                <select name="weekday" required defaultValue={slot.weekday} className={INPUT}>
+                  {Object.values(Weekday).map((day) => (
+                    <option key={day} value={day}>
+                      {WEEKDAY_LABELS[day] ?? day}
+                    </option>
+                  ))}
+                </select>
+                <input name="startTime" type="time" required defaultValue={slot.startTime} className={INPUT} />
+                <input name="endTime" type="time" required defaultValue={slot.endTime} className={INPUT} />
+                <input name="note" placeholder="Hinweis (optional)" defaultValue={slot.note ?? ""} className={INPUT} />
+                <button className={`col-span-full sm:col-span-1 ${SAVE_BUTTON}`}>Speichern</button>
               </form>
-            </li>
+            </EditableRow>
           ))}
         </ul>
 
@@ -123,24 +310,26 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
 
       <section className="space-y-4">
         <h2 className="font-semibold text-brand-700">Sitzungen (mit Meeting-Link)</h2>
+        {upcomingSessions.length === 0 && (
+          <p className="text-sm text-brand-600">Keine kommenden Sitzungen geplant.</p>
+        )}
         <ul className="space-y-2">
-          {course.sessions.map((classSession) => (
-            <li
-              key={classSession.id}
-              className="rounded-md border border-brand-200 bg-white px-4 py-3 text-sm"
-            >
-              <span className="font-medium">{classSession.title}</span> ·{" "}
-              {formatDateTime(classSession.startsAt)} ·{" "}
-              {classSession.joinUrl ? (
-                <a href={classSession.joinUrl} className="underline">
-                  {classSession.classroomType === "JITSI" ? "Jitsi-Link" : "Zoom-Link"}
-                </a>
-              ) : (
-                "kein Link hinterlegt"
-              )}
-            </li>
+          {upcomingSessions.map((classSession) => (
+            <SessionRow key={sessionKey(classSession)} classSession={classSession} courseId={course.id} />
           ))}
         </ul>
+        {pastSessions.length > 0 && (
+          <details className="text-sm">
+            <summary className="cursor-pointer font-medium text-brand-700">
+              Vergangene Sitzungen ({pastSessions.length})
+            </summary>
+            <ul className="mt-2 space-y-2">
+              {pastSessions.map((classSession) => (
+                <SessionRow key={sessionKey(classSession)} classSession={classSession} courseId={course.id} />
+              ))}
+            </ul>
+          </details>
+        )}
 
         <div className="rounded-lg border border-brand-200 bg-white p-5">
           <h3 className="mb-4 font-semibold text-brand-700">Einzelne Sitzung anlegen</h3>
@@ -320,13 +509,23 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               Diese Teilnehmer haben der Aufnahme in die WhatsApp-Gruppe zugestimmt. Bei Kindern ist
               es die Nummer der Eltern. Bitte verwende die Nummern nur dafür.
             </p>
-            <ul className="space-y-1 text-sm">
+            <ul className="divide-y divide-brand-100 text-sm">
               {whatsappMembers.map((m) => (
-                <li key={m.id}>
-                  <span className="font-medium">{m.name}</span>: {m.whatsapp}
+                <li key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                  <span className="font-medium">{m.name}</span>
+                  <span className="text-brand-700">{m.whatsapp}</span>
+                  <CopyButton text={m.whatsapp} ariaLabel={`Nummer von ${m.name} kopieren`} />
                 </li>
               ))}
             </ul>
+            {whatsappMembers.length > 1 && (
+              <div className="mt-3 border-t border-brand-100 pt-3">
+                <CopyButton
+                  text={whatsappMembers.map((m) => m.whatsapp).join("\n")}
+                  label={`Alle ${whatsappMembers.length} Nummern kopieren`}
+                />
+              </div>
+            )}
           </div>
         )}
       </section>
