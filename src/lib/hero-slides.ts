@@ -12,11 +12,12 @@ export type HeroSlide =
     };
 
 // Bildmotive fuer Slide 1 (Einladung zur kostenlosen Erstberatung).
-export type BookingMotif = "stundenplan" | "teppich" | "labyrinth";
+export type BookingMotif = "stundenplan" | "teppich" | "labyrinth" | "alhambra";
 
 const BOOKING_MOTIFS: Record<BookingMotif, Pick<Extract<HeroSlide, { kind: "feature" }>, "image" | "figure">> = {
   stundenplan: { image: "/images/hero/stundenplan.jpg" },
   teppich: { image: "/images/hero/teppich.jpg" },
+  alhambra: { image: "/images/hero/alhambra.jpg" },
   labyrinth: { image: "/images/hero/labyrinth.jpg", figure: "thinking-man" },
 };
 

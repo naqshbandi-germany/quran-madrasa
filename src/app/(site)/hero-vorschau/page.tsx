@@ -7,7 +7,8 @@ export const metadata = { title: "Hero-Vorschau", robots: { index: false, follow
 const VARIANTS: { label: string; slide: HeroSlide }[] = [
   { label: "Slide 1 (Beratung) · A: Stundenplan", slide: bookingSlide("stundenplan") },
   { label: "Slide 1 (Beratung) · B: Teppich mit Blütenranken", slide: bookingSlide("teppich") },
-  { label: "Slide 1 (Beratung) · C: Kufi-Labyrinth mit Fragezeichen", slide: bookingSlide("labyrinth") },
+  { label: "Slide 1 (Beratung) · C: Alhambra-Relief (Sterne und Kreuze)", slide: bookingSlide("alhambra") },
+  { label: "Slide 1 (Beratung) · D: Kufi-Labyrinth mit Fragezeichen", slide: bookingSlide("labyrinth") },
 ];
 
 export default function HeroPreviewPage() {
