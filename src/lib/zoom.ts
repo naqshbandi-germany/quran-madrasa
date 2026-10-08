@@ -109,3 +109,20 @@ export async function deleteZoomMeeting(meetingId: string) {
     console.error(`Zoom-Meeting ${meetingId} konnte nicht geloescht werden:`, err);
   }
 }
+
+// Aendert Thema, Beginn und Dauer eines bestehenden Meetings (z. B. wenn der Termin
+// verschoben wird). Der Teilnehmer-Link bleibt gleich.
+export async function updateZoomMeeting(
+  meetingId: string,
+  params: { topic: string; startsAt: Date; durationMin: number },
+) {
+  await zoomRequest(`/meetings/${encodeURIComponent(meetingId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      topic: params.topic,
+      start_time: params.startsAt.toISOString().replace(/\.\d{3}Z$/, "Z"),
+      duration: params.durationMin,
+      timezone: "Europe/Berlin",
+    }),
+  });
+}

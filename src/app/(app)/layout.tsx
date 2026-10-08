@@ -50,7 +50,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 px-4 py-8 sm:px-8">{children}</main>
+      <main className="min-w-0 flex-1 px-4 py-8 sm:px-8">
+        {/* Feste Maximalbreite: Zeilen bleiben kurz, Aktionen liegen nah am Text */}
+        <div className="mx-auto max-w-4xl">{children}</div>
+      </main>
     </div>
   );
 }
