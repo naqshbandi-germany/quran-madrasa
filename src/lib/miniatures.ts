@@ -3,7 +3,7 @@
 // verkleinert unter public/images/miniatures/. Die Quellenangaben erscheinen auf
 // der Seite /bildnachweis.
 
-export type MiniatureKey = "quran" | "ghazali" | "shamail" | "fiqh" | "seelenlehre" | "quranHero" | "fliesenHero" | "cornerOrnament";
+export type MiniatureKey = "quran" | "ghazali" | "shamail" | "fiqh" | "seelenlehre" | "quranHero" | "reliefHero" | "cornerOrnament";
 
 export type Miniature = {
   key: MiniatureKey;
@@ -73,15 +73,15 @@ export const MINIATURES: Record<MiniatureKey, Miniature> = {
     sourceUrl: "https://www.metmuseum.org/art/collection/search/454662",
   },
   // Titelbild des Beratungs-Slides auf der Startseite (kein Kurs-Motiv, siehe miniatureFor).
-  fliesenHero: {
-    key: "fliesenHero",
-    src: "/images/hero/alhambra-fliesen.jpg",
-    focus: "50% 50%",
-    title: "Fliesenmosaik mit Sechsecken und Sternen",
-    work: "Wandmosaik (Azulejos), Nasridenpaläste, 14. Jahrhundert",
-    origin: "Alhambra, Granada. Foto: Toniflap, Dreamstime (ID 26376694), Lizenz erworben",
+  reliefHero: {
+    key: "reliefHero",
+    src: "/images/hero/relief-sanft.jpg",
+    focus: "50% 100%",
+    title: "Stuckrelief mit Sternen und Blüten (Kontrast für die Webseite abgeschwächt)",
+    work: "Wandrelief in den Nasridenpalästen, 14. Jahrhundert",
+    origin: "Alhambra, Granada. Foto: Mangojuicy, Dreamstime (ID 7726424), Lizenz erworben",
     license: "Dreamstime Royalty-free-Lizenz",
-    sourceUrl: "https://www.dreamstime.com/stock-photo-moisaic-alhambra-granada-image26376694",
+    sourceUrl: "https://www.dreamstime.com/stock-photo-decorative-arabic-reliefs-alhambra-image7726424",
   },
   // Eck-Ornament der Quran-Seite (kein Kurs-Motiv, siehe miniatureFor).
   cornerOrnament: {

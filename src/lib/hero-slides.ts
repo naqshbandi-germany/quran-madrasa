@@ -8,18 +8,24 @@ export type HeroSlide =
       title: string;
       text: string;
       image: string;
+      // "warm": Sand-/Braunton statt Blau (fuer Fotos in warmen Farben)
+      theme?: "warm";
+      // Bild hat bereits eine eigene Perspektive (z. B. Foto von schraeg unten): nicht zusaetzlich kippen
+      flat?: boolean;
       action: { type: "link"; href: string; cta: string } | { type: "booking" };
     };
 
 // Slide 1: Einladung zur kostenlosen Erstberatung (Calendly-Link ueber BookingButton).
-// Hintergrund: Fliesenmosaik der Alhambra (Lizenzfoto, siehe MINIATURES.fliesenHero).
+// Hintergrund: Stuckrelief der Alhambra in Sand-/Brauntoenen (Lizenzfoto, siehe MINIATURES.reliefHero).
 export function bookingSlide(): HeroSlide {
   return {
     kind: "feature",
     label: "Online-Unterricht · live · persönlich",
     title: "Quran und islamisches Wissen lernen – für jeden zugänglich",
     text: "Nicht sicher, welcher Kurs passt? In einem kostenlosen, unverbindlichen Erstgespräch schauen wir gemeinsam, welches Angebot zu dir oder deinem Kind passt.",
-    image: MINIATURES.fliesenHero.src,
+    image: MINIATURES.reliefHero.src,
+    theme: "warm",
+    flat: true,
     action: { type: "booking" },
   };
 }
