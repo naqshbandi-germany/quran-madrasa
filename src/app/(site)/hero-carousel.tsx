@@ -71,8 +71,10 @@ export function HeroCarousel({
             <div aria-hidden="true" className="absolute inset-0 overflow-hidden [perspective:1000px]">
               <div
                 key={index}
-                className={`absolute bg-cover [transform-origin:50%_100%] motion-reduce:animate-none ${
-                  slide.flat ? "inset-0 bg-bottom" : `bg-center ${PLANE_CLASSES}`
+                className={`absolute bg-cover motion-reduce:animate-none ${
+                  slide.flat
+                    ? "inset-0 animate-kenburns-flat bg-bottom [transform-origin:50%_50%]"
+                    : `bg-center [transform-origin:50%_100%] ${PLANE_CLASSES}`
                 }`}
                 style={{
                   backgroundImage: `url(${slide.image})`,
