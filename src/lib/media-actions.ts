@@ -142,6 +142,8 @@ export async function registerBlobFile(input: {
     return await registerBlobFileUnsafe(input);
   } catch (err) {
     console.error("Eintragen der Blob-Datei fehlgeschlagen:", err);
+    // Datei ohne Eintrag nicht im Speicher liegen lassen
+    if (typeof input.pathname === "string") await deleteBlob(input.pathname);
     const detail = err instanceof Error && err.message ? ` (${err.message})` : "";
     return { ok: false, message: `Die Datei wurde hochgeladen, konnte aber nicht eingetragen werden.${detail}` };
   }
