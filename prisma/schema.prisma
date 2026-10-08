@@ -39,6 +39,14 @@ enum AgeGroup {
   ADULTS // 23+ Jahre
 }
 
+// Beziehung des Teilnehmers zum Konto-Inhaber: er selbst, sein Kind (unter 18, Erziehungs-
+// berechtigung wird bestaetigt) oder eine andere erwachsene Person.
+enum ParticipantRelation {
+  SELF
+  CHILD
+  OTHER
+}
+
 enum Weekday {
   MONDAY
   TUESDAY
@@ -75,6 +83,7 @@ model User {
   enrollments   Enrollment[]
   subscriptions Subscription[]
   passwordResetTokens PasswordResetToken[]
+  participants  Participant[]
 }
 
 model Course {
@@ -139,15 +148,49 @@ model ClassSession {
   reminderStartSentAt DateTime?
 }
 
+// Person, die an Kursen teilnimmt. Ein Konto (User) kann mehrere Teilnehmer anlegen: sich
+// selbst, Kinder und andere Erwachsene. Der Konto-Inhaber bucht und bezahlt, muss aber nicht
+// selbst teilnehmen.
+model Participant {
+  id        String              @id @default(cuid())
+  ownerId   String
+  owner     User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String
+  relation  ParticipantRelation
+  // Nur bei Kindern: Geburtsjahr zur Alterspruefung (bewusst kein volles Geburtsdatum).
+  birthYear Int?
+  // Kontakt-E-Mail der Person. Pflicht bei SELF/OTHER (Zugangslinks), bei Kindern optional;
+  // ohne eigene Adresse gehen Mails an den Konto-Inhaber.
+  email     String?
+  // Optionale WhatsApp-Nummer (bei Kindern: Nummer der Eltern) und Einwilligung, dass sie an
+  // die Lehrkraft weitergegeben und in die Kurs-Gruppe aufgenommen wird.
+  whatsapp          String?
+  whatsappConsentAt DateTime?
+  // Nachweis: Erziehungsberechtigung (CHILD) bzw. Erwachsenen-Bestaetigung und Einverstaendnis
+  // der Person (OTHER).
+  consentConfirmedAt DateTime?
+  createdAt DateTime            @default(now())
+
+  enrollments Enrollment[]
+
+  @@index([ownerId])
+}
+
 model Enrollment {
   id        String   @id @default(cuid())
+  // Konto-Inhaber (zahlt das Abo); der Teilnehmer steht in participantId.
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id])
   courseId  String
   course    Course   @relation(fields: [courseId], references: [id])
+  // Abo, ueber das die Teilnahme bezahlt wird (ein Abo kann mehrere Teilnehmer abdecken).
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
 
-  @@unique([userId, courseId])
+  @@unique([participantId, courseId])
 }
 
 // Ein einzelner Datensatz (id fest "main") für global editierbare Website-Texte,
@@ -174,8 +217,12 @@ model Subscription {
   status               SubscriptionStatus
   currentPeriodEnd     DateTime
   cancelAtPeriodEnd    Boolean            @default(false)
+  // Anzahl der Teilnehmer, die dieses Abo bezahlt (Stripe-Menge der Position).
+  quantity             Int                @default(1)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
+
+  enrollments Enrollment[]
 }
 
 // Einmal-Link zum Zuruecksetzen des Passworts. Gespeichert wird nur der Hash des Tokens,

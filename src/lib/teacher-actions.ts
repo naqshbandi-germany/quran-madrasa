@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { auth } from "@/auth";
 import { createClassroomMeeting, createClassroomMeetings } from "@/lib/classroom";
+import { groupRecipients } from "@/lib/enrollment-recipients";
 import { materialEmailHtml } from "@/lib/material-email";
 import { prisma } from "@/lib/prisma";
 import { MATERIAL_EMAIL_FROM, getResend } from "@/lib/resend";
@@ -296,27 +297,33 @@ export async function sendCourseMaterial(formData: FormData) {
 
   const course = await prisma.course.findUniqueOrThrow({
     where: { id: parsed.courseId },
-    include: { enrollments: { include: { user: { select: { name: true, email: true } } } } },
+    include: {
+      enrollments: {
+        include: {
+          user: { select: { name: true, email: true } },
+          participant: { select: { name: true, email: true } },
+        },
+      },
+    },
   });
   assertOwnsCourse(session, course.teacherId);
 
   const resend = getResend();
 
-  for (const enrollment of course.enrollments) {
-    const { user } = enrollment;
+  for (const recipient of groupRecipients(course.enrollments)) {
     try {
       await resend.emails.send({
         from: MATERIAL_EMAIL_FROM,
-        to: user.email,
+        to: recipient.email,
         subject: parsed.subject,
         html: materialEmailHtml({
-          studentName: user.name,
+          studentName: recipient.greetingName,
           courseTitle: course.title,
           message: parsed.message,
         }),
       });
     } catch (err) {
-      console.error(`Kursmaterial-E-Mail an ${user.email} fehlgeschlagen:`, err);
+      console.error(`Kursmaterial-E-Mail an ${recipient.email} fehlgeschlagen:`, err);
     }
   }
 

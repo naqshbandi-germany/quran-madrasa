@@ -110,7 +110,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
               <p className="text-xl font-bold text-brand-700">Preis auf Anfrage</p>
             )}
           </div>
-          {course.stripePriceId && <SubscribeButton courseId={course.id} slug={course.slug} />}
+          {course.stripePriceId && <SubscribeButton slug={course.slug} />}
         </div>
         {!course.stripePriceId && (
           <p className="mt-3 text-sm text-brand-600">

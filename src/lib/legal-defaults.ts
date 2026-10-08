@@ -57,6 +57,9 @@ export function defaultPrivacyPolicy(zoom: boolean, google = false) {
   "## 6. Kursanmeldung und Zahlung",
   "Kurse werden als Abonnement über Stripe abgewickelt (Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Grand Canal Dock, Dublin, Irland, ggf. Stripe, Inc., USA). Deine Zahlungsdaten gibst du direkt bei Stripe ein; wir erhalten keine Kartendaten, sondern nur Angaben wie den Abo-Status. Rechtsgrundlage sind Art. 6 Abs. 1 lit. b DSGVO (Vertrag) und lit. c DSGVO (steuer- und handelsrechtliche Aufbewahrungspflichten).",
 
+  "## 6a. Teilnehmer, Kinder und WhatsApp",
+  "Mit einem Konto kannst du dich selbst, deine Kinder oder andere erwachsene Personen zu Kursen anmelden. Dafür speichern wir pro Teilnehmer den Namen, bei Kindern das Geburtsjahr (zur Alterskontrolle), optional eine E-Mail-Adresse für Zugangslinks sowie den Zeitpunkt deiner Bestätigung, dass du für das Kind sorgeberechtigt bzw. die andere Person mit der Anmeldung einverstanden ist. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Vertrag mit dem Konto-Inhaber) und bei Angaben zu anderen Personen deren bzw. die Einwilligung der Sorgeberechtigten (Art. 6 Abs. 1 lit. a, Art. 8 DSGVO).\n\nOptional kannst du eine WhatsApp-Nummer angeben (bei Kindern die der Eltern). Mit deiner ausdrücklichen Einwilligung geben wir sie an die Lehrkraft des Kurses weiter, die dich in die WhatsApp-Gruppe des Kurses aufnimmt. WhatsApp wird von WhatsApp Ireland Limited (Meta) betrieben und verarbeitet dabei eigene Daten nach seinen Datenschutzhinweisen. Die Einwilligung kannst du jederzeit widerrufen, dann entfernen wir die Nummer und dich aus der Gruppe. Die Teilnahme am Kurs ist auch ohne WhatsApp möglich.",
+
   "## 7. E-Mail-Versand",
   "Für den Versand von E-Mails nutzen wir Resend (Resend, Inc., USA). Wir senden dir Erinnerungen vor Kursterminen sowie Mitteilungen und Kursmaterial deiner Lehrer zu Kursen, in die du eingeschrieben bist. Verarbeitet werden dein Name, deine E-Mail-Adresse und der Kurs. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Werbliche E-Mails versenden wir nur mit deiner Einwilligung.",
 
@@ -72,7 +75,7 @@ export function defaultPrivacyPolicy(zoom: boolean, google = false) {
   "Wir löschen personenbezogene Daten, sobald der Zweck entfällt, spätestens mit der Löschung deines Kontos, soweit keine gesetzlichen Aufbewahrungspflichten entgegenstehen.",
 
   "## 12. Kinder und Jugendliche",
-  "Unsere Kurse richten sich teilweise an Kinder und Jugendliche. Konten und Anmeldungen für Kinder unter 16 Jahren sollen durch die Erziehungsberechtigten erfolgen.",
+  "Unsere Kurse richten sich teilweise an Kinder und Jugendliche. Konten können nur Erwachsene (ab 18 Jahren) anlegen. Kinder und Jugendliche unter 18 Jahren werden von ihren Sorgeberechtigten als Teilnehmer angemeldet; dabei bestätigen die Sorgeberechtigten ihre Berechtigung.",
 
   "## 13. Deine Rechte",
   "Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21). Erteilte Einwilligungen kannst du jederzeit widerrufen. Wende dich dazu an admin@islamunterfreunden.de. Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren. Zuständig ist: [zuständige Landesdatenschutzbehörde ergänzen].",

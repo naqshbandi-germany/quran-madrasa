@@ -1,6 +1,7 @@
 import { Weekday } from "@prisma/client";
 import { notFound } from "next/navigation";
 
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
   createClassSession,
@@ -24,10 +25,23 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
     include: {
       sessions: { orderBy: { startsAt: "asc" } },
       scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
-      enrollments: { include: { user: { select: { name: true } } }, orderBy: { createdAt: "asc" } },
+      enrollments: { include: { participant: true }, orderBy: { createdAt: "asc" } },
     },
   });
   if (!course) notFound();
+
+  // Lehrer sehen nur ihre eigenen Kurse (Teilnehmerdaten), Admins alle.
+  const session = await auth();
+  if (session?.user.role !== "ADMIN" && session?.user.id !== course.teacherId) notFound();
+
+  // WhatsApp-Nummern nur mit Einwilligung, je Nummer einmal (Geschwister teilen oft die Nummer).
+  const whatsappMembers: { id: string; name: string; whatsapp: string }[] = [];
+  for (const { participant } of course.enrollments) {
+    if (!participant.whatsapp || !participant.whatsappConsentAt) continue;
+    const existing = whatsappMembers.find((m) => m.whatsapp === participant.whatsapp);
+    if (existing) existing.name += `, ${participant.name}`;
+    else whatsappMembers.push({ id: participant.id, name: participant.name, whatsapp: participant.whatsapp });
+  }
 
   const zoom = isZoomProvider();
   const meetingKind = zoom ? "Zoom" : "Jitsi";
@@ -268,7 +282,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         ) : (
           <div className="rounded-lg border border-brand-200 bg-white p-5">
             <p className="mb-4 text-sm text-brand-600">
-              Empfänger: {course.enrollments.map((e) => e.user.name).join(", ")} (
+              Empfänger: {course.enrollments.map((e) => e.participant.name).join(", ")} (
               {course.enrollments.length} Teilnehmer)
             </p>
             <form action={sendCourseMaterial} className="space-y-3">
@@ -290,6 +304,29 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                 An {course.enrollments.length} Teilnehmer senden
               </button>
             </form>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-semibold text-brand-700">WhatsApp-Gruppe des Kurses</h2>
+        {whatsappMembers.length === 0 ? (
+          <p className="text-sm text-brand-600">
+            Noch niemand hat eine WhatsApp-Nummer für die Kurs-Gruppe angegeben.
+          </p>
+        ) : (
+          <div className="rounded-lg border border-brand-200 bg-white p-5">
+            <p className="mb-3 text-sm text-brand-600">
+              Diese Teilnehmer haben der Aufnahme in die WhatsApp-Gruppe zugestimmt. Bei Kindern ist
+              es die Nummer der Eltern. Bitte verwende die Nummern nur dafür.
+            </p>
+            <ul className="space-y-1 text-sm">
+              {whatsappMembers.map((m) => (
+                <li key={m.id}>
+                  <span className="font-medium">{m.name}</span>: {m.whatsapp}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </section>
