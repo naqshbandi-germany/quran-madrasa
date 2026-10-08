@@ -1,11 +1,10 @@
 import { auth } from "@/auth";
-import { ConfirmButton } from "@/components/confirm-button";
-import { DownloadIcon, FileIcon, TrashIcon } from "@/components/icons";
+import { MediaBrowser } from "@/components/media-browser";
+import { UploadForm } from "@/components/media-upload-form";
 import { blobAccess, isBlobConfigured } from "@/lib/blob";
 import { ALLOWED_EXTENSIONS, MAX_BLOB_FILE_BYTES, MAX_FILE_BYTES, formatBytes } from "@/lib/media";
-import { deleteMediaFile } from "@/lib/media-actions";
+import { toMediaItem } from "@/lib/media-items";
 import { prisma } from "@/lib/prisma";
-import { UploadForm } from "./upload-form";
 
 export const metadata = { title: "Mediathek – Quran Madrasa" };
 export const dynamic = "force-dynamic";
@@ -24,11 +23,14 @@ export default async function MediaLibraryPage() {
       id: true,
       title: true,
       fileName: true,
+      mimeType: true,
       sizeBytes: true,
       createdAt: true,
+      blobPathname: true,
       owner: { select: { name: true } },
     },
   });
+  const items = files.map((file) => toMediaItem({ ...file, owner: isAdmin ? file.owner : null }));
 
   return (
     <div className="space-y-8">
@@ -53,46 +55,9 @@ export default async function MediaLibraryPage() {
 
       <section aria-labelledby="dateien" className="space-y-3">
         <h2 id="dateien" className="font-semibold text-brand-700">
-          Deine Dateien ({files.length})
+          {isAdmin ? "Alle Dateien" : "Deine Dateien"} ({items.length})
         </h2>
-        {files.length === 0 ? (
-          <p className="text-sm text-brand-600">Noch keine Dateien hochgeladen.</p>
-        ) : (
-          <ul className="divide-y divide-brand-100 rounded-lg border border-brand-200 bg-white text-sm">
-            {files.map((file) => (
-              <li key={file.id} className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
-                <FileIcon className="h-5 w-5 shrink-0 text-brand-600" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-brand-900">{file.title}</p>
-                  <p className="truncate text-brand-600">
-                    {file.fileName} · {formatBytes(file.sizeBytes)} ·{" "}
-                    {new Intl.DateTimeFormat("de-DE").format(file.createdAt)}
-                    {isAdmin ? ` · von ${file.owner.name}` : ""}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <a
-                    href={`/api/media/${file.id}`}
-                    className="inline-flex items-center gap-1.5 rounded-md font-medium text-azure-800 hover:text-azure-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700"
-                  >
-                    <DownloadIcon />
-                    Herunterladen
-                  </a>
-                  <form action={deleteMediaFile}>
-                    <input type="hidden" name="fileId" value={file.id} />
-                    <ConfirmButton
-                      message={`„${file.title}“ wirklich aus der Mediathek entfernen?`}
-                      className="inline-flex items-center gap-1.5 rounded-md font-medium text-red-800 hover:text-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
-                    >
-                      <TrashIcon />
-                      Entfernen
-                    </ConfirmButton>
-                  </form>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <MediaBrowser items={items} mode="manage" />
       </section>
     </div>
   );

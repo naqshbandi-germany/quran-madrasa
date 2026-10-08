@@ -5,7 +5,7 @@ import { streamMediaFile } from "@/lib/media-stream";
 import { prisma } from "@/lib/prisma";
 
 // Download einer Datei aus der Mediathek. Nur fuer Lehrer (eigene Dateien) und Admins.
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session || (session.user.role !== "TEACHER" && session.user.role !== "ADMIN")) {
     return NextResponse.json({ error: "Nicht berechtigt." }, { status: 401 });
@@ -17,5 +17,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
   }
 
-  return streamMediaFile(file);
+  // ?inline=1 zeigt die Datei im Browser an (Vorschau), sonst wird sie heruntergeladen.
+  const inline = new URL(request.url).searchParams.get("inline") === "1";
+  return streamMediaFile(file, { inline });
 }
