@@ -27,6 +27,7 @@ type OutgoingEmail = {
   to: string;
   subject: string;
   html: string;
+  replyTo?: string;
   attachments?: { filename: string; content: Buffer }[];
 };
 

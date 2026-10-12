@@ -18,7 +18,7 @@ export default async function BillingPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-brand-700">Abo verwalten</h1>
+      <h1 className="text-2xl font-bold text-azure-800">Abo verwalten</h1>
       <p className="text-brand-600">
         Alle Abos sind monatlich kündbar. Die Verwaltung (Kündigung, Zahlungsmethode ändern,
         Rechnungen) läuft über unser sicheres Stripe-Kundenportal.
@@ -30,7 +30,7 @@ export default async function BillingPage() {
           return (
             <div
               key={subscription.id}
-              className="flex items-center justify-between rounded-lg border border-brand-200 bg-white p-4"
+              className="flex items-center justify-between border border-gold-400/40 bg-white p-4"
             >
               <div>
                 <p className="font-medium text-brand-700">{course?.title ?? subscription.courseId}</p>

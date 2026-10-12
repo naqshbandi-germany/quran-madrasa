@@ -35,7 +35,7 @@ export default async function MediaLibraryPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-brand-700">Mediathek</h1>
+        <h1 className="text-2xl font-bold text-azure-800">Mediathek</h1>
         <p className="mt-1 text-sm text-brand-600">
           Hier legst du Lehrmaterial ab (z. B. Arbeitsblätter als PDF). Beim Versand einer E-Mail an
           deine Kursteilnehmer wählst du die Dateien als Anhang aus.
@@ -43,7 +43,7 @@ export default async function MediaLibraryPage() {
       </div>
 
       <section aria-labelledby="hochladen" className="space-y-3">
-        <h2 id="hochladen" className="font-semibold text-brand-700">
+        <h2 id="hochladen" className="font-semibold text-azure-800">
           Datei hochladen
         </h2>
         <UploadForm blobEnabled={blobEnabled} blobAccess={blobAccess()} userId={session.user.id} />
@@ -54,7 +54,7 @@ export default async function MediaLibraryPage() {
       </section>
 
       <section aria-labelledby="dateien" className="space-y-3">
-        <h2 id="dateien" className="font-semibold text-brand-700">
+        <h2 id="dateien" className="font-semibold text-azure-800">
           {isAdmin ? "Alle Dateien" : "Deine Dateien"} ({items.length})
         </h2>
         <MediaBrowser items={items} mode="manage" />

@@ -21,7 +21,7 @@ export type ComposerCourse = {
 export type ComposerUpload = { blobEnabled: boolean; blobAccess: "public" | "private"; userId: string };
 
 const INITIAL: ActionResult = { ok: false };
-const INPUT = "w-full rounded-md border border-brand-200 bg-white px-3 py-2";
+const INPUT = "w-full border border-brand-300 bg-white px-3 py-2";
 
 // Auswahlfenster ("Pop-up") mit der Mediathek: Dateien anhaken, bei Bedarf eine neue hochladen.
 // Wird per Portal an das Seitenende gehaengt, weil der Upload ein eigenes Formular ist und nicht
@@ -53,23 +53,23 @@ function MediaPicker({
         if (event.target === ref.current) onClose();
       }}
       aria-label="Mediathek"
-      className="m-auto h-[min(46rem,92vh)] w-[min(64rem,96vw)] rounded-lg border border-brand-200 bg-white p-0 shadow-xl backdrop:bg-black/60"
+      className="m-auto h-[min(46rem,92vh)] w-[min(64rem,96vw)] border border-gold-400/40 bg-white p-0 shadow-xl backdrop:bg-black/60"
     >
       <div className="flex h-full flex-col">
         <div className="flex items-center justify-between gap-4 border-b border-brand-100 px-5 py-3">
-          <h2 className="text-lg font-semibold text-brand-900">Mediathek: Dateien für die E-Mail auswählen</h2>
+          <h2 className="text-lg font-semibold text-azure-800">Mediathek: Dateien für die E-Mail auswählen</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fenster schließen"
-            className="rounded-md p-1.5 text-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-azure-700"
+            className="p-1.5 text-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-azure-700"
           >
             <XIcon className="h-5 w-5" />
           </button>
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          <details className="rounded-lg border border-brand-200 bg-brand-50">
+          <details className="border border-brand-200 bg-brand-50">
             <summary className="cursor-pointer px-4 py-2.5 text-sm font-medium text-azure-800">
               Neue Datei hochladen
             </summary>
@@ -87,7 +87,7 @@ function MediaPicker({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md bg-brand-600 px-5 py-2 font-medium text-white hover:bg-brand-700"
+            className="btn-primary px-5 py-2"
           >
             Fertig
           </button>
@@ -151,7 +151,7 @@ export function EmailComposer({
   }
 
   return (
-    <form action={action} className="space-y-5 rounded-lg border border-brand-200 bg-white p-5">
+    <form action={action} className="space-y-5 border border-gold-400/40 bg-white p-5">
       {/* Kurs */}
       {courses.length > 1 ? (
         <label className="flex flex-col text-sm font-medium text-brand-700">
@@ -204,7 +204,7 @@ export function EmailComposer({
         </label>
 
         {mode === "selected" && (
-          <div className="ml-6 rounded-md border border-brand-100 bg-brand-50 p-3">
+          <div className="ml-6 border border-brand-100 bg-brand-50 p-3">
             {participants.length === 0 ? (
               <p className="text-sm text-brand-600">In diesem Kurs sind noch keine Teilnehmer angemeldet.</p>
             ) : (
@@ -287,7 +287,7 @@ export function EmailComposer({
             {attachedFiles.map((f) => (
               <li
                 key={f.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-brand-200 bg-brand-50 px-3 py-2 text-sm"
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 border border-brand-200 bg-brand-50 px-3 py-2 text-sm"
               >
                 <input type="hidden" name="fileIds" value={f.id} />
                 <FileIcon className="h-4 w-4 shrink-0 text-brand-600" />
@@ -313,7 +313,7 @@ export function EmailComposer({
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
-            className="rounded-md border border-azure-800 px-4 py-2 text-sm font-medium text-azure-800 transition hover:bg-azure-800 hover:text-white"
+            className="border border-azure-800 px-4 py-2 text-sm font-medium text-azure-800 transition hover:bg-azure-800 hover:text-white"
           >
             {attachedFiles.length > 0 ? "Auswahl ändern …" : "Aus der Mediathek wählen …"}
           </button>
@@ -330,7 +330,7 @@ export function EmailComposer({
       {state.message && (
         <p
           role={state.ok ? "status" : "alert"}
-          className={`rounded-md px-3 py-2 text-sm ${state.ok ? "bg-green-50 text-green-900" : "bg-red-50 text-red-900"}`}
+          className={`px-3 py-2 text-sm ${state.ok ? "bg-green-50 text-green-900" : "bg-red-50 text-red-900"}`}
         >
           {state.message}
         </p>
@@ -339,7 +339,7 @@ export function EmailComposer({
       <button
         type="submit"
         disabled={pending || recipientCount === 0}
-        className="rounded-md bg-brand-600 px-5 py-2.5 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+        className="btn-primary px-5 py-2.5 disabled:opacity-60"
       >
         {pending ? "Wird gesendet …" : `An ${recipientCount} Teilnehmer senden`}
       </button>

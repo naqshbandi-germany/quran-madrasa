@@ -49,7 +49,7 @@ export function SiteNav() {
               </svg>
             </Link>
             <div className="invisible absolute left-0 top-full z-50 pt-3 opacity-0 transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-              <ul className="min-w-56 rounded-md border border-brand-200 bg-white py-2 shadow-lg">
+              <ul className="min-w-56 border border-gold-400/40 bg-white py-2 shadow-lg">
                 {COURSE_LINKS.map((link) => (
                   <li key={link.href}>
                     <Link
@@ -81,7 +81,7 @@ export function SiteNav() {
           aria-expanded={open}
           aria-controls="mobile-menu"
           onClick={() => setOpenOnPath(open ? null : pathname)}
-          className="rounded-md border border-brand-200 p-2 text-azure-800 lg:hidden"
+          className="border border-brand-200 p-2 text-azure-800 lg:hidden"
         >
           <svg
             viewBox="0 0 24 24"
@@ -103,7 +103,7 @@ export function SiteNav() {
         >
           <Link
             href="/"
-            className={`rounded-md px-2 py-2.5 hover:bg-brand-100 ${LINK_STYLE}`}
+            className={`px-2 py-2.5 hover:bg-brand-100 ${LINK_STYLE}`}
           >
             Kursangebot
           </Link>
@@ -111,7 +111,7 @@ export function SiteNav() {
             <Link
               key={link.href}
               href={link.href}
-              className={`rounded-md py-2 pl-7 pr-2 text-sm hover:bg-brand-100 ${LINK_STYLE}`}
+              className={`py-2 pl-7 pr-2 text-sm hover:bg-brand-100 ${LINK_STYLE}`}
             >
               {link.label}
             </Link>
@@ -120,7 +120,7 @@ export function SiteNav() {
             <Link
               key={link.href}
               href={link.href}
-              className={`rounded-md px-2 py-2.5 hover:bg-brand-100 ${LINK_STYLE}`}
+              className={`px-2 py-2.5 hover:bg-brand-100 ${LINK_STYLE}`}
             >
               {link.label}
             </Link>

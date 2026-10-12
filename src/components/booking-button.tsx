@@ -16,15 +16,15 @@ export function BookingButton({
 
   const styles =
     variant === "primary"
-      ? "bg-brand-600 text-white hover:bg-brand-700"
-      : "border border-brand-600 text-brand-700 hover:bg-brand-50";
+      ? "btn-primary btn-display"
+      : "border border-brass text-brand-700 hover:bg-brand-50";
 
   return (
     <a
       href={BOOKING_URL}
       target="_blank"
       rel="noreferrer"
-      className={`inline-block rounded-md px-5 py-2.5 text-center font-medium transition ${styles} ${className}`}
+      className={`px-6 py-3 ${variant === "primary" ? "" : "inline-block font-medium transition"} ${styles} ${className}`}
     >
       {children}
     </a>

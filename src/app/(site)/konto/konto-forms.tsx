@@ -19,7 +19,7 @@ import { childBirthYearRange } from "@/lib/participant-rules";
 const INITIAL: ActionResult = { ok: false };
 
 const PRIMARY_BUTTON =
-  "h-11 rounded-md bg-brand-600 px-5 font-medium text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60";
+  "btn-primary btn-display h-11 px-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60";
 
 // Rückmeldung nach dem Speichern: Erfolg grün, Fehler rot (Screenreader lesen sie vor).
 function Feedback({ result }: { result: ActionResult }) {
@@ -27,7 +27,7 @@ function Feedback({ result }: { result: ActionResult }) {
   return (
     <p
       role={result.ok ? "status" : "alert"}
-      className={`rounded-md px-3 py-2 text-sm ${
+      className={`px-3 py-2 text-sm ${
         result.ok ? "bg-green-50 text-green-900" : "bg-red-50 text-red-900"
       }`}
     >
@@ -41,7 +41,7 @@ export function ProfileForm({ name, email }: { name: string; email: string }) {
   // Eingaben als State halten: React leert unkontrollierte Felder nach jeder Formular-Aktion.
   const [value, setValue] = useState(name);
   return (
-    <form action={action} className="space-y-4 rounded-lg border border-brand-200 bg-white p-5">
+    <form action={action} className="space-y-4 border border-gold-400/40 bg-white p-5">
       <FloatingField
         id="profile-name"
         name="name"
@@ -80,7 +80,7 @@ export function PasswordForm() {
     return result;
   }, INITIAL);
   return (
-    <form action={action} className="space-y-4 rounded-lg border border-brand-200 bg-white p-5">
+    <form action={action} className="space-y-4 border border-gold-400/40 bg-white p-5">
       <PasswordField
         id="current-password"
         name="currentPassword"
@@ -135,7 +135,7 @@ export function ParticipantEditor({ participant }: { participant: EditablePartic
   const fid = (field: string) => `participant-${participant.id}-${field}`;
 
   return (
-    <div className="rounded-lg border border-brand-200 bg-white p-5">
+    <div className="border border-gold-400/40 bg-white p-5">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div>
           <p className="font-semibold text-brand-900">
@@ -230,7 +230,7 @@ export function ParticipantEditor({ participant }: { participant: EditablePartic
               />
             </>
           )}
-          <div className="space-y-3 rounded-md bg-brand-50 p-4">
+          <div className="space-y-3 bg-brand-50 p-4">
             <FloatingField
               id={fid("whatsapp")}
               name="whatsapp"

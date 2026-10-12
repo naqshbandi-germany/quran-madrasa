@@ -31,17 +31,17 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-brand-700">Admin-Bereich</h1>
+      <h1 className="text-2xl font-bold text-azure-800">Admin-Bereich</h1>
 
-      <section className="rounded-lg border border-brand-200 bg-white p-5">
-        <h2 className="mb-4 font-semibold text-brand-700">Lehrer</h2>
+      <section className="border border-gold-400/40 bg-white p-5">
+        <h2 className="mb-4 font-semibold text-azure-800">Lehrer</h2>
 
         {teachers.length === 0 ? (
           <p className="mb-4 text-sm text-brand-600">Noch keine Lehrer angelegt.</p>
         ) : (
           <div className="mb-4 space-y-2">
             {teachers.map((teacher) => (
-              <details key={teacher.id} className="rounded-md border border-brand-200 px-3 py-2">
+              <details key={teacher.id} className="border border-brand-300 px-3 py-2">
                 <summary className="cursor-pointer text-sm text-brand-900">
                   {teacher.name} ({teacher.email}) · {teacher._count.taughtCourses} Kurse
                 </summary>
@@ -54,23 +54,23 @@ export default async function AdminPage() {
                     name="image"
                     placeholder="Foto-URL (https://...)"
                     defaultValue={teacher.image ?? ""}
-                    className="rounded-md border border-brand-200 px-3 py-2 text-sm"
+                    className="border border-brand-300 px-3 py-2 text-sm"
                   />
                   <input
                     name="zoomEmail"
                     type="email"
                     placeholder="Zoom-Konto (E-Mail, nur bei Zoom-Betrieb)"
                     defaultValue={teacher.zoomEmail ?? ""}
-                    className="rounded-md border border-brand-200 px-3 py-2 text-sm sm:col-span-2"
+                    className="border border-brand-300 px-3 py-2 text-sm sm:col-span-2"
                   />
                   <textarea
                     name="bio"
                     placeholder="Kurze Vita"
                     defaultValue={teacher.bio ?? ""}
                     rows={2}
-                    className="rounded-md border border-brand-200 px-3 py-2 text-sm sm:col-span-2"
+                    className="border border-brand-300 px-3 py-2 text-sm sm:col-span-2"
                   />
-                  <button className="rounded-md bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-700 sm:col-span-2 sm:w-fit">
+                  <button className="btn-primary px-4 py-1.5 text-sm sm:col-span-2 sm:w-fit">
                     Profil speichern
                   </button>
                 </form>
@@ -84,14 +84,14 @@ export default async function AdminPage() {
             name="name"
             placeholder="Name"
             required
-            className="rounded-md border border-brand-200 px-3 py-2"
+            className="border border-brand-300 px-3 py-2"
           />
           <input
             name="email"
             type="email"
             placeholder="E-Mail"
             required
-            className="rounded-md border border-brand-200 px-3 py-2"
+            className="border border-brand-300 px-3 py-2"
           />
           <input
             name="password"
@@ -99,16 +99,16 @@ export default async function AdminPage() {
             placeholder="Vorläufiges Passwort (min. 8 Zeichen)"
             required
             minLength={8}
-            className="rounded-md border border-brand-200 px-3 py-2"
+            className="border border-brand-300 px-3 py-2"
           />
-          <button className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
+          <button className="btn-primary col-span-full px-4 py-2">
             Lehrer-Account anlegen
           </button>
         </form>
       </section>
 
-      <section className="rounded-lg border border-brand-200 bg-white p-5">
-        <h2 className="mb-4 font-semibold text-brand-700">Website-Inhalte</h2>
+      <section className="border border-gold-400/40 bg-white p-5">
+        <h2 className="mb-4 font-semibold text-azure-800">Website-Inhalte</h2>
         <form action={updateSiteContent} className="space-y-3">
           <label className="block text-sm text-brand-700">
             Statement of Purpose (Seite &quot;Ziel &amp; Zweck&quot;)
@@ -117,17 +117,17 @@ export default async function AdminPage() {
               defaultValue={siteContent?.missionStatement ?? ""}
               rows={6}
               placeholder="Unser Ziel ist es, hochwertigen Quran-Unterricht kostengünstig und für jeden zugänglich zu machen..."
-              className="mt-1 w-full rounded-md border border-brand-200 px-3 py-2 text-sm"
+              className="mt-1 w-full border border-brand-300 px-3 py-2 text-sm"
             />
           </label>
-          <button className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
+          <button className="btn-primary px-4 py-2">
             Text speichern
           </button>
         </form>
       </section>
 
-      <section className="rounded-lg border border-brand-200 bg-white p-5">
-        <h2 className="mb-1 font-semibold text-brand-700">Rechtstexte</h2>
+      <section className="border border-gold-400/40 bg-white p-5">
+        <h2 className="mb-1 font-semibold text-azure-800">Rechtstexte</h2>
         <p className="mb-4 text-sm text-brand-600">
           Impressum und Datenschutzerklärung der Website. Absätze durch Leerzeilen trennen,
           Zwischenüberschriften mit &quot;## &quot; am Zeilenanfang. Angezeigt wird der hier
@@ -142,7 +142,7 @@ export default async function AdminPage() {
               name="impressum"
               defaultValue={siteContent?.impressum || DEFAULT_IMPRESSUM}
               rows={14}
-              className="mt-1 w-full rounded-md border border-brand-200 px-3 py-2 font-mono text-sm"
+              className="mt-1 w-full border border-brand-300 px-3 py-2 font-mono text-sm"
             />
           </label>
           <label className="block text-sm text-brand-700">
@@ -151,17 +151,17 @@ export default async function AdminPage() {
               name="privacyPolicy"
               defaultValue={siteContent?.privacyPolicy || defaultPrivacyPolicy(isZoomProvider(), isGoogleAuthConfigured())}
               rows={24}
-              className="mt-1 w-full rounded-md border border-brand-200 px-3 py-2 font-mono text-sm"
+              className="mt-1 w-full border border-brand-300 px-3 py-2 font-mono text-sm"
             />
           </label>
-          <button className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
+          <button className="btn-primary px-4 py-2">
             Rechtstexte speichern
           </button>
         </form>
       </section>
 
-      <section className="rounded-lg border border-brand-200 bg-white p-5">
-        <h2 className="mb-4 font-semibold text-brand-700">Alle Kurse</h2>
+      <section className="border border-gold-400/40 bg-white p-5">
+        <h2 className="mb-4 font-semibold text-azure-800">Alle Kurse</h2>
 
         {courses.length === 0 ? (
           <p className="text-sm text-brand-600">Noch keine Kurse angelegt.</p>
@@ -170,7 +170,7 @@ export default async function AdminPage() {
             {courses.map((course) => (
               <li
                 key={course.id}
-                className="flex items-center justify-between rounded-md bg-brand-50 px-3 py-2 text-sm"
+                className="flex items-center justify-between bg-brand-50 px-3 py-2 text-sm"
               >
                 <span>
                   {course.title} · Lehrer: {course.teacher.name} · {course._count.enrollments}{" "}

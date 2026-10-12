@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen flex-col sm:flex-row">
-      <aside className="flex shrink-0 flex-col border-b border-brand-200 bg-white sm:min-h-screen sm:w-60 sm:border-b-0 sm:border-r">
+      <aside className="flex shrink-0 flex-col border-b border-gold-400/40 bg-white sm:min-h-screen sm:w-60 sm:border-b-0 sm:border-r">
         <div className="px-4 py-4">
           <Link href="/" className="text-lg font-semibold text-brand-700">
             Quran Madrasa
@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Link
               key={link.href}
               href={link.href}
-              className="shrink-0 rounded-md px-3 py-2 font-medium text-brand-700 hover:bg-brand-50"
+              className="shrink-0 px-3 py-2 font-medium text-brand-700 hover:bg-brand-50"
             >
               {link.label}
             </Link>

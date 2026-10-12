@@ -48,7 +48,7 @@ export function CopyButton({
       type="button"
       onClick={copy}
       aria-label={ariaLabel}
-      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-azure-800 transition hover:bg-azure-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-azure-700 ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-azure-800 transition hover:bg-azure-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-azure-700 ${className}`}
     >
       {copied ? <CheckIcon className="h-4 w-4 text-green-700" /> : <CopyIcon />}
       <span aria-live="polite">{copied ? "Kopiert" : label}</span>

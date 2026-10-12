@@ -1,4 +1,5 @@
 import { SubscriptionStatus } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import type Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
@@ -44,9 +45,17 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
     update: data,
   });
 
+  // Belegte Plaetze aendern sich: Kursseiten ("ausgebucht") neu erzeugen.
+  const refreshCourses = () => {
+    revalidatePath("/courses/[slug]", "page");
+    revalidatePath("/");
+    revalidatePath("/quran");
+  };
+
   if (data.status === "CANCELED") {
     // Abo beendet: Teilnahme entfaellt (Zugang zu Sitzungen und Mails).
     await prisma.enrollment.deleteMany({ where: { subscriptionId: saved.id } });
+    refreshCourses();
     return;
   }
 
@@ -84,4 +93,5 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
       update: { subscriptionId: saved.id },
     });
   }
+  refreshCourses();
 }

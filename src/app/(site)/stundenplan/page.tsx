@@ -21,7 +21,7 @@ export default async function TimetablePage() {
     <div className="space-y-6">
       <section className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-semibold text-brand-900">Stundenplan</h1>
+          <h1 className="text-4xl font-semibold text-azure-800">Stundenplan</h1>
           <OrnamentDivider className="mt-3" />
           <p className="mt-3 max-w-xl text-brand-900/75">
             Alle wöchentlichen Unterrichtszeiten auf einen Blick, in deutscher Zeit. Klick auf einen
@@ -32,7 +32,7 @@ export default async function TimetablePage() {
           <a
             href="/stundenplan/pdf"
             download
-            className="rounded-md border border-azure-800 px-4 py-2 text-sm font-medium text-azure-800 transition hover:bg-azure-800 hover:text-white"
+            className="border border-azure-800 px-4 py-2 text-sm font-medium text-azure-800 transition hover:bg-azure-800 hover:text-white"
           >
             Als PDF herunterladen
           </a>
@@ -45,7 +45,7 @@ export default async function TimetablePage() {
         <TimetableView timetable={timetable} />
       )}
 
-      <div className="rounded-md border border-brand-200 bg-white p-6 text-center">
+      <div className="border border-gold-400/40 bg-white p-6 text-center">
         <p className="mb-3 text-brand-900/80">
           Nicht sicher, welcher Kurs passt? Lass uns das in einem kurzen, kostenlosen Gespräch
           klären.

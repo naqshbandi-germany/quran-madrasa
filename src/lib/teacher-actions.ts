@@ -39,6 +39,12 @@ const createCourseSchema = z.object({
     .transform((v) => (v && v.trim() !== "" ? v.trim() : null)),
   ageGroups: z.array(z.nativeEnum(AgeGroup)).default([]),
   priceCents: z.coerce.number().int().positive(),
+  // leer = unbegrenzt
+  maxParticipants: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? Number(v) : null))
+    .pipe(z.number().int().min(1).max(500).nullable()),
 });
 
 export async function createCourse(formData: FormData) {
@@ -52,6 +58,7 @@ export async function createCourse(formData: FormData) {
     level: formData.get("level"),
     ageGroups: formData.getAll("ageGroups"),
     priceCents: formData.get("priceCents"),
+    maxParticipants: formData.get("maxParticipants") ?? undefined,
   });
 
   await prisma.course.create({

@@ -1,5 +1,6 @@
 import { OrnamentDivider } from "@/components/ornament";
 import { bookingSlide, quranSlide, type HeroSlide } from "@/lib/hero-slides";
+import { capacityOf } from "@/lib/course-capacity";
 import { prisma } from "@/lib/prisma";
 import type { CatalogCourse } from "@/lib/course-labels";
 import { CourseCatalog } from "./course-catalog";
@@ -15,6 +16,7 @@ export default async function HomePage() {
     orderBy: { title: "asc" },
     include: {
       teacher: { select: { name: true } },
+      _count: { select: { enrollments: true } },
       scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
     },
   });
@@ -30,6 +32,7 @@ export default async function HomePage() {
     priceCents: course.priceCents,
     currency: course.currency,
     teacherName: course.teacher.name,
+    isFull: capacityOf(course.maxParticipants, course._count.enrollments).isFull,
     scheduleSlots: course.scheduleSlots.map((slot) => ({
       weekday: slot.weekday,
       startTime: slot.startTime,
@@ -59,7 +62,7 @@ export default async function HomePage() {
       </div>
 
       <section>
-        <h2 className="text-3xl font-bold text-brand-700">Unser Kursangebot</h2>
+        <h2 className="text-3xl font-bold text-azure-800">Unser Kursangebot</h2>
         <OrnamentDivider className="mt-3" />
         <p className="mt-2 text-brand-600">
           Online-Unterricht in Quran-Rezitation (Tadschwid), Hifz und islamischer Wissenschaft –

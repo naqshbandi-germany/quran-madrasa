@@ -54,7 +54,7 @@ function Avatar({ name, image, size = "h-9 w-9" }: { name: string; image?: strin
 }
 
 const ITEM_STYLE =
-  "block rounded-md px-3 py-2 text-brand-900 transition hover:bg-brand-100 hover:text-azure-700 focus-visible:bg-brand-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure-700";
+  "block px-3 py-2 text-brand-900 transition hover:bg-brand-100 hover:text-azure-700 focus-visible:bg-brand-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure-700";
 
 // Benutzermenue rechts in der Kopfzeile: Avatar und Name, darunter ein Aufklappmenue mit den
 // Konto-Bereichen und "Abmelden". Ohne Anmeldung steht dort nur "Anmelden". Mit
@@ -96,8 +96,8 @@ export function UserMenu({ inline = false }: { inline?: boolean }) {
         href="/auth/signin"
         className={
           inline
-            ? "rounded-md px-2 py-2.5 text-brand-900 hover:bg-brand-100 hover:text-azure-700"
-            : "rounded-md border border-azure-800 px-4 py-1.5 font-medium text-azure-800 transition hover:bg-azure-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700"
+            ? "px-2 py-2.5 text-brand-900 hover:bg-brand-100 hover:text-azure-700"
+            : "btn-primary btn-display px-4 py-1.5 text-lg"
         }
       >
         Anmelden
@@ -146,7 +146,7 @@ export function UserMenu({ inline = false }: { inline?: boolean }) {
 
   if (inline) {
     return (
-      <div className="mt-2 rounded-lg border border-brand-200 bg-white" aria-label="Benutzermenü">
+      <div className="mt-2 border border-gold-400/40 bg-white" aria-label="Benutzermenü">
         {content}
       </div>
     );
@@ -193,7 +193,7 @@ export function UserMenu({ inline = false }: { inline?: boolean }) {
           role="menu"
           aria-label="Benutzermenü"
           onKeyDown={onMenuKeyDown}
-          className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-lg border border-brand-200 bg-white shadow-lg"
+          className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden border border-gold-400/40 bg-white shadow-lg"
         >
           {content}
         </div>

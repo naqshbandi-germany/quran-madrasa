@@ -18,7 +18,7 @@ export function TimetableView({ timetable }: { timetable: Timetable }) {
   const rowsPerHalfHour = 30 / ROW_MINUTES;
 
   return (
-    <div className="overflow-hidden rounded-md border border-brand-200 bg-white shadow-sm">
+    <div className="overflow-hidden border border-gold-400/40 bg-white shadow-sm">
       {/* Raster ab Desktop-Breite */}
       <div className="hidden lg:block">
         <div
@@ -76,7 +76,7 @@ export function TimetableView({ timetable }: { timetable: Timetable }) {
                 key={`${block.slug}-${i}`}
                 href={`/courses/${block.slug}`}
                 title={block.title}
-                className="m-0.5 flex flex-col items-center justify-center gap-1 overflow-hidden rounded-md border p-2 text-center leading-tight transition hover:brightness-95"
+                className="m-0.5 flex flex-col items-center justify-center gap-1 overflow-hidden border p-2 text-center leading-tight transition hover:brightness-95"
                 style={{
                   gridColumn: dayIndex + 2,
                   gridRow: `${rowStart} / ${rowEnd}`,
@@ -108,7 +108,7 @@ export function TimetableView({ timetable }: { timetable: Timetable }) {
       {/* Tageskarten untereinander auf Handy und schmalen Fenstern */}
       <div className="space-y-4 p-3 lg:hidden">
         {days.map((day) => (
-          <section key={day} className="overflow-hidden rounded-md border border-brand-200">
+          <section key={day} className="overflow-hidden border border-brand-200">
             <h2 className="bg-azure-800 px-4 py-2 font-display text-lg font-semibold tracking-wide text-white">
               {WEEKDAY_LABELS[day]}
             </h2>
@@ -120,7 +120,7 @@ export function TimetableView({ timetable }: { timetable: Timetable }) {
                   <li key={`${block.slug}-${i}`}>
                     <Link
                       href={`/courses/${block.slug}`}
-                      className="flex items-center gap-3 rounded-md border p-3"
+                      className="flex items-center gap-3 border p-3"
                       style={{
                         backgroundColor: block.palette.bg,
                         borderColor: block.palette.border,
@@ -156,7 +156,7 @@ export function TimetableView({ timetable }: { timetable: Timetable }) {
           {legend.map((entry) => (
             <span key={entry.key} className="flex items-center gap-1.5">
               <span
-                className="flex h-6 w-6 items-center justify-center rounded-md border"
+                className="flex h-6 w-6 items-center justify-center border"
                 style={{ backgroundColor: entry.palette.bg, borderColor: entry.palette.border }}
               >
                 <TimetableIcon

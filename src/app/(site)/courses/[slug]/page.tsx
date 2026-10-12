@@ -5,10 +5,12 @@ import { notFound } from "next/navigation";
 import { BookingButton } from "@/components/booking-button";
 import { OrnamentDivider } from "@/components/ornament";
 import { miniatureFor } from "@/lib/miniatures";
+import { capacityOf } from "@/lib/course-capacity";
 import { prisma } from "@/lib/prisma";
 import { AGE_GROUP_LABELS, WEEKDAY_LABELS } from "@/lib/course-labels";
 import { toGermanTime } from "@/lib/schedule-time";
 import { SubscribeButton } from "./subscribe-button";
+import { WaitlistForm } from "./waitlist-form";
 
 // Die angezeigten Unterrichtszeiten haengen von der deutschen Sommer-/Winterzeit
 // ab, daher stuendlich neu erzeugen.
@@ -25,6 +27,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
     include: {
       teacher: { select: { id: true, name: true } },
       scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
+      _count: { select: { enrollments: true } },
     },
   });
 
@@ -33,12 +36,13 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
   }
 
   const miniature = miniatureFor(course);
+  const isFull = capacityOf(course.maxParticipants, course._count.enrollments).isFull;
 
   return (
     <article className="space-y-6">
       <div className="flex gap-5 sm:gap-7">
         {miniature && (
-          <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-md border border-brand-200 bg-brand-100 shadow-sm sm:h-44 sm:w-44">
+          <div className="relative h-28 w-28 shrink-0 overflow-hidden border border-brand-200 bg-brand-100 shadow-sm sm:h-44 sm:w-44">
             <Image
               src={miniature.src}
               alt={miniature.title}
@@ -55,7 +59,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
             {course.category}
             {course.level ? ` · ${course.level}` : ""}
           </p>
-          <h1 className="mt-1 text-3xl font-semibold leading-tight text-brand-900 sm:text-4xl">
+          <h1 className="mt-1 text-3xl font-semibold leading-tight text-azure-800 sm:text-4xl">
             {course.title}
           </h1>
           <p className="mt-2 text-brand-900/75">
@@ -79,7 +83,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
 
       {course.scheduleSlots.length > 0 && (
         <div>
-          <h2 className="text-2xl font-semibold text-brand-900">Wöchentlicher Unterricht</h2>
+          <h2 className="text-2xl font-semibold text-azure-800">Wöchentlicher Unterricht</h2>
           <ul className="mt-2 space-y-1 text-sm text-brand-900">
             {course.scheduleSlots.map((rawSlot) => {
               const slot = toGermanTime(rawSlot);
@@ -95,32 +99,53 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
         </div>
       )}
 
-      <div className="rounded-lg border border-brand-200 bg-white p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            {course.priceCents > 0 ? (
-              <>
-                <p className="text-2xl font-bold text-brand-700">
-                  {formatPrice(course.priceCents, course.currency)}
-                  <span className="text-base font-normal text-brand-600"> / Monat</span>
-                </p>
-                <p className="text-sm text-brand-600">Monatlich kündbar, keine Mindestlaufzeit</p>
-              </>
-            ) : (
-              <p className="text-xl font-bold text-brand-700">Preis auf Anfrage</p>
-            )}
+      {isFull && (
+        <div className="border border-gold-400/40 bg-white p-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="bg-azure-800 px-3.5 py-1 font-display text-lg font-bold uppercase tracking-wider text-white">
+              Ausgebucht
+            </span>
+            <p className="min-w-0 flex-1 text-brand-900">
+              Dieser Kurs ist aktuell voll. Trage dich gern auf die Warteliste ein: Wir melden uns,
+              sobald ein Platz frei wird, oder zum nächsten Semester.
+            </p>
           </div>
-          {course.stripePriceId && <SubscribeButton slug={course.slug} />}
-        </div>
-        {!course.stripePriceId && (
-          <p className="mt-3 text-sm text-brand-600">
-            Die Online-Anmeldung für diesen Kurs ist noch nicht freigeschaltet. Buche gern ein
-            kostenloses Beratungsgespräch, dann klären wir alles Weitere.
+          <h2 className="mt-6 text-xl font-semibold text-azure-800">Auf die Warteliste</h2>
+          <p className="mb-4 mt-1 text-sm text-brand-900/75">
+            Kostenlos und unverbindlich, es ist keine Zahlung nötig.
           </p>
-        )}
-      </div>
+          <WaitlistForm courseId={course.id} />
+        </div>
+      )}
 
-      <div className="rounded-lg border border-brand-200 bg-brand-50 p-5 text-center">
+      {!isFull && (
+        <div className="border border-gold-400/40 bg-white p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              {course.priceCents > 0 ? (
+                <>
+                  <p className="text-2xl font-bold text-brand-700">
+                    {formatPrice(course.priceCents, course.currency)}
+                    <span className="text-base font-normal text-brand-600"> / Monat</span>
+                  </p>
+                  <p className="text-sm text-brand-600">Monatlich kündbar, keine Mindestlaufzeit</p>
+                </>
+              ) : (
+                <p className="text-xl font-bold text-brand-700">Preis auf Anfrage</p>
+              )}
+            </div>
+            {course.stripePriceId && <SubscribeButton slug={course.slug} />}
+          </div>
+          {!course.stripePriceId && (
+            <p className="mt-3 text-sm text-brand-600">
+              Die Online-Anmeldung für diesen Kurs ist noch nicht freigeschaltet. Buche gern ein
+              kostenloses Beratungsgespräch, dann klären wir alles Weitere.
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="border border-brand-200 bg-brand-50 p-5 text-center">
         <p className="mb-3 text-brand-700">Unsicher, ob dieser Kurs passt? Lass es uns unverbindlich besprechen.</p>
         <BookingButton />
       </div>

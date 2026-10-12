@@ -24,7 +24,7 @@ export default async function TeachersPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-3xl font-bold text-brand-700">Unsere Lehrer</h1>
+        <h1 className="text-3xl font-bold text-azure-800">Unsere Lehrer</h1>
         <OrnamentDivider className="mt-3" />
         <p className="mt-2 text-brand-600">
           Lernt die Menschen kennen, die euren Unterricht geben.
@@ -39,7 +39,7 @@ export default async function TeachersPage() {
             <div
               key={teacher.id}
               id={`lehrer-${teacher.id}`}
-              className="scroll-mt-24 rounded-lg border border-brand-200 bg-white p-6"
+              className="scroll-mt-24 border border-gold-400/40 bg-white p-6"
             >
               <div className="flex items-center gap-5">
                 {teacher.image ? (
@@ -55,7 +55,7 @@ export default async function TeachersPage() {
                   </div>
                 )}
                 <div>
-                  <h2 className="text-xl font-semibold text-brand-700">{teacher.name}</h2>
+                  <h2 className="text-xl font-semibold text-azure-800">{teacher.name}</h2>
                   <p className="text-sm text-brand-600">Lehrer</p>
                 </div>
               </div>
@@ -87,7 +87,7 @@ export default async function TeachersPage() {
         </div>
       )}
 
-      <div className="rounded-lg border border-brand-200 bg-brand-50 p-5 text-center">
+      <div className="border border-brand-200 bg-brand-50 p-5 text-center">
         <p className="mb-3 text-brand-700">Fragen an einen unserer Lehrer? Lernt uns unverbindlich kennen.</p>
         <BookingButton />
       </div>

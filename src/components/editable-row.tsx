@@ -22,13 +22,13 @@ export function EditableRow({
 
   return (
     <li
-      className={`rounded-md border bg-white px-4 py-3 text-sm transition-colors ${
+      className={`border bg-white px-4 py-3 text-sm transition-colors ${
         open ? "border-azure-700 ring-1 ring-azure-700/20" : "border-brand-200"
       }`}
     >
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <div
-          className="min-w-0 cursor-pointer rounded-md hover:text-azure-800"
+          className="min-w-0 cursor-pointer hover:text-azure-800"
           onClick={(event) => {
             if ((event.target as HTMLElement).closest("a, button, input, select, textarea")) return;
             setOpen((value) => !value);
@@ -41,7 +41,7 @@ export function EditableRow({
             type="button"
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
-            className="inline-flex items-center gap-1.5 rounded-md font-medium text-azure-800 hover:text-azure-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700"
+            className="inline-flex items-center gap-1.5 font-medium text-azure-800 hover:text-azure-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700"
           >
             {open ? <XIcon /> : <PencilIcon />}
             {open ? "Abbrechen" : "Bearbeiten"}

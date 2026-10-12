@@ -61,7 +61,7 @@ export default async function EmailsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-brand-700">E-Mails</h1>
+        <h1 className="text-2xl font-bold text-azure-800">E-Mails</h1>
         <p className="mt-1 text-sm text-brand-600">
           Schreibe an alle Teilnehmer eines Kurses oder wähle einzelne Teilnehmer aus. Dateien aus
           deiner Mediathek kannst du als Anhang beifügen. Die Nachricht wird getrennt von den
