@@ -79,7 +79,7 @@ export function UploadForm({
           name="file"
           type="file"
           required
-          className={`${INPUT} file:mr-3 file:file:border-0 file:bg-brand-100 file:px-3 file:py-1.5 file:font-medium file:text-brand-700`}
+          className={`${INPUT} file:mr-3 file:border-0 file:bg-brand-100 file:px-3 file:py-1.5 file:font-medium file:text-brand-700`}
         />
         {state.errors?.file && <span className="mt-1 font-normal text-red-700">{state.errors.file}</span>}
       </label>
