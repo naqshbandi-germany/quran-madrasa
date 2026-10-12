@@ -40,7 +40,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand-700">Meine Kurse</h1>
+        <h1 className="text-2xl font-bold text-azure-800">Meine Kurse</h1>
         <Link href="/dashboard/billing" className="text-sm font-medium text-brand-700 underline">
           Abo verwalten
         </Link>
@@ -58,8 +58,8 @@ export default async function DashboardPage() {
 
       <div className="space-y-6">
         {[...byCourse.values()].map(({ course, names }) => (
-          <div key={course.id} className="rounded-lg border border-brand-200 bg-white p-5">
-            <h2 className="font-semibold text-brand-700">{course.title}</h2>
+          <div key={course.id} className="border border-gold-400/40 bg-white p-5">
+            <h2 className="font-semibold text-azure-800">{course.title}</h2>
             <p className="mt-1 text-sm text-brand-600">Teilnehmer: {names.join(", ")}</p>
             {course.sessions.length === 0 ? (
               <p className="mt-2 text-sm text-brand-600">
@@ -70,7 +70,7 @@ export default async function DashboardPage() {
                 {course.sessions.map((classSession) => (
                   <li
                     key={classSession.id}
-                    className="flex items-center justify-between rounded-md bg-brand-50 px-3 py-2 text-sm"
+                    className="flex items-center justify-between bg-brand-50 px-3 py-2 text-sm"
                   >
                     <span>
                       {classSession.title} · {formatDateTime(classSession.startsAt)}
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
                     {classSession.joinUrl ? (
                       <Link
                         href={`/dashboard/classroom/${classSession.id}`}
-                        className="rounded-md bg-brand-600 px-3 py-1 font-medium text-white hover:bg-brand-700"
+                        className="btn-primary btn-display px-3 py-1"
                       >
                         Klasse beitreten
                       </Link>

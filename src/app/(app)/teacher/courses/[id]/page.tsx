@@ -24,8 +24,8 @@ import { toMediaItem } from "@/lib/media-items";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
 import { formatGermanDateTime, formatTeachingDateTime, toTeachingInputValue } from "@/lib/schedule-time";
 
-const INPUT = "rounded-md border border-brand-300 px-3 py-2";
-const SAVE_BUTTON = "rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700";
+const INPUT = "border border-brand-300 px-3 py-2";
+const SAVE_BUTTON = "btn-primary px-4 py-2";
 
 // Entfernen-Aktion mit Papierkorb-Symbol und Text, fragt vor dem Loeschen nach.
 function RemoveForm({
@@ -44,7 +44,7 @@ function RemoveForm({
       ))}
       <ConfirmButton
         message={message}
-        className="inline-flex items-center gap-1.5 rounded-md font-medium text-red-800 hover:text-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+        className="inline-flex items-center gap-1.5 font-medium text-red-800 hover:text-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
       >
         <TrashIcon />
         Entfernen
@@ -204,16 +204,16 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-brand-700">{course.title}</h1>
+      <h1 className="text-2xl font-bold text-azure-800">{course.title}</h1>
 
       <section aria-labelledby="teilnehmer" className="space-y-4">
-        <h2 id="teilnehmer" className="font-semibold text-brand-700">
+        <h2 id="teilnehmer" className="font-semibold text-azure-800">
           Teilnehmer ({course.enrollments.length})
         </h2>
         {course.enrollments.length === 0 ? (
           <p className="text-sm text-brand-600">Noch keine Teilnehmer eingeschrieben.</p>
         ) : (
-          <ul className="divide-y divide-brand-100 rounded-lg border border-brand-200 bg-white text-sm">
+          <ul className="divide-y divide-brand-100 border border-gold-400/40 bg-white text-sm">
             {course.enrollments.map(({ id, participant, user, createdAt }) => (
               <li key={id} className="px-4 py-3">
                 <p className="font-medium text-brand-900">
@@ -241,7 +241,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
       </section>
 
       <section className="space-y-4">
-        <h2 className="font-semibold text-brand-700">Wöchentlicher Stundenplan</h2>
+        <h2 className="font-semibold text-azure-800">Wöchentlicher Stundenplan</h2>
         <p className="text-sm text-brand-600">
           Feste Wochentermine für das Kursangebot (z.B. &bdquo;Mittwoch 18:00–18:40&ldquo;) –
           unabhängig von den einzelnen Sitzungen mit Meeting-Link unten. Uhrzeiten bitte in
@@ -291,7 +291,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
           <select
             name="weekday"
             required
-            className="rounded-md border border-brand-300 px-3 py-2"
+            className="border border-brand-300 px-3 py-2"
             defaultValue=""
           >
             <option value="" disabled>
@@ -307,27 +307,27 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
             name="startTime"
             type="time"
             required
-            className="rounded-md border border-brand-300 px-3 py-2"
+            className="border border-brand-300 px-3 py-2"
           />
           <input
             name="endTime"
             type="time"
             required
-            className="rounded-md border border-brand-300 px-3 py-2"
+            className="border border-brand-300 px-3 py-2"
           />
           <input
             name="note"
             placeholder="Hinweis (optional, z.B. Morgens)"
-            className="rounded-md border border-brand-300 px-3 py-2"
+            className="border border-brand-300 px-3 py-2"
           />
-          <button className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 sm:col-span-1">
+          <button className="btn-primary col-span-full px-4 py-2 sm:col-span-1">
             Termin hinzufügen
           </button>
         </form>
       </section>
 
       <section className="space-y-4">
-        <h2 className="font-semibold text-brand-700">Sitzungen (mit Meeting-Link)</h2>
+        <h2 className="font-semibold text-azure-800">Sitzungen (mit Meeting-Link)</h2>
         {upcomingSessions.length === 0 && (
           <p className="text-sm text-brand-600">Keine kommenden Sitzungen geplant.</p>
         )}
@@ -349,8 +349,8 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
           </details>
         )}
 
-        <div className="rounded-lg border border-brand-200 bg-white p-5">
-          <h3 className="mb-4 font-semibold text-brand-700">Einzelne Sitzung anlegen</h3>
+        <div className="border border-gold-400/40 bg-white p-5">
+          <h3 className="mb-4 font-semibold text-azure-800">Einzelne Sitzung anlegen</h3>
           <p className="mb-3 text-sm text-brand-600">
             Ohne eigenen Link wird automatisch {meetingDescription} erzeugt. Beginn bitte in
             Ortszeit Nordzypern angeben.
@@ -361,7 +361,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               name="title"
               placeholder="Titel (z.B. Sure Al-Baqara, Vers 1-10)"
               required
-              className="col-span-full rounded-md border border-brand-300 px-3 py-2"
+              className="col-span-full border border-brand-300 px-3 py-2"
             />
             <label className="flex flex-col text-sm text-brand-700">
               Beginn (Ortszeit Nordzypern)
@@ -369,7 +369,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                 name="startsAt"
                 type="datetime-local"
                 required
-                className="mt-1 rounded-md border border-brand-300 px-3 py-2"
+                className="mt-1 border border-brand-300 px-3 py-2"
               />
             </label>
             <label className="flex flex-col text-sm text-brand-700">
@@ -380,23 +380,23 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                 min={5}
                 max={480}
                 defaultValue={60}
-                className="mt-1 rounded-md border border-brand-300 px-3 py-2"
+                className="mt-1 border border-brand-300 px-3 py-2"
               />
             </label>
             <input
               name="joinUrl"
               type="url"
               placeholder="Eigener Link (optional, ersetzt die automatische Erzeugung)"
-              className="col-span-full rounded-md border border-brand-300 px-3 py-2"
+              className="col-span-full border border-brand-300 px-3 py-2"
             />
-            <button className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
+            <button className="btn-primary col-span-full px-4 py-2">
               Sitzung anlegen
             </button>
           </form>
         </div>
 
-        <div className="rounded-lg border border-brand-200 bg-white p-5">
-          <h3 className="mb-1 font-semibold text-brand-700">Wiederkehrende Sitzungen anlegen</h3>
+        <div className="border border-gold-400/40 bg-white p-5">
+          <h3 className="mb-1 font-semibold text-azure-800">Wiederkehrende Sitzungen anlegen</h3>
           <p className="mb-3 text-sm text-brand-600">
             Legt mehrere Termine auf einmal an, jeweils mit eigenem, automatisch erzeugtem
             Meeting-Link ({meetingKind}). Datum und Uhrzeit in Ortszeit Nordzypern.
@@ -407,13 +407,13 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               name="title"
               placeholder="Titel (für alle Termine)"
               required
-              className="col-span-full rounded-md border border-brand-300 px-3 py-2"
+              className="col-span-full border border-brand-300 px-3 py-2"
             />
             <select
               name="weekday"
               required
               defaultValue=""
-              className="rounded-md border border-brand-300 px-3 py-2"
+              className="border border-brand-300 px-3 py-2"
             >
               <option value="" disabled>
                 Wochentag
@@ -428,13 +428,13 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               name="startTime"
               type="time"
               required
-              className="rounded-md border border-brand-300 px-3 py-2"
+              className="border border-brand-300 px-3 py-2"
             />
             <input
               name="endTime"
               type="time"
               required
-              className="rounded-md border border-brand-300 px-3 py-2"
+              className="border border-brand-300 px-3 py-2"
             />
             <label className="flex flex-col text-sm text-brand-700">
               Erster Termin
@@ -442,7 +442,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                 name="firstDate"
                 type="date"
                 required
-                className="mt-1 rounded-md border border-brand-300 px-3 py-2"
+                className="mt-1 border border-brand-300 px-3 py-2"
               />
             </label>
             <label className="flex flex-col text-sm text-brand-700">
@@ -450,7 +450,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               <select
                 name="interval"
                 defaultValue="WEEKLY"
-                className="mt-1 rounded-md border border-brand-300 px-3 py-2"
+                className="mt-1 border border-brand-300 px-3 py-2"
               >
                 <option value="WEEKLY">Wöchentlich</option>
                 <option value="BIWEEKLY">Alle 2 Wochen</option>
@@ -466,10 +466,10 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                 max={52}
                 defaultValue={12}
                 required
-                className="mt-1 rounded-md border border-brand-300 px-3 py-2"
+                className="mt-1 border border-brand-300 px-3 py-2"
               />
             </label>
-            <button className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700">
+            <button className="btn-primary col-span-full px-4 py-2">
               Termine anlegen
             </button>
           </form>
@@ -477,7 +477,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
       </section>
 
       <section aria-labelledby="mail" className="space-y-4">
-        <h2 id="mail" className="font-semibold text-brand-700">
+        <h2 id="mail" className="font-semibold text-azure-800">
           E-Mail an Teilnehmer (Kursmaterial, Ankündigungen)
         </h2>
         <p className="text-sm text-brand-600">
@@ -511,13 +511,13 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
       </section>
 
       <section className="space-y-4">
-        <h2 className="font-semibold text-brand-700">WhatsApp-Gruppe des Kurses</h2>
+        <h2 className="font-semibold text-azure-800">WhatsApp-Gruppe des Kurses</h2>
         {whatsappMembers.length === 0 ? (
           <p className="text-sm text-brand-600">
             Noch niemand hat eine WhatsApp-Nummer für die Kurs-Gruppe angegeben.
           </p>
         ) : (
-          <div className="rounded-lg border border-brand-200 bg-white p-5">
+          <div className="border border-gold-400/40 bg-white p-5">
             <p className="mb-3 text-sm text-brand-600">
               Diese Teilnehmer haben der Aufnahme in die WhatsApp-Gruppe zugestimmt. Bei Kindern ist
               es die Nummer der Eltern. Bitte verwende die Nummern nur dafür.

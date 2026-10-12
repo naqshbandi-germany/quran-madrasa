@@ -50,6 +50,8 @@ const config: Config = {
           800: "#14325c",
           900: "#0d2240",
         },
+        // Messing: Grundton der Buttons (weisse Schrift, Kontrast 4,6:1); beim Hover wechselt er zu gold-600
+        brass: "#857348",
         gold: {
           200: "#ecdba8",
           400: "#c9a85c",

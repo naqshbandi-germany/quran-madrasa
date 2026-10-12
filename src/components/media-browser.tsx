@@ -87,7 +87,7 @@ function Thumb({ item, large = false }: { item: MediaItem; large?: boolean }) {
     <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-brand-50 text-brand-600">
       <Icon className={large ? "h-10 w-10" : "h-5 w-5"} />
       {large && (
-        <span className="rounded bg-white px-1.5 py-0.5 text-xs font-semibold tracking-wide text-brand-700">
+        <span className="bg-white px-1.5 py-0.5 text-xs font-semibold tracking-wide text-brand-700">
           {extensionLabel(item.fileName)}
         </span>
       )}
@@ -125,11 +125,11 @@ function PreviewDialog({
         if (event.target === ref.current) onClose();
       }}
       aria-label={`Vorschau: ${item.title}`}
-      className="m-auto w-[min(56rem,94vw)] rounded-lg border border-brand-200 bg-white p-0 shadow-xl backdrop:bg-black/60"
+      className="m-auto w-[min(56rem,94vw)] border border-gold-400/40 bg-white p-0 shadow-xl backdrop:bg-black/60"
     >
       <div className="flex items-start justify-between gap-4 border-b border-brand-100 px-5 py-3">
         <div className="min-w-0">
-          <h3 className="truncate font-semibold text-brand-900">{item.title}</h3>
+          <h3 className="truncate font-semibold text-azure-800">{item.title}</h3>
           <p className="truncate text-sm text-brand-600">
             {item.fileName} · {MEDIA_KIND_LABELS[kind]} · {formatBytes(item.sizeBytes)} · {formatDate(item.createdAt)}
             {item.ownerName ? ` · von ${item.ownerName}` : ""}
@@ -139,7 +139,7 @@ function PreviewDialog({
           type="button"
           onClick={onClose}
           aria-label="Vorschau schließen"
-          className="rounded-md p-1.5 text-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-azure-700"
+          className="p-1.5 text-brand-700 hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-azure-700"
         >
           <XIcon className="h-5 w-5" />
         </button>
@@ -151,7 +151,7 @@ function PreviewDialog({
           <img src={inlineUrl} alt={item.title} className="max-h-[66vh] max-w-full object-contain" />
         )}
         {kind === "pdf" && (
-          <iframe title={`Vorschau: ${item.title}`} src={inlineUrl} className="h-[66vh] w-full rounded bg-white" />
+          <iframe title={`Vorschau: ${item.title}`} src={inlineUrl} className="h-[66vh] w-full bg-white" />
         )}
         {kind === "audio" && <audio controls src={inlineUrl} className="w-full max-w-lg" />}
         {kind === "doc" && (
@@ -164,7 +164,7 @@ function PreviewDialog({
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-100 px-5 py-3 text-sm">
         <a
           href={`/api/media/${item.id}`}
-          className="inline-flex items-center gap-1.5 rounded-md font-medium text-azure-800 hover:text-azure-700"
+          className="inline-flex items-center gap-1.5 font-medium text-azure-800 hover:text-azure-700"
         >
           <DownloadIcon />
           Herunterladen
@@ -176,7 +176,7 @@ function PreviewDialog({
               onToggle?.();
               onClose();
             }}
-            className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700"
+            className="btn-primary px-4 py-2"
           >
             {selected ? "Auswahl aufheben" : "Auswählen"}
           </button>
@@ -185,7 +185,7 @@ function PreviewDialog({
             <input type="hidden" name="fileId" value={item.id} />
             <ConfirmButton
               message={`„${item.title}“ wirklich aus der Mediathek entfernen?`}
-              className="inline-flex items-center gap-1.5 rounded-md font-medium text-red-800 hover:text-red-700"
+              className="inline-flex items-center gap-1.5 font-medium text-red-800 hover:text-red-700"
             >
               <TrashIcon />
               Entfernen
@@ -233,7 +233,7 @@ export function MediaBrowser({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex overflow-hidden rounded-md border border-brand-200 bg-white" role="group" aria-label="Ansicht">
+        <div className="inline-flex overflow-hidden border border-gold-400/40 bg-white" role="group" aria-label="Ansicht">
           {(
             [
               { value: "grid", label: "Raster", Icon: GridIcon },
@@ -259,7 +259,7 @@ export function MediaBrowser({
           aria-label="Dateityp"
           value={filter}
           onChange={(event) => setFilter(event.target.value as "all" | MediaKind)}
-          className="rounded-md border border-brand-300 bg-white px-3 py-2 text-sm"
+          className="border border-brand-300 bg-white px-3 py-2 text-sm"
         >
           {FILTERS.map((f) => (
             <option key={f.value} value={f.value}>
@@ -276,7 +276,7 @@ export function MediaBrowser({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Dateien durchsuchen"
-            className="w-full rounded-md border border-brand-300 bg-white py-2 pl-9 pr-3 text-sm"
+            className="w-full border border-brand-300 bg-white py-2 pl-9 pr-3 text-sm"
           />
         </label>
       </div>
@@ -292,7 +292,7 @@ export function MediaBrowser({
             return (
               <li key={item.id}>
                 <div
-                  className={`relative overflow-hidden rounded-lg border bg-white transition ${
+                  className={`relative overflow-hidden border bg-white transition ${
                     on ? "border-azure-700 ring-2 ring-azure-700/40" : "border-brand-200 hover:border-azure-700"
                   }`}
                 >
@@ -317,7 +317,7 @@ export function MediaBrowser({
                     <>
                       <span
                         aria-hidden="true"
-                        className={`pointer-events-none absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded border-2 ${
+                        className={`pointer-events-none absolute left-2 top-2 flex h-6 w-6 items-center justify-center border-2 ${
                           on ? "border-azure-700 bg-azure-700 text-white" : "border-white bg-black/30 text-transparent"
                         }`}
                       >
@@ -326,7 +326,7 @@ export function MediaBrowser({
                       <button
                         type="button"
                         onClick={() => setPreviewId(item.id)}
-                        className="absolute right-2 top-2 rounded bg-white/90 px-2 py-1 text-xs font-medium text-azure-800 shadow hover:bg-white"
+                        className="absolute right-2 top-2 bg-white/90 px-2 py-1 text-xs font-medium text-azure-800 shadow hover:bg-white"
                       >
                         Vorschau
                       </button>
@@ -338,7 +338,7 @@ export function MediaBrowser({
           })}
         </ul>
       ) : (
-        <ul className="divide-y divide-brand-100 rounded-lg border border-brand-200 bg-white text-sm">
+        <ul className="divide-y divide-brand-100 border border-gold-400/40 bg-white text-sm">
           {visible.map((item) => {
             const on = isSelected(item.id);
             return (
@@ -356,7 +356,7 @@ export function MediaBrowser({
                   type="button"
                   onClick={() => setPreviewId(item.id)}
                   aria-label={`Vorschau: ${item.title}`}
-                  className="h-12 w-12 shrink-0 overflow-hidden rounded border border-brand-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-azure-700"
+                  className="h-12 w-12 shrink-0 overflow-hidden border border-brand-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-azure-700"
                 >
                   <Thumb item={item} />
                 </button>

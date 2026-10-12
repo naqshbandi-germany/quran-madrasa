@@ -22,7 +22,7 @@ export function ManageBillingButton() {
     <button
       onClick={handleClick}
       disabled={loading}
-      className="rounded-md bg-brand-600 px-5 py-2.5 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+      className="btn-primary btn-display px-5 py-2.5 disabled:opacity-60"
     >
       {loading ? "Einen Moment..." : "Zum Kundenportal (kündigen / Zahlungsdaten ändern)"}
     </button>

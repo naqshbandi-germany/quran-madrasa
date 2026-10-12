@@ -24,7 +24,7 @@ export default async function AccountPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-10">
       <div>
-        <h1 className="text-4xl font-semibold text-brand-900">Mein Konto</h1>
+        <h1 className="text-4xl font-semibold text-azure-800">Mein Konto</h1>
         <p className="mt-1 text-brand-900/75">
           Hier verwaltest du deine Angaben, dein Passwort und die Personen, die du zu Kursen
           anmeldest.
@@ -32,14 +32,14 @@ export default async function AccountPage() {
       </div>
 
       <section aria-labelledby="profil" className="space-y-4">
-        <h2 id="profil" className="text-2xl font-semibold text-brand-900">
+        <h2 id="profil" className="text-2xl font-semibold text-azure-800">
           Profil
         </h2>
         <ProfileForm name={user.name} email={user.email} />
       </section>
 
       <section aria-labelledby="passwort" className="space-y-4">
-        <h2 id="passwort" className="text-2xl font-semibold text-brand-900">
+        <h2 id="passwort" className="text-2xl font-semibold text-azure-800">
           Passwort ändern
         </h2>
         <PasswordForm />
@@ -53,7 +53,7 @@ export default async function AccountPage() {
       </section>
 
       <section aria-labelledby="teilnehmer" className="space-y-4">
-        <h2 id="teilnehmer" className="text-2xl font-semibold text-brand-900">
+        <h2 id="teilnehmer" className="text-2xl font-semibold text-azure-800">
           Meine Teilnehmer
         </h2>
         <p className="text-brand-900/75">
@@ -61,7 +61,7 @@ export default async function AccountPage() {
           Anmeldung zu einem Kurs an.
         </p>
         {participants.length === 0 ? (
-          <p className="rounded-md border border-brand-200 bg-white p-4 text-sm text-brand-900/75">
+          <p className="border border-gold-400/40 bg-white p-4 text-sm text-brand-900/75">
             Du hast noch keine Teilnehmer.{" "}
             <Link href="/" className="font-medium text-azure-800 underline">
               Zum Kursangebot
@@ -89,7 +89,7 @@ export default async function AccountPage() {
       </section>
 
       <section aria-labelledby="abos" className="space-y-3">
-        <h2 id="abos" className="text-2xl font-semibold text-brand-900">
+        <h2 id="abos" className="text-2xl font-semibold text-azure-800">
           Kurse und Abos
         </h2>
         <p className="text-brand-900/75">
@@ -106,7 +106,7 @@ export default async function AccountPage() {
       </section>
 
       <section aria-labelledby="loeschen" className="space-y-2 border-t border-brand-200 pt-6">
-        <h2 id="loeschen" className="text-lg font-semibold text-brand-900">
+        <h2 id="loeschen" className="text-lg font-semibold text-azure-800">
           Konto und Daten löschen
         </h2>
         <p className="text-sm text-brand-900/75">

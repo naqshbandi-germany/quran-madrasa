@@ -44,10 +44,10 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="text-4xl font-semibold text-brand-900">Passwort vergessen?</h1>
+      <h1 className="text-4xl font-semibold text-azure-800">Passwort vergessen?</h1>
 
       {sent ? (
-        <div role="status" className="mt-6 space-y-3 rounded-md border border-brand-200 bg-white p-5">
+        <div role="status" className="mt-6 space-y-3 border border-gold-400/40 bg-white p-5">
           <p className="font-medium text-brand-900">Prüfe dein Postfach.</p>
           <p className="text-sm text-brand-900/80">
             Wenn es zu <strong>{email.trim()}</strong> ein Konto gibt, haben wir dir einen Link zum
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="h-12 w-full rounded-md bg-brand-600 px-4 font-medium text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60"
+              className="btn-primary btn-display h-12 w-full px-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60"
             >
               {loading ? "Einen Moment …" : "Link anfordern"}
             </button>

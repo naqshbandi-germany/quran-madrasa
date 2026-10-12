@@ -18,11 +18,6 @@ export type { CatalogCourse };
 
 const ALL = "__all__";
 
-// Dünne farbige Oberkante der Karten, je Thema abwechselnd Blau/Gruen (stabil pro Thema).
-function accentFor(category: string) {
-  const sum = [...category].reduce((total, ch) => total + ch.charCodeAt(0), 0);
-  return sum % 2 === 0 ? "border-t-azure-700" : "border-t-brand-600";
-}
 type SortKey = "title" | "teacher" | "level" | "price" | "category";
 
 const SORT_LABELS: Record<SortKey, string> = {
@@ -117,7 +112,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-brand-200 bg-white p-4">
+      <div className="flex flex-wrap items-end gap-3 border border-gold-400/40 bg-white p-4">
         <label className="flex flex-col text-sm text-brand-700">
           Suche
           <input
@@ -125,7 +120,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Kurs suchen…"
-            className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
+            className="mt-1 border border-brand-300 px-3 py-1.5"
           />
         </label>
 
@@ -134,7 +129,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
+            className="mt-1 border border-brand-300 px-3 py-1.5"
           >
             <option value={ALL}>Alle Themen</option>
             {categories.map((c) => (
@@ -151,7 +146,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
             <select
               value={ageGroup}
               onChange={(e) => setAgeGroup(e.target.value)}
-              className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
+              className="mt-1 border border-brand-300 px-3 py-1.5"
             >
               <option value={ALL}>Alle Altersgruppen</option>
               {ageGroupsPresent.map((ag) => (
@@ -168,7 +163,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
           <select
             value={teacher}
             onChange={(e) => setTeacher(e.target.value)}
-            className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
+            className="mt-1 border border-brand-300 px-3 py-1.5"
           >
             <option value={ALL}>Alle Lehrer</option>
             {teachers.map((t) => (
@@ -185,7 +180,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
             <select
               value={level}
               onChange={(e) => setLevel(e.target.value)}
-              className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
+              className="mt-1 border border-brand-300 px-3 py-1.5"
             >
               <option value={ALL}>Alle Level</option>
               {levels.map((l) => (
@@ -203,7 +198,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
             <select
               value={weekday}
               onChange={(e) => setWeekday(e.target.value)}
-              className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
+              className="mt-1 border border-brand-300 px-3 py-1.5"
             >
               <option value={ALL}>Alle Wochentage</option>
               {weekdays.map((d) => (
@@ -220,7 +215,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortKey)}
-            className="mt-1 rounded-md border border-brand-300 px-3 py-1.5"
+            className="mt-1 border border-brand-300 px-3 py-1.5"
           >
             {Object.entries(SORT_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -234,7 +229,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
           <button
             type="button"
             onClick={resetFilters}
-            className="ml-auto self-end rounded-md border border-brand-300 px-3 py-1.5 text-sm text-brand-700 hover:bg-brand-50"
+            className="ml-auto self-end border border-brand-300 px-3 py-1.5 text-sm text-brand-700 hover:bg-brand-50"
           >
             Filter zurücksetzen
           </button>
@@ -255,10 +250,10 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
               <Link
                 key={course.id}
                 href={`/courses/${course.slug}`}
-                className={`flex gap-4 rounded-md border border-t-[3px] border-brand-200 bg-white p-4 shadow-sm transition hover:shadow-md ${accentFor(course.category)}`}
+                className="flex gap-4 border border-gold-400/40 bg-white p-4 transition hover:border-gold-400"
               >
                 {miniature && (
-                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md border border-brand-200 bg-brand-100 sm:h-28 sm:w-28">
+                  <div className="relative h-24 w-24 shrink-0 overflow-hidden border border-gold-400/40 bg-brand-100 sm:h-28 sm:w-28">
                     <Image
                       src={miniature.src}
                       alt=""
@@ -271,11 +266,11 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
                 )}
 
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-azure-700">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-gold-600">
                     {course.category}
                     {course.level ? ` · ${course.level}` : ""}
                   </p>
-                  <h3 className="mt-1 font-display text-xl font-semibold leading-snug text-brand-900">
+                  <h3 className="mt-1 font-display text-xl font-semibold leading-snug text-azure-800">
                     {course.title}
                   </h3>
                   <p className="mt-1 line-clamp-3 text-sm text-brand-900/75">{course.description}</p>
@@ -288,7 +283,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
 
                   {course.scheduleSlots.length > 0 && (
                     <p className="mt-2 text-xs text-brand-900/75">
-                      <span className="mr-1.5 rounded-full border border-azure-700/30 px-2 py-0.5 font-medium text-azure-800">
+                      <span className="mr-1.5 rounded-full border border-gold-400/60 px-2 py-0.5 font-medium text-azure-800">
                         {course.scheduleSlots.length}× / Woche
                       </span>
                       {formatSchedule(course.scheduleSlots)}

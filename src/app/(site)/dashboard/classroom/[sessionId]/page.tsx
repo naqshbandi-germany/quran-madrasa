@@ -40,8 +40,8 @@ export default async function ClassroomPage({
 
   // classroomType === "IN_APP" — noch nicht implementiert.
   return (
-    <div className="rounded-lg border border-brand-200 bg-white p-6">
-      <h1 className="text-xl font-semibold text-brand-700">{classSession.title}</h1>
+    <div className="border border-gold-400/40 bg-white p-6">
+      <h1 className="text-xl font-semibold text-azure-800">{classSession.title}</h1>
       <p className="mt-2 text-brand-600">
         Der eigene Online-Klassenraum mit Tafel ist noch nicht verfügbar. Diese Sitzung nutzt
         aktuell keine Meeting-Verbindung.

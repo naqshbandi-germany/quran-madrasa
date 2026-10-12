@@ -62,7 +62,7 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(fu
             onClick={() => setVisible((current) => !current)}
             aria-label={visible ? "Passwort verbergen" : "Passwort anzeigen"}
             aria-pressed={visible}
-            className="flex h-11 w-11 items-center justify-center rounded-md text-brand-900/70 hover:text-azure-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure-700"
+            className="flex h-11 w-11 items-center justify-center text-brand-900/70 hover:text-azure-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure-700"
           >
             <EyeIcon crossed={visible} />
           </button>

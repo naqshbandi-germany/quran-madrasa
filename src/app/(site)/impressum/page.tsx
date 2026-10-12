@@ -16,7 +16,7 @@ export default async function ImpressumPage() {
   return (
     <div className="space-y-6">
       <section>
-        <h1 className="text-4xl font-semibold text-brand-900">Impressum</h1>
+        <h1 className="text-4xl font-semibold text-azure-800">Impressum</h1>
         <OrnamentDivider className="mt-3" />
       </section>
       <LegalText text={text} />

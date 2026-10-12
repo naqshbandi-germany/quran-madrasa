@@ -104,7 +104,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="text-4xl font-semibold text-brand-900">Konto erstellen</h1>
+      <h1 className="text-4xl font-semibold text-azure-800">Konto erstellen</h1>
       <p className="mt-2 text-brand-900/75">
         {enrolling
           ? "Erstelle ein Konto, um dich für den Kurs anzumelden. Danach geht es direkt dort weiter."
@@ -208,7 +208,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
           <button
             type="submit"
             disabled={loading}
-            className="h-12 w-full rounded-md bg-brand-600 px-4 font-medium text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60"
+            className="btn-primary btn-display h-12 w-full px-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60"
           >
             {loading ? "Einen Moment …" : "Konto erstellen"}
           </button>

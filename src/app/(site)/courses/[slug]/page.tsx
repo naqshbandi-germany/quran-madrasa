@@ -38,7 +38,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
     <article className="space-y-6">
       <div className="flex gap-5 sm:gap-7">
         {miniature && (
-          <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-md border border-brand-200 bg-brand-100 shadow-sm sm:h-44 sm:w-44">
+          <div className="relative h-28 w-28 shrink-0 overflow-hidden border border-brand-200 bg-brand-100 shadow-sm sm:h-44 sm:w-44">
             <Image
               src={miniature.src}
               alt={miniature.title}
@@ -55,7 +55,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
             {course.category}
             {course.level ? ` · ${course.level}` : ""}
           </p>
-          <h1 className="mt-1 text-3xl font-semibold leading-tight text-brand-900 sm:text-4xl">
+          <h1 className="mt-1 text-3xl font-semibold leading-tight text-azure-800 sm:text-4xl">
             {course.title}
           </h1>
           <p className="mt-2 text-brand-900/75">
@@ -79,7 +79,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
 
       {course.scheduleSlots.length > 0 && (
         <div>
-          <h2 className="text-2xl font-semibold text-brand-900">Wöchentlicher Unterricht</h2>
+          <h2 className="text-2xl font-semibold text-azure-800">Wöchentlicher Unterricht</h2>
           <ul className="mt-2 space-y-1 text-sm text-brand-900">
             {course.scheduleSlots.map((rawSlot) => {
               const slot = toGermanTime(rawSlot);
@@ -95,7 +95,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
         </div>
       )}
 
-      <div className="rounded-lg border border-brand-200 bg-white p-6">
+      <div className="border border-gold-400/40 bg-white p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             {course.priceCents > 0 ? (
@@ -120,7 +120,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
         )}
       </div>
 
-      <div className="rounded-lg border border-brand-200 bg-brand-50 p-5 text-center">
+      <div className="border border-brand-200 bg-brand-50 p-5 text-center">
         <p className="mb-3 text-brand-700">Unsicher, ob dieser Kurs passt? Lass es uns unverbindlich besprechen.</p>
         <BookingButton />
       </div>

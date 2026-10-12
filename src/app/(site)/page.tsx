@@ -59,7 +59,7 @@ export default async function HomePage() {
       </div>
 
       <section>
-        <h2 className="text-3xl font-bold text-brand-700">Unser Kursangebot</h2>
+        <h2 className="text-3xl font-bold text-azure-800">Unser Kursangebot</h2>
         <OrnamentDivider className="mt-3" />
         <p className="mt-2 text-brand-600">
           Online-Unterricht in Quran-Rezitation (Tadschwid), Hifz und islamischer Wissenschaft –

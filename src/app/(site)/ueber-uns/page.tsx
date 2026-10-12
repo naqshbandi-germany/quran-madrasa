@@ -8,7 +8,7 @@ export default async function AboutPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-3xl font-bold text-brand-700">Ziel & Zweck</h1>
+        <h1 className="text-3xl font-bold text-azure-800">Ziel & Zweck</h1>
       </section>
 
       {missionStatement ? (
@@ -22,7 +22,7 @@ export default async function AboutPage() {
         </p>
       )}
 
-      <div className="rounded-lg border border-brand-200 bg-brand-50 p-5 text-center">
+      <div className="border border-brand-200 bg-brand-50 p-5 text-center">
         <p className="mb-3 text-brand-700">Neugierig geworden? Lernt uns in einem kostenlosen Gespräch kennen.</p>
         <BookingButton />
       </div>

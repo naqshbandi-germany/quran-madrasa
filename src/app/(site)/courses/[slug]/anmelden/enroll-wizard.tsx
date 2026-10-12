@@ -43,9 +43,9 @@ function formatPrice(cents: number, currency: string) {
 }
 
 const PRIMARY_BUTTON =
-  "h-12 rounded-md bg-brand-600 px-6 font-medium text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60";
+  "btn-primary btn-display h-12 px-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60";
 const SECONDARY_BUTTON =
-  "h-12 rounded-md border border-brand-300 bg-white px-6 font-medium text-brand-900 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700";
+  "h-12 border border-brand-300 bg-white px-6 font-medium text-brand-900 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700";
 
 export function EnrollWizard({ course, account, participants }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
@@ -170,7 +170,7 @@ export function EnrollWizard({ course, account, participants }: Props) {
   return (
     <div className="mx-auto max-w-2xl">
       <p className="text-xs uppercase tracking-[0.18em] text-azure-700">Anmeldung</p>
-      <h1 className="mt-1 text-3xl font-semibold leading-tight text-brand-900">{course.title}</h1>
+      <h1 className="mt-1 text-3xl font-semibold leading-tight text-azure-800">{course.title}</h1>
       <p className="mt-1 text-brand-900/75">
         {formatPrice(course.priceCents, course.currency)} pro Teilnehmer und Monat · monatlich
         kündbar
@@ -185,7 +185,7 @@ export function EnrollWizard({ course, account, participants }: Props) {
             key={n}
             aria-current={step === n ? "step" : undefined}
             className={`flex items-center gap-2 rounded-full border px-3 py-1 ${
-              step === n ? "border-brand-600 bg-brand-600 text-white" : "border-brand-200 text-brand-900/70"
+              step === n ? "border-brass bg-brass text-white" : "border-brand-200 text-brand-900/70"
             }`}
           >
             <span className="font-semibold">{n}</span>
@@ -203,7 +203,7 @@ export function EnrollWizard({ course, account, participants }: Props) {
               <h2
                 ref={headingRef}
                 tabIndex={-1}
-                className="text-2xl font-semibold text-brand-900 outline-none"
+                className="text-2xl font-semibold text-azure-800 outline-none"
               >
                 Wen meldest du an?
               </h2>
@@ -220,7 +220,7 @@ export function EnrollWizard({ course, account, participants }: Props) {
                 {participants.map((p) => (
                   <label
                     key={p.id}
-                    className={`flex items-start gap-3 rounded-md border bg-white p-3 ${
+                    className={`flex items-start gap-3 border bg-white p-3 ${
                       p.enrolled ? "border-brand-200 opacity-70" : "cursor-pointer border-brand-200 hover:border-azure-700"
                     }`}
                   >
@@ -294,7 +294,7 @@ export function EnrollWizard({ course, account, participants }: Props) {
               <h2
                 ref={headingRef}
                 tabIndex={-1}
-                className="text-2xl font-semibold text-brand-900 outline-none"
+                className="text-2xl font-semibold text-azure-800 outline-none"
               >
                 Prüfen und anmelden
               </h2>
@@ -304,8 +304,8 @@ export function EnrollWizard({ course, account, participants }: Props) {
               </p>
             </div>
 
-            <div className="rounded-lg border border-brand-200 bg-white p-5">
-              <h3 className="font-semibold text-brand-900">{course.title}</h3>
+            <div className="border border-gold-400/40 bg-white p-5">
+              <h3 className="font-semibold text-azure-800">{course.title}</h3>
               <ul className="mt-3 divide-y divide-brand-100">
                 {summaryRows.map((row) => (
                   <li key={row.key} className="flex items-center justify-between py-2 text-sm">
@@ -365,7 +365,7 @@ function AddButton({ title, hint, onClick }: { title: string; hint: string; onCl
     <button
       type="button"
       onClick={onClick}
-      className="rounded-md border border-dashed border-brand-400 bg-white p-3 text-left transition hover:border-azure-700 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700"
+      className="border border-dashed border-brand-400 bg-white p-3 text-left transition hover:border-azure-700 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700"
     >
       <span className="block font-medium text-brand-900">+ {title}</span>
       <span className="block text-sm text-brand-900/70">{hint}</span>
@@ -397,10 +397,10 @@ function DraftCard({
   return (
     <section
       aria-labelledby={id("title")}
-      className="space-y-4 rounded-lg border border-brand-200 bg-white p-5"
+      className="space-y-4 border border-gold-400/40 bg-white p-5"
     >
       <div className="flex items-center justify-between gap-3">
-        <h3 id={id("title")} className="font-semibold text-brand-900">
+        <h3 id={id("title")} className="font-semibold text-azure-800">
           Teilnehmer neu: {titles[input.relation]}
           <span className="sr-only"> (Nr. {position})</span>
         </h3>
@@ -464,7 +464,7 @@ function DraftCard({
         </>
       )}
 
-      <div className="space-y-3 rounded-md bg-brand-50 p-4">
+      <div className="space-y-3 bg-brand-50 p-4">
         <FloatingField
           id={id("whatsapp")}
           type="tel"

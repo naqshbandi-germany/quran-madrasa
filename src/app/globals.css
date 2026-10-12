@@ -18,3 +18,15 @@ h3 {
 .font-display {
   font-variant-numeric: lining-nums;
 }
+
+/* Primaerer Button: Messing, beim Hover weich zum Goldton; Schrift weiss.
+   btn-display setzt zusaetzlich die Ueberschriftenschrift (Cormorant Garamond). */
+@layer components {
+  .btn-primary {
+    @apply bg-brass text-white transition-colors duration-300 ease-out hover:bg-gold-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700;
+  }
+
+  .btn-display {
+    @apply inline-flex items-center justify-center text-center font-display text-xl font-bold leading-tight tracking-wide;
+  }
+}

@@ -7,7 +7,7 @@ export function LegalText({ text }: { text: string }) {
     <div className="max-w-3xl space-y-3 text-brand-900">
       {paragraphs.map((paragraph, i) =>
         paragraph.startsWith("## ") ? (
-          <h2 key={i} className="pt-4 text-2xl font-semibold text-brand-900">
+          <h2 key={i} className="pt-4 text-2xl font-semibold text-azure-800">
             {paragraph.slice(3)}
           </h2>
         ) : (

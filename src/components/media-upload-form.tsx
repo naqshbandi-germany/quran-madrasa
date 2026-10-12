@@ -8,7 +8,7 @@ import { MAX_BLOB_FILE_BYTES, MAX_FILE_BYTES, formatBytes, mimeTypeFor, safeFile
 import { registerBlobFile, uploadMediaFile } from "@/lib/media-actions";
 
 const INITIAL: ActionResult = { ok: false };
-const INPUT = "mt-1 w-full rounded-md border border-brand-300 bg-white px-3 py-2";
+const INPUT = "mt-1 w-full border border-brand-300 bg-white px-3 py-2";
 
 // Mit Blob-Speicher (blobEnabled) geht die Datei direkt vom Browser in den Speicher und wird
 // danach eingetragen; ohne ihn laeuft der Upload ueber den Server (nur bis 4 MB).
@@ -71,7 +71,7 @@ export function UploadForm({
     <form
       ref={formRef}
       action={action}
-      className="grid gap-4 rounded-lg border border-brand-200 bg-white p-5 sm:grid-cols-2"
+      className="grid gap-4 border border-gold-400/40 bg-white p-5 sm:grid-cols-2"
     >
       <label className="flex flex-col text-sm font-medium text-brand-700">
         Datei
@@ -79,7 +79,7 @@ export function UploadForm({
           name="file"
           type="file"
           required
-          className={`${INPUT} file:mr-3 file:rounded-md file:border-0 file:bg-brand-100 file:px-3 file:py-1.5 file:font-medium file:text-brand-700`}
+          className={`${INPUT} file:mr-3 file:file:border-0 file:bg-brand-100 file:px-3 file:py-1.5 file:font-medium file:text-brand-700`}
         />
         {state.errors?.file && <span className="mt-1 font-normal text-red-700">{state.errors.file}</span>}
       </label>
@@ -91,7 +91,7 @@ export function UploadForm({
       {state.message && (
         <p
           role={state.ok ? "status" : "alert"}
-          className={`col-span-full rounded-md px-3 py-2 text-sm ${
+          className={`col-span-full px-3 py-2 text-sm ${
             state.ok ? "bg-green-50 text-green-900" : "bg-red-50 text-red-900"
           }`}
         >
@@ -102,7 +102,7 @@ export function UploadForm({
       <button
         type="submit"
         disabled={pending}
-        className="col-span-full rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-60 sm:col-span-1 sm:w-fit"
+        className="btn-primary col-span-full px-4 py-2 disabled:opacity-60 sm:col-span-1 sm:w-fit"
       >
         {pending ? "Wird hochgeladen …" : "Hochladen"}
       </button>

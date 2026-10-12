@@ -5,7 +5,7 @@ import { SiteNav } from "./site-nav";
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-brand-200 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-gold-400/40 bg-white/95 backdrop-blur">
         <SiteNav />
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>

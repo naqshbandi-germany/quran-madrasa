@@ -57,7 +57,7 @@ function ResetPasswordForm() {
   if (!token) {
     return (
       <div className="mx-auto max-w-md space-y-3">
-        <h1 className="text-4xl font-semibold text-brand-900">Link ungültig</h1>
+        <h1 className="text-4xl font-semibold text-azure-800">Link ungültig</h1>
         <p className="text-brand-900/80">
           Dieser Link ist unvollständig.{" "}
           <Link href="/auth/passwort-vergessen" className="font-medium text-azure-800 underline">
@@ -70,14 +70,14 @@ function ResetPasswordForm() {
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="text-4xl font-semibold text-brand-900">Neues Passwort festlegen</h1>
+      <h1 className="text-4xl font-semibold text-azure-800">Neues Passwort festlegen</h1>
 
       {done ? (
-        <div role="status" className="mt-6 space-y-3 rounded-md border border-brand-200 bg-white p-5">
+        <div role="status" className="mt-6 space-y-3 border border-gold-400/40 bg-white p-5">
           <p className="font-medium text-brand-900">Dein Passwort wurde geändert.</p>
           <Link
             href="/auth/signin"
-            className="inline-block rounded-md bg-brand-600 px-5 py-2.5 font-medium text-white hover:bg-brand-700"
+            className="btn-primary btn-display inline-block px-5 py-2.5"
           >
             Jetzt anmelden
           </Link>
@@ -97,7 +97,7 @@ function ResetPasswordForm() {
           <button
             type="submit"
             disabled={loading}
-            className="h-12 w-full rounded-md bg-brand-600 px-4 font-medium text-white transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60"
+            className="btn-primary btn-display h-12 w-full px-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60"
           >
             {loading ? "Einen Moment …" : "Passwort speichern"}
           </button>
