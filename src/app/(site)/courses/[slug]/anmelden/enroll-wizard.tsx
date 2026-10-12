@@ -28,6 +28,8 @@ type Props = {
   course: { id: string; slug: string; title: string; priceCents: number; currency: string };
   account: { name: string; email: string };
   participants: SavedParticipant[];
+  // Noch freie Plaetze (Teilnehmerbegrenzung); null = unbegrenzt
+  freePlaces: number | null;
 };
 
 type Draft = { key: number; input: ParticipantInput; errors: ParticipantErrors };
@@ -47,7 +49,7 @@ const PRIMARY_BUTTON =
 const SECONDARY_BUTTON =
   "h-12 border border-brand-300 bg-white px-6 font-medium text-brand-900 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700";
 
-export function EnrollWizard({ course, account, participants }: Props) {
+export function EnrollWizard({ course, account, participants, freePlaces }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -104,6 +106,14 @@ export function EnrollWizard({ course, account, participants }: Props) {
     setFormError(null);
     if (count === 0) {
       setFormError("Bitte wähle mindestens einen Teilnehmer aus oder füge einen hinzu.");
+      return;
+    }
+    if (freePlaces != null && count > freePlaces) {
+      setFormError(
+        freePlaces === 1
+          ? "In diesem Kurs ist nur noch 1 Platz frei. Bitte melde nur 1 Teilnehmer an."
+          : `In diesem Kurs sind nur noch ${freePlaces} Plätze frei. Bitte melde höchstens ${freePlaces} Teilnehmer an.`,
+      );
       return;
     }
     if (count > MAX_PARTICIPANTS_PER_ORDER) {

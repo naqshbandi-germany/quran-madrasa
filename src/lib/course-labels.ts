@@ -23,6 +23,8 @@ export type CatalogCourse = {
   priceCents: number;
   currency: string;
   teacherName: string;
+  // Teilnehmerbegrenzung erreicht (Anzeige "Ausgebucht")
+  isFull: boolean;
   scheduleSlots: ScheduleSlot[];
 };
 

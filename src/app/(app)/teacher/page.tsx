@@ -79,6 +79,14 @@ export default async function TeacherPage() {
             placeholder="Level (optional, z.B. Level 1)"
             className="border border-brand-300 px-3 py-2"
           />
+          <input
+            name="maxParticipants"
+            type="number"
+            min={1}
+            max={500}
+            placeholder="Max. Teilnehmerzahl (leer = unbegrenzt)"
+            className="border border-brand-300 px-3 py-2"
+          />
           <fieldset className="col-span-full flex flex-wrap gap-4 text-sm text-brand-700">
             <legend className="mb-1 font-medium">Altersgruppe</legend>
             {Object.entries(AGE_GROUP_LABELS).map(([value, label]) => (

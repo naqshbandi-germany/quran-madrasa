@@ -9,6 +9,8 @@ import { EmailComposer } from "@/components/email-composer";
 import { CopyButton } from "@/components/copy-button";
 import { EditableRow } from "@/components/editable-row";
 import { TrashIcon } from "@/components/icons";
+import { ParticipantsList, type ParticipantRow } from "@/components/participants-list";
+import { WaitlistContactButton } from "@/components/waitlist-contact-button";
 import {
   createClassSession,
   createRecurringSessions,
@@ -19,6 +21,8 @@ import {
   updateScheduleSlot,
 } from "@/lib/teacher-actions";
 import { isZoomProvider } from "@/lib/classroom";
+import { capacityOf } from "@/lib/course-capacity";
+import { removeWaitlistEntry, setMaxParticipants } from "@/lib/waitlist-actions";
 import { blobAccess, isBlobConfigured } from "@/lib/blob";
 import { toMediaItem } from "@/lib/media-items";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
@@ -160,6 +164,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         include: { participant: true, user: { select: { name: true, email: true } } },
         orderBy: { createdAt: "asc" },
       },
+      waitlist: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!course) notFound();
@@ -176,6 +181,19 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
     if (existing) existing.name += `, ${participant.name}`;
     else whatsappMembers.push({ id: participant.id, name: participant.name, whatsapp: participant.whatsapp });
   }
+
+  const capacity = capacityOf(course.maxParticipants, course.enrollments.length);
+  const dateFormat = new Intl.DateTimeFormat("de-DE");
+  const participantRows: ParticipantRow[] = course.enrollments.map(({ id, participant, user, createdAt }) => ({
+    enrollmentId: id,
+    name: participant.name,
+    detail:
+      participant.relation === "CHILD"
+        ? `(Kind${participant.birthYear ? `, Jahrgang ${participant.birthYear}` : ""})`
+        : "",
+    contact: participant.email ? `E-Mail: ${participant.email}` : `Kontakt über ${user.name}: ${user.email}`,
+    since: dateFormat.format(createdAt),
+  }));
 
   const mediaFiles = await prisma.mediaFile.findMany({
     where: session?.user.role === "ADMIN" ? {} : { ownerId: session?.user.id },
@@ -206,37 +224,88 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-azure-800">{course.title}</h1>
 
-      <section aria-labelledby="teilnehmer" className="space-y-4">
-        <h2 id="teilnehmer" className="font-semibold text-azure-800">
-          Teilnehmer ({course.enrollments.length})
+      <section aria-labelledby="begrenzung" className="space-y-3">
+        <h2 id="begrenzung" className="font-semibold text-azure-800">
+          Teilnehmerbegrenzung
         </h2>
-        {course.enrollments.length === 0 ? (
-          <p className="text-sm text-brand-600">Noch keine Teilnehmer eingeschrieben.</p>
+        <form
+          action={setMaxParticipants}
+          className="flex flex-wrap items-end gap-3 border border-gold-400/40 bg-white p-4 text-sm"
+        >
+          <input type="hidden" name="courseId" value={course.id} />
+          <label className="flex flex-col text-brand-700">
+            Maximale Teilnehmerzahl
+            <input
+              name="maxParticipants"
+              type="number"
+              min={1}
+              max={500}
+              defaultValue={course.maxParticipants ?? ""}
+              placeholder="unbegrenzt"
+              className={`mt-1 w-48 ${INPUT}`}
+            />
+          </label>
+          <button className={SAVE_BUTTON}>Speichern</button>
+          <p className="basis-full text-xs text-brand-600">
+            Leer lassen = unbegrenzt. Ist die Grenze erreicht, erscheint der Kurs als
+            &bdquo;ausgebucht&ldquo; und Interessenten tragen sich in die Warteliste ein.
+          </p>
+        </form>
+      </section>
+
+      <section aria-labelledby="teilnehmer" className="space-y-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="teilnehmer" className="font-semibold text-azure-800">
+            Teilnehmer ({course.enrollments.length})
+          </h2>
+          {capacity.max != null && (
+            <span
+              className={`px-3 py-0.5 text-xs font-semibold text-white ${capacity.isFull ? "bg-azure-800" : "bg-brass"}`}
+            >
+              {capacity.taken} von {capacity.max} Plätzen belegt
+              {capacity.taken > capacity.max ? " (überbucht)" : ""}
+            </span>
+          )}
+        </div>
+        <ParticipantsList rows={participantRows} />
+      </section>
+
+      <section aria-labelledby="warteliste" className="space-y-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="warteliste" className="font-semibold text-azure-800">
+            Warteliste ({course.waitlist.length})
+          </h2>
+          <span className="text-xs text-brand-600">sortiert nach Eintragsdatum, älteste zuerst</span>
+        </div>
+        {course.waitlist.length === 0 ? (
+          <p className="text-sm text-brand-600">Niemand wartet auf einen Platz.</p>
         ) : (
-          <ul className="divide-y divide-brand-100 border border-gold-400/40 bg-white text-sm">
-            {course.enrollments.map(({ id, participant, user, createdAt }) => (
-              <li key={id} className="px-4 py-3">
-                <p className="font-medium text-brand-900">
-                  {participant.name}{" "}
-                  {participant.relation === "CHILD" && (
-                    <span className="font-normal text-brand-600">
-                      (Kind{participant.birthYear ? `, Jahrgang ${participant.birthYear}` : ""})
-                    </span>
-                  )}
-                </p>
-                <p className="text-brand-600">
-                  {participant.email ? (
-                    <>E-Mail: {participant.email}</>
-                  ) : (
-                    <>
-                      Kontakt über {user.name}: {user.email}
-                    </>
-                  )}
-                  {" · "}angemeldet am {new Intl.DateTimeFormat("de-DE").format(createdAt)}
-                </p>
+          <ol className="divide-y divide-brand-100 border border-gold-400/40 bg-white text-sm">
+            {course.waitlist.map((entry, index) => (
+              <li key={entry.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center border border-gold-400/60 bg-brand-100 font-display text-base font-bold text-azure-800">
+                  {index + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-brand-900">
+                    {entry.name} <span className="font-normal text-brand-600">· {entry.email}</span>
+                  </p>
+                  <p className="text-xs text-brand-700">
+                    eingetragen am {new Intl.DateTimeFormat("de-DE").format(entry.createdAt)}
+                    {entry.contactedAt
+                      ? ` · angeschrieben am ${new Intl.DateTimeFormat("de-DE").format(entry.contactedAt)}`
+                      : ""}
+                  </p>
+                </div>
+                <WaitlistContactButton entryId={entry.id} name={entry.name} />
+                <RemoveForm
+                  action={removeWaitlistEntry}
+                  fields={{ entryId: entry.id }}
+                  message={`${entry.name} von der Warteliste entfernen?`}
+                />
               </li>
             ))}
-          </ul>
+          </ol>
         )}
       </section>
 

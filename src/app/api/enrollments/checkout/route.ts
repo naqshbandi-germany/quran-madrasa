@@ -11,6 +11,7 @@ import {
   type ParticipantInput,
   type ParticipantRelationValue,
 } from "@/lib/participant-rules";
+import { getCourseCapacity } from "@/lib/course-capacity";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 
@@ -66,6 +67,26 @@ export async function POST(request: Request) {
   const course = await prisma.course.findUnique({ where: { id: courseId } });
   if (!course || !course.isPublished || !course.stripePriceId) {
     return NextResponse.json({ error: "Kurs nicht verfügbar." }, { status: 400 });
+  }
+
+  // Teilnehmerbegrenzung: voller Kurs -> keine Zahlung, nur Warteliste.
+  const capacity = await getCourseCapacity(course.id, course.maxParticipants);
+  if (capacity.isFull) {
+    return NextResponse.json(
+      { error: "Dieser Kurs ist leider ausgebucht. Du kannst dich auf der Kursseite auf die Warteliste setzen." },
+      { status: 409 },
+    );
+  }
+  if (capacity.free != null && total > capacity.free) {
+    return NextResponse.json(
+      {
+        error:
+          capacity.free === 1
+            ? "In diesem Kurs ist nur noch 1 Platz frei. Bitte melde nur 1 Teilnehmer an."
+            : `In diesem Kurs sind nur noch ${capacity.free} Plätze frei. Bitte melde höchstens ${capacity.free} Teilnehmer an.`,
+      },
+      { status: 409 },
+    );
   }
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });

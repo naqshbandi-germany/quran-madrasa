@@ -269,6 +269,11 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
                   <p className="text-[11px] uppercase tracking-[0.16em] text-gold-600">
                     {course.category}
                     {course.level ? ` · ${course.level}` : ""}
+                    {course.isFull && (
+                      <span className="ml-2 bg-azure-800 px-2 py-0.5 font-semibold tracking-[0.1em] text-white">
+                        Ausgebucht
+                      </span>
+                    )}
                   </p>
                   <h3 className="mt-1 font-display text-xl font-semibold leading-snug text-azure-800">
                     {course.title}

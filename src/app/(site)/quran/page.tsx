@@ -5,6 +5,7 @@ import { BookingButton } from "@/components/booking-button";
 import { OrnamentDivider } from "@/components/ornament";
 import { formatPrice, formatSchedule } from "@/lib/course-labels";
 import { MINIATURES } from "@/lib/miniatures";
+import { capacityOf } from "@/lib/course-capacity";
 import { prisma } from "@/lib/prisma";
 
 export const metadata = { title: "Quran-Unterricht für alle Level – Quran Madrasa" };
@@ -24,7 +25,10 @@ const QUOTE = {
 export default async function QuranPage() {
   const courses = await prisma.course.findMany({
     where: { isPublished: true, slug: { in: LEVEL_SLUGS } },
-    include: { scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] } },
+    include: {
+      scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
+      _count: { select: { enrollments: true } },
+    },
   });
   const levels = LEVEL_SLUGS.flatMap((slug) => courses.filter((c) => c.slug === slug));
   const image = MINIATURES.quranHero;
@@ -94,6 +98,11 @@ export default async function QuranPage() {
               >
                 <p className="text-[11px] uppercase tracking-[0.16em] text-gold-600">
                   {course.level ?? "Quran"}
+                  {capacityOf(course.maxParticipants, course._count.enrollments).isFull && (
+                    <span className="ml-2 bg-azure-800 px-2 py-0.5 font-semibold tracking-[0.1em] text-white">
+                      Ausgebucht
+                    </span>
+                  )}
                 </p>
                 <h3 className="mt-1 font-display text-2xl font-semibold leading-snug text-azure-800">
                   {course.title}

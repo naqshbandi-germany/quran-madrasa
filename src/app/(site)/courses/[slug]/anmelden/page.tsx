@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { getCourseCapacity } from "@/lib/course-capacity";
 import { prisma } from "@/lib/prisma";
 import { EnrollWizard } from "./enroll-wizard";
 
@@ -14,6 +15,8 @@ export default async function EnrollPage({ params }: { params: Promise<{ slug: s
   const course = await prisma.course.findUnique({ where: { slug } });
   if (!course || !course.isPublished) notFound();
   if (!course.stripePriceId) redirect(`/courses/${slug}`);
+  const capacity = await getCourseCapacity(course.id, course.maxParticipants);
+  if (capacity.isFull) redirect(`/courses/${slug}`);
 
   const session = await auth();
   if (!session) {
@@ -44,6 +47,7 @@ export default async function EnrollPage({ params }: { params: Promise<{ slug: s
         birthYear: p.birthYear,
         enrolled: p.enrollments.length > 0,
       }))}
+      freePlaces={capacity.free}
     />
   );
 }

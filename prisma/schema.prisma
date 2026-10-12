@@ -104,6 +104,9 @@ model Course {
   stripePriceId String?
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
+  // Hoechstzahl der Teilnehmer (Personen, nicht Konten); null = unbegrenzt. Ist der Kurs voll,
+  // erscheint er als ausgebucht und Interessenten tragen sich in die Warteliste ein.
+  maxParticipants Int?
 
   teacherId   String
   teacher     User     @relation("TeacherCourses", fields: [teacherId], references: [id])
@@ -111,6 +114,7 @@ model Course {
   sessions      ClassSession[]
   enrollments   Enrollment[]
   scheduleSlots ScheduleSlot[]
+  waitlist      WaitlistEntry[]
 }
 
 // Wiederkehrender wöchentlicher Termin eines Kurses (z.B. "Mittwoch 18:00-18:40"),
@@ -175,6 +179,24 @@ model Participant {
   enrollments Enrollment[]
 
   @@index([ownerId])
+}
+
+// Interessent auf der Warteliste eines vollen Kurses (ohne Konto, ohne Zahlung). Die Reihenfolge
+// ergibt sich aus createdAt (wer sich zuerst einträgt, steht oben).
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  // Einwilligung in die Speicherung der Angaben zur Benachrichtigung.
+  consentAt DateTime
+  createdAt DateTime @default(now())
+  // Wann die Lehrkraft zuletzt angefragt hat, ob das Interesse weiter besteht.
+  contactedAt DateTime?
+
+  @@unique([courseId, email])
+  @@index([courseId, createdAt])
 }
 
 model Enrollment {
