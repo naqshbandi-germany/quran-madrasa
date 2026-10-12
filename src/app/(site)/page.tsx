@@ -66,8 +66,7 @@ export default async function HomePage() {
         <OrnamentDivider className="mt-3" />
         <p className="mt-2 text-brand-600">
           Online-Unterricht in Quran-Rezitation (Tadschwid), Hifz und islamischer Wissenschaft –
-          live mit unseren Lehrern. Filtere nach Thema, Altersgruppe, Lehrer, Level oder
-          Wochentag.
+          live mit unseren Lehrern.
         </p>
       </section>
 
