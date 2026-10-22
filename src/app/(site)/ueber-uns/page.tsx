@@ -12,7 +12,7 @@ export default async function AboutPage() {
       </section>
 
       {missionStatement ? (
-        <div className="max-w-2xl space-y-4 whitespace-pre-line text-brand-900">
+        <div className="max-w-2xl whitespace-pre-line text-lg leading-relaxed text-brand-900">
           {missionStatement}
         </div>
       ) : (
