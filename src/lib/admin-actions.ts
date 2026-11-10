@@ -216,3 +216,49 @@ function revalidateCoursePages(slug: string) {
   revalidatePath("/lehrer");
   revalidatePath(`/courses/${slug}`);
 }
+
+// Legt eine versteckte Kopie eines Kurses an (z. B. fuer eine Testgruppe), waehrend das Original
+// oeffentlich bleibt. Uebernommen werden Texte, Lehrkraft, Altersgruppen und Wochentermine; Preise,
+// Sitzungen und Teilnehmer nicht. Die Kopie ist zunaechst ein Entwurf.
+export async function duplicateAsHiddenCourse(formData: FormData) {
+  await requireAdmin();
+  const courseId = z.string().cuid().parse(formData.get("courseId"));
+  const original = await prisma.course.findUniqueOrThrow({
+    where: { id: courseId },
+    include: { scheduleSlots: true },
+  });
+
+  let slug = `${original.slug}-test`;
+  for (let n = 2; await prisma.course.findUnique({ where: { slug } }); n++) {
+    slug = `${original.slug}-test-${n}`;
+  }
+
+  await prisma.course.create({
+    data: {
+      slug,
+      title: `${original.title} (Testgruppe)`,
+      description: original.description,
+      category: original.category,
+      level: original.level,
+      ageGroups: original.ageGroups,
+      currency: original.currency,
+      priceCents: 0,
+      maxParticipants: original.maxParticipants,
+      teacherId: original.teacherId,
+      isPublished: false,
+      isHidden: true,
+      accessCode: generateAccessCode(),
+      scheduleSlots: {
+        create: original.scheduleSlots.map((slot) => ({
+          weekday: slot.weekday,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          note: slot.note,
+        })),
+      },
+    },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/teacher");
+}
