@@ -2,6 +2,7 @@ import { SubscriptionStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import type Stripe from "stripe";
 
+import { sendEnrollmentConfirmation } from "@/lib/notification-email";
 import { prisma } from "@/lib/prisma";
 
 function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionStatus {
@@ -86,12 +87,31 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
     select: { id: true },
   });
 
+  // Bereits eingeschriebene Teilnehmer erkennen, damit die Bestaetigungs-Mail nur einmal geht
+  // (Stripe schickt pro Abo mehrere Ereignisse).
+  const alreadyEnrolled = new Set(
+    (
+      await prisma.enrollment.findMany({
+        where: { courseId, participantId: { in: participants.map((p) => p.id) } },
+        select: { participantId: true },
+      })
+    ).map((e) => e.participantId),
+  );
+
+  const newEnrollmentIds: string[] = [];
   for (const participant of participants) {
-    await prisma.enrollment.upsert({
+    const enrollment = await prisma.enrollment.upsert({
       where: { participantId_courseId: { participantId: participant.id, courseId } },
       create: { userId, participantId: participant.id, courseId, subscriptionId: saved.id },
       update: { subscriptionId: saved.id },
     });
+    if (!alreadyEnrolled.has(participant.id)) newEnrollmentIds.push(enrollment.id);
   }
   refreshCourses();
+
+  try {
+    await sendEnrollmentConfirmation(courseId, newEnrollmentIds);
+  } catch (err) {
+    console.error("Bestätigungs-Mail nach der Anmeldung fehlgeschlagen:", err);
+  }
 }

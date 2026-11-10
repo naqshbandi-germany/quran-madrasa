@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { auth } from "@/auth";
 import { createClassroomMeeting, createClassroomMeetings } from "@/lib/classroom";
+import { sendSessionChangeNotice } from "@/lib/notification-email";
 import { prisma } from "@/lib/prisma";
 import { fromTeachingLocal, parseTeachingDateTime } from "@/lib/schedule-time";
 import { deleteZoomMeeting, updateZoomMeeting } from "@/lib/zoom";
@@ -384,6 +385,13 @@ export async function updateClassSession(formData: FormData) {
 
   await prisma.classSession.update({ where: { id: existing.id }, data });
 
+  // Kommende Stunde verschoben (Beginn oder Dauer geaendert): Teilnehmer informieren.
+  const moved =
+    startsAt.getTime() !== existing.startsAt.getTime() || parsed.durationMin !== existing.durationMin;
+  if (moved && Math.max(startsAt.getTime(), existing.startsAt.getTime()) > Date.now()) {
+    await sendSessionChangeNotice("moved", existing, { startsAt, durationMin: parsed.durationMin });
+  }
+
   revalidatePath(`/teacher/courses/${existing.courseId}`);
   revalidatePath("/dashboard");
 }
@@ -402,6 +410,10 @@ export async function deleteClassSession(formData: FormData) {
 
   if (existing.zoomMeetingId) await deleteZoomMeeting(existing.zoomMeetingId);
   await prisma.classSession.delete({ where: { id: existing.id } });
+  // Kommende Stunde abgesagt: Teilnehmer informieren (vergangene Termine werden still entfernt).
+  if (existing.startsAt.getTime() > Date.now()) {
+    await sendSessionChangeNotice("cancelled", existing);
+  }
 
   revalidatePath(`/teacher/courses/${existing.courseId}`);
   revalidatePath("/dashboard");

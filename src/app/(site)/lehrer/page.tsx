@@ -14,7 +14,7 @@ export default async function TeachersPage() {
       image: true,
       bio: true,
       taughtCourses: {
-        where: { isPublished: true },
+        where: { isPublished: true, isHidden: false },
         select: { slug: true, title: true },
         orderBy: { title: "asc" },
       },

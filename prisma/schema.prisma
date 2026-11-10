@@ -78,6 +78,9 @@ model User {
   createdAt     DateTime  @default(now())
 
   stripeCustomerId String? @unique
+  // Geheimer Schluessel fuer das Kalender-Abo (/api/kalender/<token>), wird beim ersten Aufruf
+  // des Dashboards erzeugt.
+  calendarToken    String? @unique
 
   taughtCourses Course[]       @relation("TeacherCourses")
   enrollments   Enrollment[]
@@ -107,6 +110,14 @@ model Course {
   // Hoechstzahl der Teilnehmer (Personen, nicht Konten); null = unbegrenzt. Ist der Kurs voll,
   // erscheint er als ausgebucht und Interessenten tragen sich in die Warteliste ein.
   maxParticipants Int?
+  // Versteckter Kurs (z. B. Testphase): erscheint nicht im Kursangebot, Stundenplan und auf der
+  // Lehrerseite, ist aber ueber den geheimen Link /zugang/<accessCode> erreichbar und buchbar.
+  isHidden    Boolean  @default(false)
+  accessCode  String?  @unique
+  // Optionale einmalige Anmeldegebuehr (Stripe-Preis, nicht wiederkehrend), wird mit der ersten
+  // Rechnung des Abos faellig. Betrag in Cent nur fuer die Anzeige.
+  signupFeeCents    Int?
+  signupFeePriceId  String?
 
   teacherId   String
   teacher     User     @relation("TeacherCourses", fields: [teacherId], references: [id])
@@ -226,6 +237,8 @@ model SiteContent {
   // src/lib/legal-defaults.ts angezeigt.
   impressum        String   @default("")
   privacyPolicy    String   @default("")
+  // Letzter Aufruf des Erinnerungs-Endpoints (Ueberwachung des externen Cron-Dienstes).
+  remindersLastRunAt DateTime?
   updatedAt        DateTime @updatedAt
 }
 

@@ -24,7 +24,7 @@ const QUOTE = {
 
 export default async function QuranPage() {
   const courses = await prisma.course.findMany({
-    where: { isPublished: true, slug: { in: LEVEL_SLUGS } },
+    where: { isPublished: true, isHidden: false, slug: { in: LEVEL_SLUGS } },
     include: {
       scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
       _count: { select: { enrollments: true } },

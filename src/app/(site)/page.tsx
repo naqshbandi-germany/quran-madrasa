@@ -12,7 +12,7 @@ export const revalidate = 3600;
 
 export default async function HomePage() {
   const courses = await prisma.course.findMany({
-    where: { isPublished: true },
+    where: { isPublished: true, isHidden: false },
     orderBy: { title: "asc" },
     include: {
       teacher: { select: { name: true } },

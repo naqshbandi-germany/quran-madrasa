@@ -3,14 +3,46 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import {
   createTeacherAccount,
+  regenerateAccessCode,
+  updateCourseSettings,
   updateLegalTexts,
   updateSiteContent,
   updateTeacherProfile,
 } from "@/lib/admin-actions";
+import { getAppUrl } from "@/lib/app-url";
 import { isZoomProvider } from "@/lib/classroom";
+import { CopyButton } from "@/components/copy-button";
 import { isGoogleAuthConfigured } from "@/lib/auth-providers";
 import { DEFAULT_IMPRESSUM, defaultPrivacyPolicy } from "@/lib/legal-defaults";
+import { formatGermanDateTime } from "@/lib/schedule-time";
 import { togglePublish } from "@/lib/teacher-actions";
+
+function minutesSince(date: Date | null) {
+  return date ? Math.round((Date.now() - date.getTime()) / 60_000) : null;
+}
+
+// Zeigt den aktuellen Stand (Erinnerungs-Status, Kurse) und darf nicht zwischengespeichert werden.
+export const dynamic = "force-dynamic";
+
+// Der Taktgeber fuer Erinnerungen ruft alle 15 Minuten an. Bleibt er laenger aus, gehen keine
+// Erinnerungen raus; das soll hier auffallen.
+function ReminderStatus({ lastRunAt, minutesAgo }: { lastRunAt: Date | null; minutesAgo: number | null }) {
+  const ok = minutesAgo !== null && minutesAgo <= 35;
+  return (
+    <section
+      className={`border p-4 text-sm ${ok ? "border-brand-200 bg-brand-50" : "border-red-300 bg-red-50"}`}
+    >
+      <h2 className="font-semibold text-azure-800">Erinnerungs-Mails</h2>
+      <p className="mt-1 text-brand-900">
+        {minutesAgo === null
+          ? "Der Taktgeber hat sich noch nie gemeldet. Ohne ihn werden keine Erinnerungen verschickt (Einrichtung siehe README)."
+          : ok
+            ? `In Ordnung: zuletzt vor ${minutesAgo} Minuten geprüft (${formatGermanDateTime(lastRunAt!)} Uhr).`
+            : `Achtung: zuletzt vor ${minutesAgo} Minuten geprüft (${formatGermanDateTime(lastRunAt!)} Uhr). Bitte den Taktgeber (cron-job.org) kontrollieren.`}
+      </p>
+    </section>
+  );
+}
 
 export default async function AdminPage() {
   const teachers = await prisma.user.findMany({
@@ -20,6 +52,7 @@ export default async function AdminPage() {
   });
 
   const siteContent = await prisma.siteContent.findUnique({ where: { id: "main" } });
+  const remindersLastRunAt = siteContent?.remindersLastRunAt ?? null;
 
   const courses = await prisma.course.findMany({
     orderBy: { createdAt: "desc" },
@@ -32,6 +65,8 @@ export default async function AdminPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-azure-800">Admin-Bereich</h1>
+
+      <ReminderStatus lastRunAt={remindersLastRunAt} minutesAgo={minutesSince(remindersLastRunAt)} />
 
       <section className="border border-gold-400/40 bg-white p-5">
         <h2 className="mb-4 font-semibold text-azure-800">Lehrer</h2>
@@ -167,28 +202,108 @@ export default async function AdminPage() {
           <p className="text-sm text-brand-600">Noch keine Kurse angelegt.</p>
         ) : (
           <ul className="space-y-2">
-            {courses.map((course) => (
-              <li
-                key={course.id}
-                className="flex items-center justify-between bg-brand-50 px-3 py-2 text-sm"
-              >
-                <span>
-                  {course.title} · Lehrer: {course.teacher.name} · {course._count.enrollments}{" "}
-                  Schüler · {course.isPublished ? "veröffentlicht" : "Entwurf"}
-                </span>
-                <div className="flex gap-3">
-                  <Link href={`/teacher/courses/${course.id}`} className="underline">
-                    Sitzungen
-                  </Link>
-                  <form action={togglePublish}>
-                    <input type="hidden" name="courseId" value={course.id} />
-                    <button className="underline">
-                      {course.isPublished ? "Entwurf setzen" : "Veröffentlichen"}
-                    </button>
-                  </form>
-                </div>
-              </li>
-            ))}
+            {courses.map((course) => {
+              const secretLink =
+                course.isHidden && course.accessCode ? `${getAppUrl()}/zugang/${course.accessCode}` : null;
+              return (
+                <li key={course.id} className="bg-brand-50 px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>
+                      {course.title} · Lehrer: {course.teacher.name} · {course._count.enrollments}{" "}
+                      Schüler · {course.isPublished ? "veröffentlicht" : "Entwurf"}
+                      {course.isHidden && " · versteckt"}
+                    </span>
+                    <div className="flex gap-3">
+                      <Link href={`/teacher/courses/${course.id}`} className="underline">
+                        Sitzungen
+                      </Link>
+                      <form action={togglePublish}>
+                        <input type="hidden" name="courseId" value={course.id} />
+                        <button className="underline">
+                          {course.isPublished ? "Entwurf setzen" : "Veröffentlichen"}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-brand-700">Preis, Plätze und Sichtbarkeit</summary>
+                    <form action={updateCourseSettings} className="mt-2 grid gap-2 sm:grid-cols-2">
+                      <input type="hidden" name="courseId" value={course.id} />
+                      <label className="text-brand-700">
+                        Preis pro Monat in € (0 = kostenlos)
+                        <input
+                          name="price"
+                          inputMode="decimal"
+                          defaultValue={(course.priceCents / 100).toFixed(2).replace(".", ",")}
+                          className="mt-1 w-full border border-brand-300 px-3 py-1.5"
+                        />
+                      </label>
+                      <label className="text-brand-700">
+                        Stripe-Preis-ID (monatlich, price_...)
+                        <input
+                          name="stripePriceId"
+                          defaultValue={course.stripePriceId ?? ""}
+                          className="mt-1 w-full border border-brand-300 px-3 py-1.5 font-mono"
+                        />
+                      </label>
+                      <label className="text-brand-700">
+                        Einmalige Anmeldegebühr in € (leer = keine)
+                        <input
+                          name="signupFee"
+                          inputMode="decimal"
+                          defaultValue={
+                            course.signupFeeCents != null
+                              ? (course.signupFeeCents / 100).toFixed(2).replace(".", ",")
+                              : ""
+                          }
+                          className="mt-1 w-full border border-brand-300 px-3 py-1.5"
+                        />
+                      </label>
+                      <label className="text-brand-700">
+                        Stripe-Preis-ID der Gebühr (einmalig, price_...)
+                        <input
+                          name="signupFeePriceId"
+                          defaultValue={course.signupFeePriceId ?? ""}
+                          className="mt-1 w-full border border-brand-300 px-3 py-1.5 font-mono"
+                        />
+                      </label>
+                      <label className="text-brand-700">
+                        Höchstzahl Teilnehmer (leer = unbegrenzt)
+                        <input
+                          name="maxParticipants"
+                          type="number"
+                          min={1}
+                          defaultValue={course.maxParticipants ?? ""}
+                          className="mt-1 w-full border border-brand-300 px-3 py-1.5"
+                        />
+                      </label>
+                      <label className="flex items-center gap-2 self-end text-brand-700">
+                        <input type="checkbox" name="isHidden" defaultChecked={course.isHidden} />
+                        Versteckt (nur über geheimen Link erreichbar)
+                      </label>
+                      <button className="btn-primary px-4 py-1.5 sm:col-span-2 sm:w-fit">
+                        Einstellungen speichern
+                      </button>
+                    </form>
+                    {secretLink && (
+                      <div className="mt-3 border-t border-brand-200 pt-3">
+                        <p className="text-brand-700">
+                          Geheimer Link (der Kurs muss außerdem veröffentlicht sein):
+                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <code className="break-all bg-white px-2 py-1">{secretLink}</code>
+                          <CopyButton text={secretLink} />
+                          <form action={regenerateAccessCode}>
+                            <input type="hidden" name="courseId" value={course.id} />
+                            <button className="underline">Neuen Link erzeugen</button>
+                          </form>
+                        </div>
+                      </div>
+                    )}
+                  </details>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

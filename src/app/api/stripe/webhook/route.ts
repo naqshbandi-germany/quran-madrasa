@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
+import { sendPaymentFailedNotice } from "@/lib/notification-email";
 import { getStripe } from "@/lib/stripe";
 import { syncSubscription } from "@/lib/subscription-sync";
 
@@ -38,6 +39,16 @@ export async function POST(request: Request) {
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
       await syncSubscription(subscription);
+      break;
+    }
+    case "invoice.payment_failed": {
+      // Nur Verlaengerungen melden; beim ersten Checkout sieht der Nutzer den Fehler direkt.
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
+      if (customerId && invoice.billing_reason === "subscription_cycle") {
+        const courseId = invoice.parent?.subscription_details?.metadata?.courseId ?? null;
+        await sendPaymentFailedNotice(customerId, courseId);
+      }
       break;
     }
     default:

@@ -11,6 +11,7 @@ import {
   type ParticipantInput,
   type ParticipantRelationValue,
 } from "@/lib/participant-rules";
+import { accessQuery, canAccessCourse } from "@/lib/course-access";
 import { getCourseCapacity } from "@/lib/course-capacity";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
   }
 
   const course = await prisma.course.findUnique({ where: { id: courseId } });
-  if (!course || !course.isPublished || !course.stripePriceId) {
+  if (!course || !canAccessCourse(course, asString(body?.accessCode)) || !course.stripePriceId) {
     return NextResponse.json({ error: "Kurs nicht verfügbar." }, { status: 400 });
   }
 
@@ -169,6 +170,8 @@ export async function POST(request: Request) {
     }
 
     const appUrl = getAppUrl();
+    const query = accessQuery(course);
+    const cancelUrl = `${appUrl}/courses/${course.slug}/anmelden${query ? `${query}&` : "?"}checkout=cancelled`;
     const metadata = {
       userId: user.id,
       courseId: course.id,
@@ -179,9 +182,15 @@ export async function POST(request: Request) {
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: stripeCustomerId,
-      line_items: [{ price: course.stripePriceId, quantity: participantIds.length }],
+      // Optional: einmalige Anmeldegebuehr pro Teilnehmer, faellig mit der ersten Rechnung.
+      line_items: [
+        { price: course.stripePriceId, quantity: participantIds.length },
+        ...(course.signupFeePriceId
+          ? [{ price: course.signupFeePriceId, quantity: participantIds.length }]
+          : []),
+      ],
       success_url: `${appUrl}/dashboard?checkout=success`,
-      cancel_url: `${appUrl}/courses/${course.slug}/anmelden?checkout=cancelled`,
+      cancel_url: cancelUrl,
       metadata,
       subscription_data: { metadata },
     });

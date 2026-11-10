@@ -10,9 +10,9 @@ export const maxDuration = 60;
 
 type ReminderField = "reminder24hSentAt" | "reminder1hSentAt" | "reminderStartSentAt";
 
-// Wird alle 15 Minuten von einem GitHub-Actions-Workflow aufgerufen (siehe
-// .github/workflows/send-reminders.yml) - Vercels Hobby-Plan erlaubt Cron Jobs
-// nur einmal taeglich, daher dieser externe Taktgeber.
+// Wird alle 15 Minuten von einem externen Taktgeber aufgerufen (cron-job.org, siehe README;
+// als Rueckfall auch .github/workflows/send-reminders.yml) - Vercels Hobby-Plan erlaubt Cron
+// Jobs nur einmal taeglich. Doppelte Aufrufe sind unschaedlich (reminder*SentAt).
 //
 // Zeitfenster um die eigentliche Marke herum, damit weder Timing-
 // Ungenauigkeiten des Schedulers noch knapp verpasste Durchlaeufe eine
@@ -91,6 +91,13 @@ export async function POST(request: Request) {
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 });
   }
+
+  // Fuer die Ueberwachung im Admin-Bereich: wann der Taktgeber zuletzt angeklopft hat.
+  await prisma.siteContent.upsert({
+    where: { id: "main" },
+    create: { id: "main", remindersLastRunAt: new Date() },
+    update: { remindersLastRunAt: new Date() },
+  });
 
   const sessions24h = await findDueSessions(24 * 60, 20, "reminder24hSentAt");
   const sent24h = await sendRemindersFor(sessions24h, "24h", "reminder24hSentAt");
