@@ -10,7 +10,7 @@ export const revalidate = 3600;
 
 export default async function TimetablePage() {
   const courses = await prisma.course.findMany({
-    where: { isPublished: true },
+    where: { isPublished: true, isHidden: false },
     orderBy: { title: "asc" },
     include: { scheduleSlots: true },
   });

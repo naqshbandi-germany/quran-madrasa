@@ -184,6 +184,74 @@ gehören (Empfehlung des NIST statt Pflicht-Sonderzeichen). „Passwort vergesse
 60 Minuten gültigen Einmal-Link per E-Mail; ohne `RESEND_API_KEY` wird er lokal in der Konsole
 ausgegeben.
 
+## Testphase: versteckter Kurs, Anmeldegebühr, Benachrichtigungen
+
+### Versteckter Kurs mit geheimem Link
+
+Im Admin-Bereich unter „Alle Kurse“ → „Preis, Plätze und Sichtbarkeit“ lässt sich ein Kurs als
+**versteckt** markieren. Er erscheint dann nicht im Kursangebot, im Stundenplan (auch nicht im PDF),
+auf der Quran-Seite und auf der Lehrerseite. Erreichbar ist er nur über den geheimen Link
+`/zugang/<code>`, der dort angezeigt wird (Kopieren-Button). Der Kurs muss zusätzlich
+**veröffentlicht** sein. „Neuen Link erzeugen“ macht den alten Link ungültig. Die Seite ist für
+Suchmaschinen gesperrt (`noindex`). Der Zugangscode wird bis zur Zahlung mitgeführt
+(`/courses/<kurs>/anmelden?zugang=<code>`), auch über Registrierung und Login hinweg.
+
+### Einmalige Anmeldegebühr (z. B. 5 € und danach 0 € pro Monat)
+
+1. In Stripe ein Produkt für den Kurs mit **zwei Preisen** anlegen: einen **wiederkehrenden**
+   Preis (monatlich, z. B. 0,00 €) und einen **einmaligen** Preis (z. B. 5,00 €).
+2. Im Admin-Bereich beim Kurs eintragen: Preis pro Monat (0), Stripe-Preis-ID des monatlichen
+   Preises, Anmeldegebühr (5) und Stripe-Preis-ID des einmaligen Preises.
+3. Beim Checkout zahlt jeder Teilnehmer die Gebühr einmal mit der ersten Rechnung; das Abo läuft
+   danach mit 0 € weiter. So werden Verlängerung, Kündigung und alle Benachrichtigungen wie im
+   Normalbetrieb durchlaufen.
+
+### Benachrichtigungen
+
+- **Bestätigung nach der Zahlung** an die neu eingeschriebenen Teilnehmer, mit den nächsten
+  Terminen (`src/lib/notification-email.ts`, ausgelöst im Webhook über `syncSubscription`).
+- **Stunde verschoben oder abgesagt:** Ändert die Lehrkraft Beginn oder Dauer einer kommenden
+  Stunde oder löscht sie, bekommen alle Teilnehmer eine Mail.
+- **Zahlung fehlgeschlagen** bei einer Verlängerung (`invoice.payment_failed`): Mail an den
+  Konto-Inhaber mit Link zu den Zahlungsdaten. Dafür im Stripe-Dashboard beim Webhook das
+  Ereignis `invoice.payment_failed` zusätzlich abonnieren. Automatische Wiederholungsversuche
+  stellt man in Stripe unter Einstellungen → Billing → Abonnements und E-Mails ein.
+- **Rückerstattung:** Erstattungen werden in Stripe gemacht. Soll die Person danach nicht mehr
+  teilnehmen, dort auch das Abo kündigen (sofort); der Webhook trägt sie dann aus.
+
+### Kalender-Abo
+
+Im Bereich „Meine Kurse“ gibt es „Kalender abonnieren“ (webcal-Link), einen Download und einen
+Link zum Kopieren. Der Link enthält einen persönlichen Schlüssel (`User.calendarToken`) und liefert
+alle Termine der eigenen Kurse als iCalendar (`/api/kalender/<schlüssel>.ics`). Verschobene oder
+abgesagte Stunden aktualisieren sich beim nächsten Abruf durch die Kalender-App.
+
+### Taktgeber für Erinnerungen (cron-job.org)
+
+GitHub Actions ist bei privaten Repos auf 2.000 Minuten im Monat begrenzt; ein Lauf alle
+15 Minuten braucht etwa 2.900. Deshalb übernimmt ein kostenloser externer Dienst den Takt:
+
+1. Auf [cron-job.org](https://cron-job.org) ein Konto anlegen und einen Cronjob erstellen.
+2. URL: `https://<domain>/api/cron/send-reminders`, Zeitplan: alle 15 Minuten.
+3. Unter „Erweitert“: Anfragemethode **POST**, Header `Authorization` mit dem Wert
+   `Bearer <CRON_SECRET>` (derselbe Wert wie in Vercel).
+4. Speichern und einmal „Jetzt ausführen“. Im Admin-Bereich steht oben, wann der Taktgeber
+   zuletzt geprüft hat; ist das länger als 35 Minuten her, erscheint eine Warnung.
+5. Läuft cron-job.org zuverlässig, in `.github/workflows/send-reminders.yml` den Block
+   `schedule` entfernen. Doppelte Aufrufe schaden nicht, es geht keine Erinnerung doppelt raus.
+
+### Umzug auf die eigene Domain
+
+Beim Wechsel auf die eigene Domain (z. B. `islamunterfreunden.de`) anpassen:
+
+- Vercel: Domain hinzufügen und DNS-Einträge beim Domain-Anbieter setzen
+- Vercel-Variablen `NEXT_PUBLIC_APP_URL` und `NEXTAUTH_URL` auf die neue Adresse, dann neu deployen
+- Stripe: Webhook-Endpunkt auf `https://<domain>/api/stripe/webhook` (neues Signing Secret in
+  `STRIPE_WEBHOOK_SECRET`)
+- Google-Anmeldung: neue Weiterleitungs-URI `https://<domain>/api/auth/callback/google`
+- Taktgeber (cron-job.org bzw. der GitHub-Workflow): neue URL
+- Resend: Absender-Domain verifiziert lassen (`RESEND_FROM_EMAIL`)
+
 ## Lokales Setup
 
 ### 1. Voraussetzungen

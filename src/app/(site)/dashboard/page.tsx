@@ -1,6 +1,10 @@
 import Link from "next/link";
 
+import { randomBytes } from "node:crypto";
+
 import { auth } from "@/auth";
+import { CopyButton } from "@/components/copy-button";
+import { getAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { formatGermanDateTime } from "@/lib/schedule-time";
 
@@ -37,6 +41,25 @@ export default async function DashboardPage() {
     byCourse.set(course.id, entry);
   }
 
+  // Kalender-Abo: geheimer Schluessel wird beim ersten Besuch mit Kursen erzeugt.
+  let calendarUrl: string | null = null;
+  if (enrollments.length > 0) {
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: session.user.id },
+      select: { calendarToken: true },
+    });
+    const token =
+      user.calendarToken ??
+      (
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: { calendarToken: randomBytes(24).toString("base64url") },
+          select: { calendarToken: true },
+        })
+      ).calendarToken;
+    calendarUrl = `${getAppUrl()}/api/kalender/${token}.ics`;
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -54,6 +77,28 @@ export default async function DashboardPage() {
           </Link>{" "}
           an.
         </p>
+      )}
+
+      {calendarUrl && (
+        <div className="border border-brand-200 bg-brand-50 p-4 text-sm">
+          <h2 className="font-semibold text-azure-800">Termine im Kalender</h2>
+          <p className="mt-1 text-brand-900/80">
+            Abonniere deine Kurstermine im Handy- oder Computer-Kalender. Verschobene oder
+            abgesagte Stunden werden dort automatisch aktualisiert.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <a href={calendarUrl.replace(/^https?:/, "webcal:")} className="btn-primary px-3 py-1.5">
+              Kalender abonnieren
+            </a>
+            <a href={calendarUrl} download className="underline">
+              Als Datei herunterladen
+            </a>
+            <CopyButton text={calendarUrl} label="Link kopieren" />
+          </div>
+          <p className="mt-2 text-xs text-brand-600">
+            Der Link ist persönlich. Bitte nicht weitergeben.
+          </p>
+        </div>
       )}
 
       <div className="space-y-6">

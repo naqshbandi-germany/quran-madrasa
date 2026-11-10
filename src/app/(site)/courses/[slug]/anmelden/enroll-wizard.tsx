@@ -25,7 +25,15 @@ type SavedParticipant = {
 };
 
 type Props = {
-  course: { id: string; slug: string; title: string; priceCents: number; currency: string };
+  course: {
+    id: string;
+    slug: string;
+    title: string;
+    priceCents: number;
+    currency: string;
+    signupFeeCents: number | null;
+    accessCode: string | null;
+  };
   account: { name: string; email: string };
   participants: SavedParticipant[];
   // Noch freie Plaetze (Teilnehmerbegrenzung); null = unbegrenzt
@@ -61,6 +69,8 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
   const hasSelf = participants.some((p) => p.relation === "SELF") || drafts.some((d) => d.input.relation === "SELF");
   const count = selected.size + drafts.length;
   const total = count * course.priceCents;
+  const fee = course.signupFeeCents && course.signupFeeCents > 0 ? course.signupFeeCents : 0;
+  const totalFee = count * fee;
 
   // Beim Schrittwechsel die Ueberschrift fokussieren (Screenreader und Tastatur).
   useEffect(() => {
@@ -146,6 +156,7 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           courseId: course.id,
+          accessCode: course.accessCode,
           existingParticipantIds: [...selected],
           newParticipants: drafts.map((draft) => draft.input),
         }),
@@ -182,7 +193,8 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
       <p className="text-xs uppercase tracking-[0.18em] text-azure-700">Anmeldung</p>
       <h1 className="mt-1 text-3xl font-semibold leading-tight text-azure-800">{course.title}</h1>
       <p className="mt-1 text-brand-900/75">
-        {formatPrice(course.priceCents, course.currency)} pro Teilnehmer und Monat · monatlich
+        {formatPrice(course.priceCents, course.currency)} pro Teilnehmer und Monat
+        {fee > 0 && ` · einmalig ${formatPrice(fee, course.currency)} Anmeldegebühr`} · monatlich
         kündbar
       </p>
 
@@ -323,7 +335,10 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
                       <span className="font-medium text-brand-900">{row.name}</span>{" "}
                       <span className="text-brand-900/70">({RELATION_LABELS[row.relation]})</span>
                     </span>
-                    <span>{formatPrice(course.priceCents, course.currency)}</span>
+                    <span>
+                      {formatPrice(course.priceCents, course.currency)} / Monat
+                      {fee > 0 && ` + ${formatPrice(fee, course.currency)} einmalig`}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -331,9 +346,16 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
                 <span>Gesamt pro Monat</span>
                 <span>{formatPrice(total, course.currency)}</span>
               </p>
+              {fee > 0 && (
+                <p className="mt-1 flex items-center justify-between font-semibold text-brand-900">
+                  <span>Einmalige Anmeldegebühr</span>
+                  <span>{formatPrice(totalFee, course.currency)}</span>
+                </p>
+              )}
               <p className="mt-2 text-sm text-brand-900/75">
                 Monatlich kündbar, keine Mindestlaufzeit. Die Abrechnung erfolgt monatlich über
-                Stripe, die erste Zahlung wird sofort fällig.
+                Stripe, die erste Zahlung wird sofort fällig
+                {fee > 0 && " (zusammen mit der Anmeldegebühr)"}.
               </p>
             </div>
 
