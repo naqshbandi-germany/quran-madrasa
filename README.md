@@ -193,7 +193,9 @@ Im Admin-Bereich unter „Alle Kurse“ → „Preis, Plätze und Sichtbarkeit�
 auf der Quran-Seite und auf der Lehrerseite. Erreichbar ist er nur über den geheimen Link
 `/zugang/<code>`, der dort angezeigt wird (Kopieren-Button). Der Kurs muss zusätzlich
 **veröffentlicht** sein. „Neuen Link erzeugen“ macht den alten Link ungültig. Die Seite ist für
-Suchmaschinen gesperrt (`noindex`). Der Zugangscode wird bis zur Zahlung mitgeführt
+Suchmaschinen gesperrt (`noindex`). Soll ein öffentlicher Kurs bleiben und zusätzlich eine Testgruppe
+bekommen, legt „Als versteckten Kurs duplizieren“ eine versteckte Kopie an (Texte, Lehrkraft und
+Wochentermine werden übernommen, Preise und Sitzungen nicht; die Kopie startet als Entwurf). Der Zugangscode wird bis zur Zahlung mitgeführt
 (`/courses/<kurs>/anmelden?zugang=<code>`), auch über Registrierung und Login hinweg.
 
 ### Einmalige Anmeldegebühr (z. B. 5 € und danach 0 € pro Monat)
