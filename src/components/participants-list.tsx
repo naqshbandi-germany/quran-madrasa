@@ -16,6 +16,8 @@ export type ParticipantRow = {
   detail: string;
   contact: string;
   since: string;
+  // Anwesenheit und Lernstand, z. B. "8 von 10 Stunden anwesend · Sure 67 Al-Mulk, Vers 12"
+  progress?: string;
 };
 
 type Offer = NonNullable<RemoveParticipantResult["next"]>;
@@ -71,6 +73,7 @@ export function ParticipantsList({ rows }: { rows: ParticipantRow[] }) {
                   {row.contact}
                   {" · "}angemeldet am {row.since}
                 </p>
+                {row.progress && <p className="text-xs text-brand-700">{row.progress}</p>}
               </div>
               <button
                 type="button"
