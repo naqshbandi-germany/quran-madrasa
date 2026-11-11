@@ -1,11 +1,9 @@
 name: Send Class Reminders
 
-# Vercels Hobby-Plan erlaubt Cron Jobs nur 1x taeglich - dieser Workflow
-# uebernimmt stattdessen den 15-Minuten-Takt (bei oeffentlichen Repos
-# kostenlos und ohne Limit).
+# Den 15-Minuten-Takt uebernimmt cron-job.org (siehe README, Abschnitt Taktgeber). Dieser
+# Workflow bleibt nur als manueller Notfall-Knopf (Actions -> Run workflow), da GitHub Actions
+# bei privaten Repos nur begrenzte Freiminuten hat.
 on:
-  schedule:
-    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -14,5 +12,5 @@ jobs:
     steps:
       - name: Call reminder endpoint
         run: |
-          curl -sf -X POST "https://quran-madrasa.vercel.app/api/cron/send-reminders" \
+          curl -sf -X POST "https://www.islamunterfreunden.de/api/cron/send-reminders" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
