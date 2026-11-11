@@ -162,6 +162,41 @@ model ClassSession {
   reminder24hSentAt   DateTime?
   reminder1hSentAt    DateTime?
   reminderStartSentAt DateTime?
+  // Notiz der Lehrkraft fuer alle Teilnehmer: was in der Stunde durchgenommen wurde und die
+  // Hausaufgabe bis zur naechsten Stunde.
+  lessonContent  String?
+  homework       String?
+
+  evaluations SessionEvaluation[]
+}
+
+enum AttendanceStatus {
+  PRESENT
+  EXCUSED
+  ABSENT
+}
+
+// Auswertung einer Stunde pro Teilnehmer: Anwesenheit und Lernfortschritt. Sichtbar fuer die
+// Lehrkraft, den Admin und den Konto-Inhaber des Teilnehmers (nicht fuer andere Teilnehmer).
+model SessionEvaluation {
+  id            String            @id @default(cuid())
+  sessionId     String
+  session       ClassSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant       @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  attendance    AttendanceStatus?
+  // Stand nach der Stunde: bis zu welcher Sure (1-114) und welchem Vers gelesen bzw. gelernt wurde.
+  surah         Int?
+  ayah          Int?
+  // Einschaetzung der Tadschwid-Regeln von 1 (viel Uebung noetig) bis 5 (sehr sicher).
+  tajweedRating Int?
+  // Persoenliche Rueckmeldung der Lehrkraft.
+  comment       String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@unique([sessionId, participantId])
+  @@index([participantId])
 }
 
 // Person, die an Kursen teilnimmt. Ein Konto (User) kann mehrere Teilnehmer anlegen: sich
@@ -188,6 +223,7 @@ model Participant {
   createdAt DateTime            @default(now())
 
   enrollments Enrollment[]
+  evaluations SessionEvaluation[]
 
   @@index([ownerId])
 }

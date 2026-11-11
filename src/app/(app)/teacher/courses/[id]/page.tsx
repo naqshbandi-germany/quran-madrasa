@@ -26,6 +26,7 @@ import { removeWaitlistEntry, setMaxParticipants } from "@/lib/waitlist-actions"
 import { blobAccess, isBlobConfigured } from "@/lib/blob";
 import { toMediaItem } from "@/lib/media-items";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
+import { formatAttendance, getProgressSummaries, type ProgressSummary } from "@/lib/progress";
 import { formatGermanDateTime, formatTeachingDateTime, toTeachingInputValue } from "@/lib/schedule-time";
 
 const INPUT = "border border-brand-300 px-3 py-2";
@@ -57,6 +58,17 @@ function RemoveForm({
   );
 }
 
+function progressLine(s: ProgressSummary | undefined) {
+  if (!s || (s.recorded === 0 && !s.position && s.tajweedRating == null)) return undefined;
+  return [
+    formatAttendance(s),
+    s.position && `Stand: ${s.position}`,
+    s.tajweedRating != null && `Tadschwid ${s.tajweedRating}/5`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 function formatDateTime(date: Date) {
   return `${formatTeachingDateTime(date)} Ortszeit (${formatGermanDateTime(date)} deutsche Zeit)`;
 }
@@ -68,6 +80,8 @@ type SessionData = {
   durationMin: number;
   joinUrl: string | null;
   classroomType: string;
+  lessonContent: string | null;
+  _count: { evaluations: number };
 };
 
 // Aendert sich ein Wert, wird die Zeile neu aufgebaut und das Bearbeiten-Formular klappt zu.
@@ -75,7 +89,15 @@ function sessionKey(s: SessionData) {
   return `${s.id}-${s.startsAt.getTime()}-${s.title}-${s.durationMin}-${s.joinUrl ?? ""}`;
 }
 
-function SessionRow({ classSession, courseId }: { classSession: SessionData; courseId: string }) {
+function SessionRow({
+  classSession,
+  courseId,
+  isUpcoming,
+}: {
+  classSession: SessionData;
+  courseId: string;
+  isUpcoming: boolean;
+}) {
   const linkLabel = classSession.classroomType === "JITSI" ? "Jitsi-Link" : "Zoom-Link";
   return (
     <EditableRow
@@ -92,13 +114,27 @@ function SessionRow({ classSession, courseId }: { classSession: SessionData; cou
               "kein Link hinterlegt"
             )}
           </p>
+          <p className="mt-1">
+            <Link
+              href={`/teacher/courses/${courseId}/sitzungen/${classSession.id}`}
+              className="font-medium text-azure-800 underline"
+            >
+              {isUpcoming ? "Inhalt & Hausaufgabe" : "Stunde auswerten"}
+            </Link>
+            {(classSession._count.evaluations > 0 || classSession.lessonContent) && (
+              <span className="ml-2 text-xs text-brand-600">
+                ✓ ausgewertet
+                {classSession._count.evaluations > 0 ? ` (${classSession._count.evaluations} Teilnehmer)` : ""}
+              </span>
+            )}
+          </p>
         </div>
       }
       removeAction={
         <RemoveForm
           action={deleteClassSession}
           fields={{ sessionId: classSession.id }}
-          message="Diese Sitzung wirklich entfernen? Ein automatisch erzeugtes Zoom-Meeting wird dabei ebenfalls gelöscht."
+          message="Diese Sitzung wirklich entfernen? Ein automatisch erzeugtes Zoom-Meeting und die Auswertung der Stunde (Anwesenheit, Lernstand) werden dabei ebenfalls gelöscht."
         />
       }
     >
@@ -158,7 +194,10 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
   const course = await prisma.course.findUnique({
     where: { id },
     include: {
-      sessions: { orderBy: { startsAt: "asc" } },
+      sessions: {
+        orderBy: { startsAt: "asc" },
+        include: { _count: { select: { evaluations: true } } },
+      },
       scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
       enrollments: {
         include: { participant: true, user: { select: { name: true, email: true } } },
@@ -184,7 +223,12 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
 
   const capacity = capacityOf(course.maxParticipants, course.enrollments.length);
   const dateFormat = new Intl.DateTimeFormat("de-DE");
+  const progress = await getProgressSummaries(
+    course.id,
+    course.enrollments.map((e) => e.participantId),
+  );
   const participantRows: ParticipantRow[] = course.enrollments.map(({ id, participant, user, createdAt }) => ({
+    progress: progressLine(progress.get(participant.id)),
     enrollmentId: id,
     name: participant.name,
     detail:
@@ -402,7 +446,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         )}
         <ul className="space-y-2">
           {upcomingSessions.map((classSession) => (
-            <SessionRow key={sessionKey(classSession)} classSession={classSession} courseId={course.id} />
+            <SessionRow key={sessionKey(classSession)} classSession={classSession} courseId={course.id} isUpcoming />
           ))}
         </ul>
         {pastSessions.length > 0 && (
@@ -412,7 +456,12 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
             </summary>
             <ul className="mt-2 space-y-2">
               {pastSessions.map((classSession) => (
-                <SessionRow key={sessionKey(classSession)} classSession={classSession} courseId={course.id} />
+                <SessionRow
+                  key={sessionKey(classSession)}
+                  classSession={classSession}
+                  courseId={course.id}
+                  isUpcoming={false}
+                />
               ))}
             </ul>
           </details>
