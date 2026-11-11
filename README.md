@@ -241,6 +241,25 @@ GitHub Actions ist bei privaten Repos auf 2.000 Minuten im Monat begrenzt; ein L
    bleibt als manueller Notfall-Knopf (GitHub → Actions → „Send Class Reminders“ → „Run
    workflow“). Doppelte Aufrufe schaden nicht, es geht keine Erinnerung doppelt raus.
 
+### Stripe-Konto wechseln (oder von Test auf Live umstellen)
+
+Produkte, Preise, Kunden, Abos und Webhooks gehören immer zu einem Stripe-Konto und einem Modus
+(Test oder Live). Beim Wechsel:
+
+1. Im neuen Konto für jeden buchbaren Kurs Produkt und Preise neu anlegen (monatlich und ggf.
+   einmalige Gebühr) und die neuen `price_…`-IDs im Admin-Bereich beim Kurs eintragen.
+2. Im neuen Konto einen Webhook auf `https://www.islamunterfreunden.de/api/stripe/webhook`
+   anlegen, mit `checkout.session.completed`, `customer.subscription.updated`,
+   `customer.subscription.deleted` und `invoice.payment_failed`.
+3. Kundenportal im neuen Konto einrichten (Einstellungen → Billing → Kundenportal: Kündigen
+   erlauben, Mengenänderung aus).
+4. In Vercel `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` und
+   `STRIPE_WEBHOOK_SECRET` durch die Werte des neuen Kontos ersetzen, dann Redeploy.
+5. Laufende Abos im alten Konto dort kündigen; sie werden nicht übertragen.
+
+Gespeicherte Stripe-Kunden-IDs aus dem alten Konto werden beim nächsten Checkout automatisch
+erkannt und durch einen neuen Kunden im neuen Konto ersetzt (`src/lib/stripe-customer.ts`).
+
 ### Vorschau-Modus (Website noch nicht öffentlich)
 
 Ist in Vercel die Variable `SITE_PREVIEW_CODE` gesetzt (z. B. ein zufälliges Wort), sehen

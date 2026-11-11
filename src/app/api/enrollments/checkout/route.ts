@@ -15,6 +15,7 @@ import { accessQuery, canAccessCourse } from "@/lib/course-access";
 import { getCourseCapacity } from "@/lib/course-capacity";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import { ensureStripeCustomer } from "@/lib/stripe-customer";
 
 const RELATIONS: ParticipantRelationValue[] = ["SELF", "CHILD", "OTHER"];
 
@@ -158,16 +159,7 @@ export async function POST(request: Request) {
 
   try {
     const stripe = getStripe();
-    let stripeCustomerId = user.stripeCustomerId;
-    if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: user.name,
-        metadata: { userId: user.id },
-      });
-      stripeCustomerId = customer.id;
-      await prisma.user.update({ where: { id: user.id }, data: { stripeCustomerId } });
-    }
+    const stripeCustomerId = await ensureStripeCustomer(user);
 
     const appUrl = getAppUrl();
     const query = accessQuery(course);

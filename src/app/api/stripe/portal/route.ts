@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { getAppUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import { existingStripeCustomerId } from "@/lib/stripe-customer";
 
 // Leitet zum Stripe Customer Portal weiter, wo Nutzer ihr Abo selbst
 // verwalten und monatlich kündigen können, ohne dass wir das nachbauen müssen.
@@ -14,7 +15,9 @@ export async function POST() {
   }
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
-  if (!user.stripeCustomerId) {
+  // Nach einem Wechsel des Stripe-Kontos kann die gespeicherte Kunden-ID ungueltig sein.
+  const customerId = await existingStripeCustomerId(user.stripeCustomerId);
+  if (!customerId) {
     return NextResponse.json({ error: "Kein Abo vorhanden." }, { status: 400 });
   }
 
@@ -22,7 +25,7 @@ export async function POST() {
   const stripe = getStripe();
 
   const portalSession = await stripe.billingPortal.sessions.create({
-    customer: user.stripeCustomerId,
+    customer: customerId,
     return_url: `${appUrl}/dashboard/billing`,
   });
 
