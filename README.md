@@ -193,9 +193,7 @@ Im Admin-Bereich unter „Alle Kurse“ → „Preis, Plätze und Sichtbarkeit�
 auf der Quran-Seite und auf der Lehrerseite. Erreichbar ist er nur über den geheimen Link
 `/zugang/<code>`, der dort angezeigt wird (Kopieren-Button). Der Kurs muss zusätzlich
 **veröffentlicht** sein. „Neuen Link erzeugen“ macht den alten Link ungültig. Die Seite ist für
-Suchmaschinen gesperrt (`noindex`). Soll ein öffentlicher Kurs bleiben und zusätzlich eine Testgruppe
-bekommen, legt „Als versteckten Kurs duplizieren“ eine versteckte Kopie an (Texte, Lehrkraft und
-Wochentermine werden übernommen, Preise und Sitzungen nicht; die Kopie startet als Entwurf). Der Zugangscode wird bis zur Zahlung mitgeführt
+Suchmaschinen gesperrt (`noindex`). Der Zugangscode wird bis zur Zahlung mitgeführt
 (`/courses/<kurs>/anmelden?zugang=<code>`), auch über Registrierung und Login hinweg.
 
 ### Einmalige Anmeldegebühr (z. B. 5 € und danach 0 € pro Monat)
@@ -239,8 +237,22 @@ GitHub Actions ist bei privaten Repos auf 2.000 Minuten im Monat begrenzt; ein L
    `Bearer <CRON_SECRET>` (derselbe Wert wie in Vercel).
 4. Speichern und einmal „Jetzt ausführen“. Im Admin-Bereich steht oben, wann der Taktgeber
    zuletzt geprüft hat; ist das länger als 35 Minuten her, erscheint eine Warnung.
-5. Läuft cron-job.org zuverlässig, in `.github/workflows/send-reminders.yml` den Block
-   `schedule` entfernen. Doppelte Aufrufe schaden nicht, es geht keine Erinnerung doppelt raus.
+5. Der GitHub-Workflow `.github/workflows/send-reminders.yml` läuft nicht mehr automatisch, er
+   bleibt als manueller Notfall-Knopf (GitHub → Actions → „Send Class Reminders“ → „Run
+   workflow“). Doppelte Aufrufe schaden nicht, es geht keine Erinnerung doppelt raus.
+
+### Vorschau-Modus (Website noch nicht öffentlich)
+
+Ist in Vercel die Variable `SITE_PREVIEW_CODE` gesetzt (z. B. ein zufälliges Wort), sehen
+Besucher auf Startseite, Kursangebot, Stundenplan, Kursseiten und „Über uns“ nur eine Seite
+„Bald verfügbar“ (`/bald`, für Suchmaschinen gesperrt). Weiterhin erreichbar bleiben: versteckte
+Kurse (`/zugang/<code>`) samt Anmeldung und Zahlung, Login und Registrierung, „Meine Kurse“,
+Konto, Lehrer- und Admin-Bereich, Lehrerseite sowie Impressum und Datenschutz.
+
+Wer den aktuellen Stand der ganzen Seite sehen soll, öffnet einmal
+`https://www.islamunterfreunden.de/?vorschau=<SITE_PREVIEW_CODE>`. Das setzt ein Cookie
+(180 Tage), danach ist die Seite in diesem Browser normal sichtbar. Zum Veröffentlichen die
+Variable in Vercel löschen und neu deployen.
 
 ### Umzug auf die eigene Domain
 

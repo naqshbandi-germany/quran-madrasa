@@ -3,7 +3,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import {
   createTeacherAccount,
-  duplicateAsHiddenCourse,
   regenerateAccessCode,
   updateCourseSettings,
   updateLegalTexts,
@@ -224,17 +223,6 @@ export default async function AdminPage() {
                           {course.isPublished ? "Entwurf setzen" : "Veröffentlichen"}
                         </button>
                       </form>
-                      {!course.isHidden && (
-                        <form action={duplicateAsHiddenCourse}>
-                          <input type="hidden" name="courseId" value={course.id} />
-                          <button
-                            className="underline"
-                            title="Legt eine versteckte Kopie (Entwurf) mit geheimem Link an, z. B. für eine Testgruppe. Das Original bleibt unverändert."
-                          >
-                            Als versteckten Kurs duplizieren
-                          </button>
-                        </form>
-                      )}
                     </div>
                   </div>
                   <details className="mt-2">
