@@ -26,7 +26,7 @@ function layout(greetingName: string, body: string, footer: string) {
   return `
     <div style="font-family: sans-serif; color: #1f3616; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #3f6b31; font-size: 20px;">Quran Madrasa</h1>
-      <p>Assalamu alaikum ${escapeHtml(greetingName)},</p>
+      <p>Assalamu alaykum ${escapeHtml(greetingName)},</p>
       ${body}
       <p style="font-size: 13px; color: #7aa968;">${footer}</p>
     </div>`;

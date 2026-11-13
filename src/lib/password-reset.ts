@@ -16,7 +16,7 @@ function resetEmailHtml(name: string, link: string) {
   return `
     <div style="font-family: sans-serif; color: #1d2a24; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #14325c; font-size: 20px;">Quran Madrasa</h1>
-      <p>Assalamu alaikum ${name},</p>
+      <p>Assalamu alaykum ${name},</p>
       <p>du hast darum gebeten, dein Passwort zurückzusetzen. Mit diesem Link legst du ein neues
       Passwort fest. Er ist ${RESET_TOKEN_TTL_MINUTES} Minuten gültig und nur einmal nutzbar:</p>
       <p style="margin: 24px 0;">

@@ -10,7 +10,7 @@ const WRAPPER = (inner: string) => `
 // Bestaetigung nach dem Eintragen in die Warteliste.
 export function waitlistJoinedHtml(params: { name: string; courseTitle: string }) {
   return WRAPPER(`
-      <p>Assalamu alaikum ${escapeHtml(params.name)},</p>
+      <p>Assalamu alaykum ${escapeHtml(params.name)},</p>
       <p>du stehst jetzt auf der Warteliste für den Kurs <strong>${escapeHtml(params.courseTitle)}</strong>.</p>
       <p>Sobald ein Platz frei wird, melden wir uns bei dir, auch für das nächste Semester.
       Eine Zahlung ist dafür nicht nötig.</p>
@@ -26,7 +26,7 @@ export function waitlistOfferHtml(params: {
   enrollUrl: string;
 }) {
   return WRAPPER(`
-      <p>Assalamu alaikum ${escapeHtml(params.name)},</p>
+      <p>Assalamu alaykum ${escapeHtml(params.name)},</p>
       <p>im Kurs <strong>${escapeHtml(params.courseTitle)}</strong> ist ein Platz frei geworden.
       Besteht weiterhin Interesse, dass du teilnimmst?</p>
       <p>Dann melde dich hier an:</p>
@@ -47,7 +47,7 @@ export function participantRemovedHtml(params: {
     ? "Dein Abo für diesen Kurs wurde beendet."
     : "Dein Abo wurde um einen Teilnehmer verkleinert und wird ab der nächsten Abrechnung entsprechend berechnet.";
   return WRAPPER(`
-      <p>Assalamu alaikum ${escapeHtml(params.ownerName)},</p>
+      <p>Assalamu alaykum ${escapeHtml(params.ownerName)},</p>
       <p><strong>${escapeHtml(params.participantName)}</strong> wurde von der Lehrkraft aus dem Kurs
       <strong>${escapeHtml(params.courseTitle)}</strong> ausgetragen.</p>
       <p>${billing} Für den laufenden Monat erfolgt keine Rückerstattung.</p>
