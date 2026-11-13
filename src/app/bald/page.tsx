@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SITE_NAME } from "@/lib/site";
 
 // Platzhalter-Seite, solange die Website im Vorschau-Modus ist (siehe src/proxy.ts).
 export const metadata: Metadata = {
-  title: "Quran Madrasa – bald verfügbar",
+  title: { absolute: `${SITE_NAME} – bald verfügbar` },
   robots: { index: false, follow: false },
 };
 
 export default function ComingSoonPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-4 text-center">
-      <p className="text-xs uppercase tracking-[0.18em] text-azure-700">Quran Madrasa</p>
+      <p className="text-xs uppercase tracking-[0.18em] text-azure-700">{SITE_NAME}</p>
       <h1 className="mt-2 font-display text-4xl font-semibold text-azure-800">Bald verfügbar</h1>
       <p className="mt-4 text-brand-900/80">
         Unser Online-Angebot für Quran-Unterricht und islamische Wissenschaften befindet sich im

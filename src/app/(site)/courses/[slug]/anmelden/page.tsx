@@ -6,7 +6,7 @@ import { getCourseCapacity } from "@/lib/course-capacity";
 import { prisma } from "@/lib/prisma";
 import { EnrollWizard } from "./enroll-wizard";
 
-export const metadata = { title: "Zum Kurs anmelden – Quran Madrasa" };
+export const metadata = { title: "Zum Kurs anmelden" };
 
 // Hängt von der Anmeldung ab und darf nicht zwischengespeichert werden.
 export const dynamic = "force-dynamic";

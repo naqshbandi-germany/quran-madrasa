@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { startViewAs } from "@/lib/view-as-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -104,9 +105,15 @@ export default async function AccountsPage({
                     </p>
                   </div>
                   {user.role !== "ADMIN" && user.id !== session.user.id && (
-                    <Link href={`/admin/konten/${user.id}`} className="shrink-0 font-medium text-red-800 underline">
-                      Konto löschen …
-                    </Link>
+                    <div className="flex shrink-0 items-center gap-4">
+                      <form action={startViewAs}>
+                        <input type="hidden" name="userId" value={user.id} />
+                        <button className="font-medium text-azure-800 underline">Ansehen als</button>
+                      </form>
+                      <Link href={`/admin/konten/${user.id}`} className="font-medium text-red-800 underline">
+                        Konto löschen …
+                      </Link>
+                    </div>
                   )}
                 </li>
               ))}

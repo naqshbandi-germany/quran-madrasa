@@ -8,7 +8,7 @@ import { MINIATURES } from "@/lib/miniatures";
 import { capacityOf } from "@/lib/course-capacity";
 import { prisma } from "@/lib/prisma";
 
-export const metadata = { title: "Quran-Unterricht für alle Level – Quran Madrasa" };
+export const metadata = { title: "Quran-Unterricht für alle Level" };
 
 // Die Terminanzeige haengt von der deutschen Sommer-/Winterzeit ab, daher stuendlich neu
 // erzeugen.

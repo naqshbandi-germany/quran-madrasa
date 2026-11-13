@@ -3,6 +3,7 @@ import type { NextFetchEvent, NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { authConfig } from "@/auth.config";
+import { VIEW_AS_COOKIE, VIEW_AS_INFO_COOKIE } from "@/lib/view-as";
 
 // In Next.js 16 heißt die Datei "proxy.ts" statt "middleware.ts". Sie erledigt zwei Dinge:
 // 1. Vorschau-Schutz: Ist SITE_PREVIEW_CODE gesetzt, sehen Besucher ohne Vorschau-Freigabe auf
@@ -11,6 +12,9 @@ import { authConfig } from "@/auth.config";
 //    Dashboard sowie Lehrer- und Admin-Bereich bleiben erreichbar, damit Testnutzer und Team
 //    weiterarbeiten können.
 // 2. Zugriffsprüfung (eingeloggt? Rolle?) über den "authorized"-Callback in auth.config.ts.
+// 3. Entwicklermodus "Ansehen als" (src/lib/view-as.ts): Waehrend ein Admin die Website als
+//    jemand anderes ansieht, sind Aenderungen gesperrt (nur GET/HEAD). Gehoert das Cookie nicht
+//    zu einem angemeldeten Admin (z. B. nach dem Abmelden), wird es entfernt.
 
 // Mit (request, event) aufgerufen verhaelt sich auth() wie die Middleware von Auth.js
 // ("export { auth as default }"); die Typen kennen diese Ueberladung fuer NextRequest nicht.
@@ -81,7 +85,34 @@ function previewGate(request: NextRequest) {
   return response;
 }
 
+const READ_METHODS = ["GET", "HEAD", "OPTIONS"];
+
+// Nur aufgerufen, wenn das Cookie des Entwicklermodus gesetzt ist. Mit Handler-Funktion stellt
+// Auth.js die Sitzung als request.auth bereit.
+const viewAsGuard = NextAuth(authConfig).auth((request) => {
+  const { pathname } = request.nextUrl;
+  const isRead = READ_METHODS.includes(request.method);
+
+  if (request.auth?.user.role !== "ADMIN") {
+    // Liegengebliebenes Cookie: entfernen und die Seite normal (mit Zugriffspruefung) neu laden.
+    const response = isRead ? NextResponse.redirect(request.nextUrl) : NextResponse.next();
+    response.cookies.delete(VIEW_AS_COOKIE);
+    response.cookies.delete(VIEW_AS_INFO_COOKIE);
+    return response;
+  }
+
+  if (!isRead && !pathname.startsWith("/api/auth/")) {
+    return new NextResponse(
+      "Entwicklermodus: Du siehst die Website gerade als jemand anderes. Änderungen sind gesperrt.",
+      { status: 403, headers: { "Content-Type": "text/plain; charset=utf-8" } },
+    );
+  }
+  return previewGate(request) ?? NextResponse.next();
+}) as unknown as (request: NextRequest, event: NextFetchEvent) => Promise<Response>;
+
 export default async function proxy(request: NextRequest, event: NextFetchEvent) {
+  if (request.cookies.has(VIEW_AS_COOKIE)) return viewAsGuard(request, event);
+
   const gated = previewGate(request);
   if (gated) return gated;
 

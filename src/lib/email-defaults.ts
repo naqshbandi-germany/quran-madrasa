@@ -312,10 +312,10 @@ export const EMAIL_TEMPLATES = {
     ],
     hasButton: true,
     defaults: {
-      subject: "Dein Lehrer-Zugang bei Quran Madrasa",
+      subject: "Dein Lehrer-Zugang bei Islam unter Freunden",
       body: [
         GREETING,
-        "für dich wurde ein Lehrer-Zugang bei Quran Madrasa angelegt. Dein Benutzername ist deine E-Mail-Adresse **{{email}}**.",
+        "für dich wurde ein Lehrer-Zugang bei Islam unter Freunden angelegt. Dein Benutzername ist deine E-Mail-Adresse **{{email}}**.",
         "Bitte lege über diesen Link dein eigenes Passwort fest. Der Link ist {{tage}} Tage gültig und nur einmal nutzbar:",
         "{{button}}",
         "Danach meldest du dich mit deiner E-Mail-Adresse und dem neuen Passwort an und findest unter „Meine Kurse“ deine Kurse.",

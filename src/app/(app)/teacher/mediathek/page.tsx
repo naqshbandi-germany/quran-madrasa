@@ -6,7 +6,7 @@ import { ALLOWED_EXTENSIONS, MAX_BLOB_FILE_BYTES, MAX_FILE_BYTES, formatBytes } 
 import { toMediaItem } from "@/lib/media-items";
 import { prisma } from "@/lib/prisma";
 
-export const metadata = { title: "Mediathek – Quran Madrasa" };
+export const metadata = { title: "Mediathek" };
 export const dynamic = "force-dynamic";
 
 export default async function MediaLibraryPage() {

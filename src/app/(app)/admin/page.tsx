@@ -13,6 +13,7 @@ import {
 import { getAppUrl } from "@/lib/app-url";
 import { isZoomProvider } from "@/lib/classroom";
 import { CopyButton } from "@/components/copy-button";
+import { ViewAsPicker } from "@/components/view-as-picker";
 import { isGoogleAuthConfigured } from "@/lib/auth-providers";
 import { DEFAULT_IMPRESSUM, defaultPrivacyPolicy } from "@/lib/legal-defaults";
 import { formatGermanDateTime } from "@/lib/schedule-time";
@@ -73,6 +74,14 @@ export default async function AdminPage({
     include: { _count: { select: { taughtCourses: true } } },
   });
 
+  // Fuer den Entwicklermodus; die neuesten Schueler zuerst (weitere ueber "Konten").
+  const students = await prisma.user.findMany({
+    where: { role: "STUDENT" },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    select: { id: true, name: true, email: true },
+  });
+
   const siteContent = await prisma.siteContent.findUnique({ where: { id: "main" } });
   const remindersLastRunAt = siteContent?.remindersLastRunAt ?? null;
 
@@ -89,6 +98,11 @@ export default async function AdminPage({
       <h1 className="text-2xl font-bold text-azure-800">Admin-Bereich</h1>
 
       <ReminderStatus lastRunAt={remindersLastRunAt} minutesAgo={minutesSince(remindersLastRunAt)} />
+
+      <ViewAsPicker
+        teachers={teachers.map((t) => ({ id: t.id, name: t.name, email: t.email }))}
+        students={students}
+      />
 
       <section id="lehrer" className="border border-gold-400/40 bg-white p-5">
         <h2 className="mb-4 font-semibold text-azure-800">Lehrer</h2>

@@ -39,7 +39,7 @@ export function buildCalendar(name: string, host: string, events: CalendarEvent[
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Quran Madrasa//Kurstermine//DE",
+    "PRODID:-//Islam unter Freunden//Kurstermine//DE",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${icsText(name)}`,

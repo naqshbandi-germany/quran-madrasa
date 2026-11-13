@@ -3,6 +3,7 @@ import { Cormorant_Garamond, EB_Garamond } from "next/font/google";
 
 import "./globals.css";
 import { AuthProvider } from "./providers";
+import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
 const display = Cormorant_Garamond({
   subsets: ["latin", "latin-ext"],
@@ -18,7 +19,7 @@ const quote = EB_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Quran Madrasa",
+  title: { default: `${SITE_NAME} – ${SITE_TAGLINE}`, template: `%s – ${SITE_NAME}` },
   description: "Online-Unterricht für Quran-Rezitation und islamische Wissenschaften",
 };
 
