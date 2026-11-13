@@ -53,6 +53,16 @@ const reminderPlaceholders = [
   { key: "link", label: "Link zum Unterrichtsraum (Ziel des Buttons)", example: "https://www.islamunterfreunden.de/dashboard/classroom/abc123" },
   BUTTON,
 ] as const;
+const reminder24hPlaceholders = [
+  ...reminderPlaceholders,
+  {
+    key: "leseprobe",
+    label: "Hinweis auf eine von der Lehrkraft erbetene Leseprobe mit Link zur Aufnahme (leer, wenn keine erbeten ist)",
+    example:
+      '<div style="margin: 24px 0; padding: 12px 16px; background: #f4f1e8; border-left: 3px solid #b8963e;"><p style="margin: 0 0 8px;"><strong>Leseprobe erbeten:</strong> Sure Al-Mulk, Verse 1-5</p><p style="margin: 0 0 12px; font-size: 14px;">Bitte nimm den Abschnitt vor der Stunde kurz auf. Die Lehrkraft hört ihn sich an und kann sich so gezielt vorbereiten. Nur die Lehrkraft kann die Aufnahme hören.</p><a href="#" style="color: #1d6347; font-weight: bold;">Leseprobe aufnehmen</a></div>',
+    html: true,
+  },
+] as const;
 const reminderFooter = "Diese Erinnerung wurde automatisch verschickt, weil du bei diesem Kurs eingeschrieben bist.";
 
 export const EMAIL_TEMPLATES = {
@@ -91,12 +101,18 @@ export const EMAIL_TEMPLATES = {
   reminder_24h: {
     label: "Erinnerung 24 Stunden vorher",
     group: "Kurs und Termine",
-    description: "Automatisch einen Tag vor jeder Stunde an alle Teilnehmer des Kurses.",
-    placeholders: reminderPlaceholders,
+    description: "Automatisch einen Tag vor jeder Stunde an alle Teilnehmer des Kurses, ggf. mit der Bitte um eine Leseprobe.",
+    placeholders: reminder24hPlaceholders,
     hasButton: true,
     defaults: {
       subject: 'Erinnerung: "{{kurs}}" morgen',
-      body: [GREETING, "dein Kurs **{{kurs}}** findet morgen statt.", "**Wann:** {{datum}}"].join("\n\n"),
+      body: [
+        GREETING,
+        "dein Kurs **{{kurs}}** findet morgen statt.",
+        "**Wann:** {{datum}}",
+        "{{button}}",
+        "{{leseprobe}}",
+      ].join("\n\n"),
       buttonLabel: "Klasse beitreten",
       footer: reminderFooter,
     },

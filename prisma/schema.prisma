@@ -126,6 +126,7 @@ model Course {
   enrollments   Enrollment[]
   scheduleSlots ScheduleSlot[]
   waitlist      WaitlistEntry[]
+  readingSamples ReadingSample[]
 }
 
 // Wiederkehrender wöchentlicher Termin eines Kurses (z.B. "Mittwoch 18:00-18:40"),
@@ -166,8 +167,12 @@ model ClassSession {
   // Hausaufgabe bis zur naechsten Stunde.
   lessonContent  String?
   homework       String?
+  // Bitte der Lehrkraft um eine Leseprobe vor dieser Stunde, z. B. "Sure 67, Verse 1-10".
+  // Steht im Dashboard und in der Erinnerung 24 Stunden vorher.
+  readingRequest String?
 
-  evaluations SessionEvaluation[]
+  evaluations    SessionEvaluation[]
+  readingSamples ReadingSample[]
 }
 
 enum AttendanceStatus {
@@ -223,7 +228,8 @@ model Participant {
   createdAt DateTime            @default(now())
 
   enrollments Enrollment[]
-  evaluations SessionEvaluation[]
+  evaluations    SessionEvaluation[]
+  readingSamples ReadingSample[]
 
   @@index([ownerId])
 }
@@ -331,6 +337,36 @@ model MediaFile {
   createdAt DateTime @default(now())
 
   @@index([ownerId, createdAt])
+}
+
+// Kurze Audioaufnahme eines Teilnehmers (Leseprobe), die sich die Lehrkraft vor der Stunde
+// anhoert. Nur fuer Konto-Inhaber, Lehrkraft des Kurses und Admin abrufbar; wird nach
+// READING_SAMPLE_RETENTION_DAYS (src/lib/reading-samples.ts) automatisch geloescht.
+// Speicherung wie in der Mediathek: Vercel Blob (blobPathname) oder als Bytes in der Datenbank.
+model ReadingSample {
+  id             String        @id @default(cuid())
+  participantId  String
+  participant    Participant   @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  courseId       String
+  course         Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  // Stunde, fuer die die Leseprobe gedacht ist (optional).
+  sessionId      String?
+  session        ClassSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  mimeType       String
+  sizeBytes      Int
+  durationSec    Int?
+  data           Bytes?
+  blobPathname   String?
+  // Kurzer Hinweis des Teilnehmers, z. B. "Verse 1-10, beim Idgham unsicher"
+  note           String?
+  // Rueckmeldung der Lehrkraft
+  listenedAt     DateTime?
+  teacherComment String?
+  createdAt      DateTime      @default(now())
+
+  @@index([courseId, createdAt])
+  @@index([participantId])
+  @@index([sessionId])
 }
 
 // Im Admin-Bereich angepasste Texte der automatischen E-Mails (Schluessel siehe
