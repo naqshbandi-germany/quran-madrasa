@@ -15,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const navLinks = [
     session.user.role === "TEACHER" && { href: "/teacher", label: "Meine Kurse" },
     session.user.role === "ADMIN" && { href: "/admin", label: "Admin-Bereich" },
+    session.user.role === "ADMIN" && { href: "/admin/emails", label: "E-Mail-Texte" },
     { href: "/teacher/mediathek", label: "Mediathek" },
     { href: "/teacher/emails", label: "E-Mails" },
   ].filter((link): link is { href: string; label: string } => Boolean(link));

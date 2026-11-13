@@ -10,8 +10,8 @@ import { getAppUrl } from "@/lib/app-url";
 import { getCourseCapacity } from "@/lib/course-capacity";
 import { prisma } from "@/lib/prisma";
 import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
+import { buildEmail } from "@/lib/email-templates";
 import { getStripe } from "@/lib/stripe";
-import { participantRemovedHtml, waitlistJoinedHtml, waitlistOfferHtml } from "@/lib/waitlist-email";
 
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -97,8 +97,7 @@ export async function joinWaitlist(_prev: ActionResult, formData: FormData): Pro
     await deliverEmail({
       from: EMAIL_FROM,
       to: email,
-      subject: `Warteliste: ${course.title}`,
-      html: waitlistJoinedHtml({ name, courseTitle: course.title }),
+      ...(await buildEmail("waitlist_joined", { name, kurs: course.title })),
     });
   } catch (err) {
     // Der Eintrag ist gespeichert; eine fehlgeschlagene Bestaetigung soll ihn nicht verwerfen.
@@ -198,13 +197,14 @@ export async function removeParticipantFromCourse(enrollmentId: string): Promise
     await deliverEmail({
       from: EMAIL_FROM,
       to: enrollment.user.email,
-      subject: `Austragung aus dem Kurs ${enrollment.course.title}`,
-      html: participantRemovedHtml({
-        ownerName: enrollment.user.name,
-        participantName: enrollment.participant.name,
-        courseTitle: enrollment.course.title,
-        subscriptionEnded,
-      }),
+      ...(await buildEmail("participant_removed", {
+        name: enrollment.user.name,
+        teilnehmer: enrollment.participant.name,
+        kurs: enrollment.course.title,
+        abo: subscriptionEnded
+          ? "Dein Abo für diesen Kurs wurde beendet."
+          : "Dein Abo wurde um einen Teilnehmer verkleinert und wird ab der nächsten Abrechnung entsprechend berechnet.",
+      })),
       replyTo: course.teacher.email,
     });
   } catch (err) {
@@ -245,13 +245,12 @@ export async function contactWaitlistEntry(entryId: string): Promise<ActionResul
     await deliverEmail({
       from: EMAIL_FROM,
       to: entry.email,
-      subject: `Platz frei: ${course.title}`,
-      html: waitlistOfferHtml({
+      ...(await buildEmail("waitlist_offer", {
         name: entry.name,
-        courseTitle: course.title,
-        teacherName: course.teacher.name,
-        enrollUrl: `${getAppUrl()}/courses/${course.slug}/anmelden`,
-      }),
+        kurs: course.title,
+        lehrer: course.teacher.name,
+        link: `${getAppUrl()}/courses/${course.slug}/anmelden`,
+      })),
       replyTo: course.teacher.email,
     });
   } catch (err) {
