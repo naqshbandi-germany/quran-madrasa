@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   createTeacherAccount,
   regenerateAccessCode,
+  resendTeacherInvite,
   updateCourseSettings,
   updateLegalTexts,
   updateSiteContent,
@@ -44,7 +45,28 @@ function ReminderStatus({ lastRunAt, minutesAgo }: { lastRunAt: Date | null; min
   );
 }
 
-export default async function AdminPage() {
+const INVITE_NOTICES: Record<string, { ok: boolean; text: string }> = {
+  gesendet: { ok: true, text: "Die Einladung wurde per E-Mail verschickt." },
+  lokal: {
+    ok: true,
+    text: "Kein E-Mail-Dienst eingerichtet (lokal): Der Einladungslink steht in der Server-Konsole.",
+  },
+  fehler: {
+    ok: false,
+    text: "Der Zugang ist gespeichert, aber die E-Mail konnte nicht verschickt werden. Bitte später „Einladung erneut senden“.",
+  },
+  vergeben: { ok: false, text: "Diese E-Mail-Adresse gehört schon zu einem anderen Konto." },
+  ungueltig: { ok: false, text: "Bitte Name und eine gültige E-Mail-Adresse angeben." },
+};
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ einladung?: string }>;
+}) {
+  const { einladung } = await searchParams;
+  const inviteNotice = einladung ? INVITE_NOTICES[einladung] : undefined;
+
   const teachers = await prisma.user.findMany({
     where: { role: "TEACHER" },
     orderBy: { createdAt: "desc" },
@@ -68,8 +90,17 @@ export default async function AdminPage() {
 
       <ReminderStatus lastRunAt={remindersLastRunAt} minutesAgo={minutesSince(remindersLastRunAt)} />
 
-      <section className="border border-gold-400/40 bg-white p-5">
+      <section id="lehrer" className="border border-gold-400/40 bg-white p-5">
         <h2 className="mb-4 font-semibold text-azure-800">Lehrer</h2>
+
+        {inviteNotice && (
+          <p
+            role={inviteNotice.ok ? "status" : "alert"}
+            className={`mb-4 border px-3 py-2 text-sm ${inviteNotice.ok ? "border-green-300 bg-green-50 text-green-900" : "border-red-300 bg-red-50 text-red-800"}`}
+          >
+            {inviteNotice.text}
+          </p>
+        )}
 
         {teachers.length === 0 ? (
           <p className="mb-4 text-sm text-brand-600">Noch keine Lehrer angelegt.</p>
@@ -85,6 +116,16 @@ export default async function AdminPage() {
                   className="mt-3 grid gap-2 border-t border-brand-100 pt-3 sm:grid-cols-2"
                 >
                   <input type="hidden" name="teacherId" value={teacher.id} />
+                  <label className="flex flex-col text-xs text-brand-700 sm:col-span-2">
+                    E-Mail-Adresse (Anmeldung)
+                    <input
+                      name="email"
+                      type="email"
+                      required
+                      defaultValue={teacher.email}
+                      className="mt-1 border border-brand-300 px-3 py-2 text-sm"
+                    />
+                  </label>
                   <input
                     name="image"
                     placeholder="Foto-URL (https://...)"
@@ -109,35 +150,45 @@ export default async function AdminPage() {
                     Profil speichern
                   </button>
                 </form>
+                <form
+                  action={resendTeacherInvite}
+                  className="mt-3 flex flex-wrap items-center gap-3 border-t border-brand-100 pt-3 text-sm"
+                >
+                  <input type="hidden" name="teacherId" value={teacher.id} />
+                  <button className="border border-brand-300 px-3 py-1.5 text-brand-800 hover:bg-brand-50">
+                    Einladung erneut senden
+                  </button>
+                  <span className="text-xs text-brand-600">
+                    Schickt einen neuen Link zum Festlegen des Passworts an {teacher.email}.
+                  </span>
+                </form>
               </details>
             ))}
           </div>
         )}
 
-        <form action={createTeacherAccount} className="grid gap-3 sm:grid-cols-3">
+        <h3 className="mb-2 text-sm font-semibold text-azure-800">Lehrer einladen</h3>
+        <p className="mb-3 text-sm text-brand-600">
+          Die Lehrkraft bekommt eine E-Mail mit einem Link (7 Tage gültig), über den sie ihr
+          eigenes Passwort festlegt. Danach meldet sie sich mit ihrer E-Mail-Adresse an.
+        </p>
+        <form action={createTeacherAccount} className="grid gap-3 sm:grid-cols-2">
           <input
             name="name"
             placeholder="Name"
             required
+            minLength={2}
             className="border border-brand-300 px-3 py-2"
           />
           <input
             name="email"
             type="email"
-            placeholder="E-Mail"
+            placeholder="E-Mail-Adresse der Lehrkraft"
             required
-            className="border border-brand-300 px-3 py-2"
-          />
-          <input
-            name="password"
-            type="password"
-            placeholder="Vorläufiges Passwort (min. 8 Zeichen)"
-            required
-            minLength={8}
             className="border border-brand-300 px-3 py-2"
           />
           <button className="btn-primary col-span-full px-4 py-2">
-            Lehrer-Account anlegen
+            Lehrer anlegen und einladen
           </button>
         </form>
       </section>
