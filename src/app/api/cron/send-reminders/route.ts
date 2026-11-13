@@ -3,8 +3,9 @@ import { NextResponse } from "next/server";
 import { getAppUrl } from "@/lib/app-url";
 import { groupRecipients } from "@/lib/enrollment-recipients";
 import { prisma } from "@/lib/prisma";
-import { reminderHtml, reminderSubject, type ReminderKind } from "@/lib/reminder-email";
-import { EMAIL_FROM, getResend } from "@/lib/resend";
+import { emailRenderer } from "@/lib/email-templates";
+import { formatReminderDate, REMINDER_TEMPLATES, type ReminderKind } from "@/lib/reminder-email";
+import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
 
 export const maxDuration = 60;
 
@@ -51,7 +52,7 @@ async function sendRemindersFor(
   field: ReminderField,
 ) {
   const appUrl = getAppUrl();
-  const resend = getResend();
+  const render = await emailRenderer(REMINDER_TEMPLATES[kind]);
   let emailCount = 0;
 
   for (const classSession of sessions) {
@@ -59,16 +60,14 @@ async function sendRemindersFor(
 
     for (const recipient of groupRecipients(classSession.course.enrollments)) {
       try {
-        await resend.emails.send({
+        await deliverEmail({
           from: EMAIL_FROM,
           to: recipient.email,
-          subject: reminderSubject(classSession.course.title, kind),
-          html: reminderHtml({
-            studentName: recipient.greetingName,
-            courseTitle: classSession.course.title,
-            startsAt: classSession.startsAt,
-            joinUrl,
-            kind,
+          ...render({
+            name: recipient.greetingName,
+            kurs: classSession.course.title,
+            datum: formatReminderDate(classSession.startsAt),
+            link: joinUrl,
           }),
         });
         emailCount++;

@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 
+import { htmlToText } from "@/lib/email-render";
+
 // Lazy statt eager erzeugt, siehe Kommentar in src/lib/stripe.ts.
 let resendInstance: Resend | null = null;
 
@@ -37,7 +39,11 @@ type OutgoingEmail = {
 export async function deliverEmail(email: OutgoingEmail) {
   if (!process.env.RESEND_API_KEY && process.env.NODE_ENV !== "production") {
     const files = (email.attachments ?? []).map((a) => `${a.filename} (${a.content.length} B)`);
-    console.log(`[E-Mail nicht gesendet, kein RESEND_API_KEY] an ${email.to}: ${email.subject}`, files);
+    console.log(
+      `[E-Mail nicht gesendet, kein RESEND_API_KEY] an ${email.to}: ${email.subject}`,
+      files,
+      `\n${htmlToText(email.html)}\n`,
+    );
     return;
   }
   const { error } = await getResend().emails.send(email);
