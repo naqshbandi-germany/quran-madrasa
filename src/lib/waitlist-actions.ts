@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
 import { buildEmail } from "@/lib/email-templates";
 import { getStripe } from "@/lib/stripe";
+import { retrieveSubscriptionIfPresent } from "@/lib/stripe-subscription";
 
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -159,31 +160,38 @@ export async function removeParticipantFromCourse(enrollmentId: string): Promise
   const course = await requireTeacherOfCourse(enrollment.courseId);
 
   let subscriptionEnded = false;
+  // Abo aus einem frueheren Stripe-Konto: hier nicht kuendbar. Die Einschreibung wird trotzdem
+  // entfernt; die Kuendigung im alten Konto muss von Hand erfolgen.
+  let subscriptionInOtherAccount = false;
   try {
     if (enrollment.subscription) {
       const stripe = getStripe();
-      const sub = await stripe.subscriptions.retrieve(enrollment.subscription.stripeSubscriptionId);
-      const item = sub.items.data[0];
-      const remaining = (sub.metadata.participantIds ?? "")
-        .split(",")
-        .map((id) => id.trim())
-        .filter((id) => id && id !== enrollment.participantId);
-      const quantity = item?.quantity ?? 1;
-
-      if (!item || quantity <= 1 || remaining.length === 0) {
-        if (sub.status !== "canceled") await stripe.subscriptions.cancel(sub.id, { prorate: false });
-        subscriptionEnded = true;
+      const sub = await retrieveSubscriptionIfPresent(enrollment.subscription.stripeSubscriptionId);
+      if (!sub) {
+        subscriptionInOtherAccount = true;
       } else {
-        // Die Teilnehmer-IDs aus den Metadaten nehmen, sonst schreibt der Webhook ihn wieder ein.
-        await stripe.subscriptions.update(sub.id, {
-          items: [{ id: item.id, quantity: quantity - 1 }],
-          metadata: { ...sub.metadata, participantIds: remaining.join(",") },
-          proration_behavior: "none",
-        });
-        await prisma.subscription.update({
-          where: { id: enrollment.subscription.id },
-          data: { quantity: quantity - 1 },
-        });
+        const item = sub.items.data[0];
+        const remaining = (sub.metadata.participantIds ?? "")
+          .split(",")
+          .map((id) => id.trim())
+          .filter((id) => id && id !== enrollment.participantId);
+        const quantity = item?.quantity ?? 1;
+
+        if (!item || quantity <= 1 || remaining.length === 0) {
+          if (sub.status !== "canceled") await stripe.subscriptions.cancel(sub.id, { prorate: false });
+          subscriptionEnded = true;
+        } else {
+          // Die Teilnehmer-IDs aus den Metadaten nehmen, sonst schreibt der Webhook ihn wieder ein.
+          await stripe.subscriptions.update(sub.id, {
+            items: [{ id: item.id, quantity: quantity - 1 }],
+            metadata: { ...sub.metadata, participantIds: remaining.join(",") },
+            proration_behavior: "none",
+          });
+          await prisma.subscription.update({
+            where: { id: enrollment.subscription.id },
+            data: { quantity: quantity - 1 },
+          });
+        }
       }
     }
   } catch (err) {
@@ -193,6 +201,14 @@ export async function removeParticipantFromCourse(enrollmentId: string): Promise
 
   await prisma.enrollment.delete({ where: { id: enrollmentId } });
 
+  if (subscriptionInOtherAccount && enrollment.subscription) {
+    // Ohne verbliebene Teilnehmer gilt das alte Abo hier als beendet.
+    const left = await prisma.enrollment.count({ where: { subscriptionId: enrollment.subscription.id } });
+    if (left === 0) {
+      await prisma.subscription.update({ where: { id: enrollment.subscription.id }, data: { status: "CANCELED" } });
+    }
+  }
+
   try {
     await deliverEmail({
       from: EMAIL_FROM,
@@ -201,9 +217,11 @@ export async function removeParticipantFromCourse(enrollmentId: string): Promise
         name: enrollment.user.name,
         teilnehmer: enrollment.participant.name,
         kurs: enrollment.course.title,
-        abo: subscriptionEnded
-          ? "Dein Abo für diesen Kurs wurde beendet."
-          : "Dein Abo wurde um einen Teilnehmer verkleinert und wird ab der nächsten Abrechnung entsprechend berechnet.",
+        abo: subscriptionInOtherAccount
+          ? "Dein bisheriges Abo lief noch über unser früheres Zahlungskonto. Falls dort weiterhin etwas abgebucht wird, antworte einfach auf diese Mail."
+          : subscriptionEnded
+            ? "Dein Abo für diesen Kurs wurde beendet."
+            : "Dein Abo wurde um einen Teilnehmer verkleinert und wird ab der nächsten Abrechnung entsprechend berechnet.",
       })),
       replyTo: course.teacher.email,
     });

@@ -162,6 +162,14 @@ export default async function AdminPage({
                     Schickt einen neuen Link zum Festlegen des Passworts an {teacher.email}.
                   </span>
                 </form>
+                <p className="mt-3 border-t border-brand-100 pt-3 text-sm">
+                  <Link href={`/admin/konten/${teacher.id}`} className="font-medium text-red-800 underline">
+                    Lehrer-Konto löschen …
+                  </Link>{" "}
+                  <span className="text-xs text-brand-600">
+                    Vorher werden die Kurse und die Mediathek einer anderen Lehrkraft zugeordnet.
+                  </span>
+                </p>
               </details>
             ))}
           </div>
