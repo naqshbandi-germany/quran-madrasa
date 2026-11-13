@@ -260,6 +260,27 @@ Produkte, Preise, Kunden, Abos und Webhooks gehören immer zu einem Stripe-Konto
 Gespeicherte Stripe-Kunden-IDs aus dem alten Konto werden beim nächsten Checkout automatisch
 erkannt und durch einen neuen Kunden im neuen Konto ersetzt (`src/lib/stripe-customer.ts`).
 
+**Kontrolle:** Der Admin-Bereich zeigt oben im Kasten „Stripe-Konto“, über welches Konto die
+Website gerade abrechnet, und warnt bei Kurs-Preis-IDs, die es dort nicht gibt.
+
+**Es wird trotzdem noch über das alte Konto abgerechnet?** Dann ist auf Vercel noch der alte
+Schlüssel aktiv. Die Website kennt nur den Schlüssel, kein Konto-Login; wer im Stripe-Dashboard
+in welchem Konto Mitglied ist, spielt keine Rolle. Typische Ursachen:
+
+- Im Stripe-Dashboard war beim Kopieren noch das alte Konto ausgewählt (Kontoname oben links
+  prüfen, dort auf „Camp in Germany“ umschalten, dann Entwickler → API-Schlüssel). Als Mitglied
+  mit der Rolle „Entwickler“ siehst du dort den geheimen Schlüssel des neuen Kontos.
+- Die Variable wurde in Vercel nur für „Preview“ oder „Development“ geändert, nicht für
+  „Production“.
+- Nach dem Ändern wurde kein Redeploy gemacht (Vercel → Deployments → letztes Deployment →
+  „Redeploy“). Geänderte Variablen gelten erst für neue Deployments.
+- Testmodus statt Live: `sk_test_…` rechnet im Testmodus ab, für echte Zahlungen muss der
+  Schlüssel mit `sk_live_…` beginnen, und Preise sowie Webhook müssen ebenfalls im Live-Modus
+  angelegt sein.
+
+Laufende Abos aus dem alten Konto buchen dort weiter monatlich ab, bis sie im alten Konto
+gekündigt werden (Schritt 5); die betroffenen Teilnehmer melden sich danach neu an.
+
 ### Vorschau-Modus (Website noch nicht öffentlich)
 
 Ist in Vercel die Variable `SITE_PREVIEW_CODE` gesetzt (z. B. ein zufälliges Wort), sehen
