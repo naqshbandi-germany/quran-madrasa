@@ -15,6 +15,9 @@ keys.txt
 api.keys.xlsx
 ZUGANG.md
 
+# lokale Claude-Code-Einstellungen
+.claude/
+
 # misc
 .DS_Store
 *.pem
