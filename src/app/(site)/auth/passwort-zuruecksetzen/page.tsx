@@ -9,7 +9,10 @@ import { PasswordField } from "@/components/form/password-field";
 import { passwordMeetsRules } from "@/lib/password-rules";
 
 function ResetPasswordForm() {
-  const token = useSearchParams().get("token") ?? "";
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token") ?? "";
+  // Einladung einer neuen Lehrkraft: erstes Passwort statt "neues" Passwort.
+  const isInvite = searchParams.get("einladung") === "1";
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [formError, setFormError] = useState<React.ReactNode>(null);
@@ -70,11 +73,21 @@ function ResetPasswordForm() {
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="text-4xl font-semibold text-azure-800">Neues Passwort festlegen</h1>
+      <h1 className="text-4xl font-semibold text-azure-800">
+        {isInvite ? "Willkommen! Lege dein Passwort fest" : "Neues Passwort festlegen"}
+      </h1>
+      {isInvite && !done && (
+        <p className="mt-3 text-brand-900/80">
+          Für dich wurde ein Lehrer-Zugang angelegt. Wähle ein Passwort, mit dem du dich künftig
+          zusammen mit deiner E-Mail-Adresse anmeldest.
+        </p>
+      )}
 
       {done ? (
         <div role="status" className="mt-6 space-y-3 border border-gold-400/40 bg-white p-5">
-          <p className="font-medium text-brand-900">Dein Passwort wurde geändert.</p>
+          <p className="font-medium text-brand-900">
+            {isInvite ? "Dein Passwort ist gespeichert. Dein Zugang ist jetzt aktiv." : "Dein Passwort wurde geändert."}
+          </p>
           <Link
             href="/auth/signin"
             className="btn-primary btn-display inline-block px-5 py-2.5"
@@ -87,7 +100,7 @@ function ResetPasswordForm() {
           <FormAlert>{formError}</FormAlert>
           <PasswordField
             id="reset-password"
-            label="Neues Passwort"
+            label={isInvite ? "Dein Passwort" : "Neues Passwort"}
             value={password}
             onChange={setPassword}
             autoComplete="new-password"
