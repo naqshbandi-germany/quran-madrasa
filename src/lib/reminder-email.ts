@@ -24,8 +24,23 @@ export function reminderHtml(params: {
   startsAt: Date;
   joinUrl: string;
   kind: ReminderKind;
+  // Bitte der Lehrkraft um eine Leseprobe (nur in der Erinnerung 24 Stunden vorher).
+  readingRequest?: string | null;
+  readingUrl?: string;
 }) {
-  const { studentName, courseTitle, startsAt, joinUrl, kind } = params;
+  const { studentName, courseTitle, startsAt, joinUrl, kind, readingRequest, readingUrl } = params;
+  const readingBlock =
+    readingRequest && readingUrl
+      ? `
+      <div style="margin: 24px 0; padding: 12px 16px; background: #f4f1e8; border-left: 3px solid #b8963e;">
+        <p style="margin: 0 0 8px;"><strong>Leseprobe erbeten:</strong> ${escapeHtml(readingRequest)}</p>
+        <p style="margin: 0 0 12px; font-size: 14px;">
+          Bitte nimm den Abschnitt vor der Stunde kurz auf. Die Lehrkraft hört ihn sich an und kann
+          sich so gezielt vorbereiten. Nur die Lehrkraft kann die Aufnahme hören.
+        </p>
+        <a href="${readingUrl}" style="color: #3f6b31; font-weight: bold;">Leseprobe aufnehmen</a>
+      </div>`
+      : "";
   const whenText =
     kind === "24h" ? "morgen" : kind === "1h" ? "in einer Stunde" : "gerade eben";
   const introText =
@@ -49,6 +64,7 @@ export function reminderHtml(params: {
           Klasse beitreten
         </a>
       </p>
+      ${readingBlock}
       <p style="font-size: 13px; color: #7aa968;">
         Diese Erinnerung wurde automatisch verschickt, weil du bei diesem Kurs eingeschrieben
         bist.

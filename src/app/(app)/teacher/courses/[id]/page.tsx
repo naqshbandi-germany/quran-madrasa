@@ -254,6 +254,8 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
   });
   const composerFiles = mediaFiles.map((file) => toMediaItem(file));
 
+  const unheardSamples = await prisma.readingSample.count({ where: { courseId: course.id, listenedAt: null } });
+
   const now = new Date();
   const upcomingSessions = course.sessions.filter((s) => s.startsAt >= now);
   const pastSessions = course.sessions.filter((s) => s.startsAt < now).reverse();
@@ -440,7 +442,12 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
       </section>
 
       <section className="space-y-4">
-        <h2 className="font-semibold text-azure-800">Sitzungen (mit Meeting-Link)</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-semibold text-azure-800">Sitzungen (mit Meeting-Link)</h2>
+          <Link href={`/teacher/courses/${course.id}/leseproben`} className="text-sm font-medium text-azure-800 underline">
+            Leseproben{unheardSamples > 0 ? ` (${unheardSamples} neu)` : ""}
+          </Link>
+        </div>
         {upcomingSessions.length === 0 && (
           <p className="text-sm text-brand-600">Keine kommenden Sitzungen geplant.</p>
         )}

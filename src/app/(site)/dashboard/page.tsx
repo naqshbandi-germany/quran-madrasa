@@ -133,9 +133,14 @@ export default async function DashboardPage() {
           <div key={course.id} className="border border-gold-400/40 bg-white p-5">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="font-semibold text-azure-800">{course.title}</h2>
-              <Link href={`/dashboard/kurse/${course.id}`} className="text-sm font-medium text-brand-700 underline">
-                Lernverlauf ansehen
-              </Link>
+              <div className="flex flex-wrap gap-x-4 text-sm font-medium text-brand-700">
+                <Link href={`/dashboard/kurse/${course.id}`} className="underline">
+                  Lernverlauf ansehen
+                </Link>
+                <Link href={`/dashboard/kurse/${course.id}/leseprobe`} className="underline">
+                  Leseprobe aufnehmen
+                </Link>
+              </div>
             </div>
             <ul className="mt-1 space-y-0.5 text-sm text-brand-600">
               {participants.map((p) => {
@@ -151,6 +156,26 @@ export default async function DashboardPage() {
                 );
               })}
             </ul>
+            {(() => {
+              const requested = course.sessions.find((cs) => cs.readingRequest);
+              if (!requested) return null;
+              return (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border border-gold-400/60 bg-brand-50 px-3 py-2 text-sm">
+                  <p>
+                    <span className="font-semibold text-azure-800">
+                      Leseprobe erbeten bis {formatDateTime(requested.startsAt)}:
+                    </span>{" "}
+                    {requested.readingRequest}
+                  </p>
+                  <Link
+                    href={`/dashboard/kurse/${course.id}/leseprobe?sitzung=${requested.id}`}
+                    className="btn-primary px-3 py-1"
+                  >
+                    Jetzt aufnehmen
+                  </Link>
+                </div>
+              );
+            })()}
             {lastHomework?.homework && (
               <div className="mt-3 border-l-2 border-gold-400 bg-brand-50 px-3 py-2 text-sm">
                 <p className="font-semibold text-azure-800">

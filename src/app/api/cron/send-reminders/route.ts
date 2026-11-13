@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getAppUrl } from "@/lib/app-url";
 import { groupRecipients } from "@/lib/enrollment-recipients";
 import { prisma } from "@/lib/prisma";
+import { deleteExpiredSamples } from "@/lib/reading-samples";
 import { reminderHtml, reminderSubject, type ReminderKind } from "@/lib/reminder-email";
 import { EMAIL_FROM, getResend } from "@/lib/resend";
 
@@ -69,6 +70,12 @@ async function sendRemindersFor(
             startsAt: classSession.startsAt,
             joinUrl,
             kind,
+            ...(kind === "24h" && classSession.readingRequest
+              ? {
+                  readingRequest: classSession.readingRequest,
+                  readingUrl: `${appUrl}/dashboard/kurse/${classSession.courseId}/leseprobe?sitzung=${classSession.id}`,
+                }
+              : {}),
           }),
         });
         emailCount++;
@@ -108,7 +115,14 @@ export async function POST(request: Request) {
   const sessionsStart = await findDueSessions(0, 8, "reminderStartSentAt");
   const sentStart = await sendRemindersFor(sessionsStart, "start", "reminderStartSentAt");
 
+  // Leseproben nach Ablauf der Aufbewahrungsfrist loeschen.
+  const deletedSamples = await deleteExpiredSamples().catch((err) => {
+    console.error("Abgelaufene Leseproben konnten nicht geloescht werden:", err);
+    return 0;
+  });
+
   return NextResponse.json({
+    deletedSamples,
     sessions24h: sessions24h.length,
     sessions1h: sessions1h.length,
     sessionsStart: sessionsStart.length,
