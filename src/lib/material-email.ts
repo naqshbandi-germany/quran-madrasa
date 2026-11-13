@@ -23,7 +23,7 @@ export function materialEmailHtml(params: {
   return `
     <div style="font-family: sans-serif; color: #1f3616; max-width: 480px; margin: 0 auto;">
       <h1 style="color: #3f6b31; font-size: 20px;">Quran Madrasa</h1>
-      <p>Assalamu alaykum ${escapeHtml(studentName)},</p>
+      <p>Salam alaykum ${escapeHtml(studentName)},</p>
       <p style="font-size: 13px; color: #7aa968; margin-bottom: 4px;">
         Neue Nachricht zu deinem Kurs <strong>${courseTitle}</strong>:
       </p>

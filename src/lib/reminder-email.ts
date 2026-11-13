@@ -1,58 +1,32 @@
 import { escapeHtml } from "@/lib/html";
 import { formatGermanDateTime } from "@/lib/schedule-time";
 
-function formatDateTime(date: Date) {
-  return `${formatGermanDateTime(date, "full")} Uhr (deutsche Zeit)`;
-}
+// Die Texte der Erinnerungen stehen in src/lib/email-defaults.ts und sind im Admin-Bereich
+// bearbeitbar; hier nur die Zuordnung Erinnerungsart -> Vorlage und vom Code erzeugte Bausteine.
 
 export type ReminderKind = "24h" | "1h" | "start";
 
-export function reminderSubject(courseTitle: string, kind: ReminderKind) {
-  switch (kind) {
-    case "24h":
-      return `Erinnerung: "${courseTitle}" morgen`;
-    case "1h":
-      return `Gleich geht's los: "${courseTitle}" in einer Stunde`;
-    case "start":
-      return `Jetzt live: "${courseTitle}" hat begonnen`;
-  }
+export const REMINDER_TEMPLATES = {
+  "24h": "reminder_24h",
+  "1h": "reminder_1h",
+  start: "reminder_start",
+} as const;
+
+export function formatReminderDate(date: Date) {
+  return `${formatGermanDateTime(date, "full")} Uhr (deutsche Zeit)`;
 }
 
-export function reminderHtml(params: {
-  studentName: string;
-  courseTitle: string;
-  startsAt: Date;
-  joinUrl: string;
-  kind: ReminderKind;
-}) {
-  const { studentName, courseTitle, startsAt, joinUrl, kind } = params;
-  const whenText =
-    kind === "24h" ? "morgen" : kind === "1h" ? "in einer Stunde" : "gerade eben";
-  const introText =
-    kind === "start"
-      ? `dein Kurs <strong>${courseTitle}</strong> hat gerade begonnen.`
-      : `dein Kurs <strong>${courseTitle}</strong> findet ${whenText} statt.`;
-
+// Hinweis auf eine von der Lehrkraft erbetene Leseprobe (Platzhalter {{leseprobe}} in der
+// Erinnerung 24 Stunden vorher). Ohne Bitte bleibt er leer.
+export function readingRequestHtml(readingRequest: string | null | undefined, readingUrl: string) {
+  if (!readingRequest) return "";
   return `
-    <div style="font-family: sans-serif; color: #1f3616; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #3f6b31; font-size: 20px;">Quran Madrasa</h1>
-      <p>Assalamu alaykum ${escapeHtml(studentName)},</p>
-      <p>${introText}</p>
-      <p style="margin: 16px 0;">
-        <strong>Wann:</strong> ${formatDateTime(startsAt)}
-      </p>
-      <p style="margin: 24px 0;">
-        <a
-          href="${joinUrl}"
-          style="background: #3f6b31; color: #fff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold;"
-        >
-          Klasse beitreten
-        </a>
-      </p>
-      <p style="font-size: 13px; color: #7aa968;">
-        Diese Erinnerung wurde automatisch verschickt, weil du bei diesem Kurs eingeschrieben
-        bist.
-      </p>
-    </div>
-  `;
+      <div style="margin: 24px 0; padding: 12px 16px; background: #f4f1e8; border-left: 3px solid #b8963e;">
+        <p style="margin: 0 0 8px;"><strong>Leseprobe erbeten:</strong> ${escapeHtml(readingRequest)}</p>
+        <p style="margin: 0 0 12px; font-size: 14px;">
+          Bitte nimm den Abschnitt vor der Stunde kurz auf. Die Lehrkraft hört ihn sich an und kann
+          sich so gezielt vorbereiten. Nur die Lehrkraft kann die Aufnahme hören.
+        </p>
+        <a href="${escapeHtml(readingUrl)}" style="color: #1d6347; font-weight: bold;">Leseprobe aufnehmen</a>
+      </div>`;
 }

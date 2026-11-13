@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
+import { REVIEW_SAMPLE_SELECT, ReadingSampleReviewList } from "@/components/reading-sample-review-list";
 import { saveSessionEvaluation } from "@/lib/evaluation-actions";
 import { prisma } from "@/lib/prisma";
 import { formatGermanDateTime, formatTeachingDateTime } from "@/lib/schedule-time";
@@ -64,6 +65,12 @@ export default async function EvaluateSessionPage({
   const lastPosition = new Map<string, { surah: number | null; ayah: number | null }>();
   for (const p of previous) if (!lastPosition.has(p.participantId)) lastPosition.set(p.participantId, p);
 
+  const samples = await prisma.readingSample.findMany({
+    where: { sessionId },
+    orderBy: { createdAt: "desc" },
+    select: REVIEW_SAMPLE_SELECT,
+  });
+
   const isFuture = classSession.startsAt > new Date();
 
   return (
@@ -117,6 +124,19 @@ export default async function EvaluateSessionPage({
               placeholder="z. B. Verse 16–30 täglich zweimal laut lesen"
               className={`mt-1 ${INPUT}`}
             />
+          </label>
+          <label className="flex flex-col text-sm text-brand-700">
+            Leseprobe vor dieser Stunde erbitten (optional)
+            <input
+              name="readingRequest"
+              maxLength={500}
+              defaultValue={classSession.readingRequest ?? ""}
+              placeholder="z. B. Sure Al-Mulk, Verse 1–10"
+              className={`mt-1 ${INPUT}`}
+            />
+            <span className="mt-1 text-xs text-brand-600">
+              Erscheint im Dashboard der Teilnehmer und in der Erinnerung 24 Stunden vor der Stunde.
+            </span>
           </label>
         </section>
 
@@ -229,6 +249,16 @@ export default async function EvaluateSessionPage({
 
         <button className="btn-primary px-5 py-2">Auswertung speichern</button>
       </form>
+
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-semibold text-azure-800">Leseproben zu dieser Stunde ({samples.length})</h2>
+          <Link href={`/teacher/courses/${id}/leseproben`} className="text-sm text-brand-700 underline">
+            Alle Leseproben des Kurses
+          </Link>
+        </div>
+        <ReadingSampleReviewList samples={samples} />
+      </section>
     </div>
   );
 }

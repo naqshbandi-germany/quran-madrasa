@@ -1,5 +1,6 @@
 import { getAppUrl } from "@/lib/app-url";
 import { groupRecipients } from "@/lib/enrollment-recipients";
+import { buildEmail, emailRenderer } from "@/lib/email-templates";
 import { escapeHtml } from "@/lib/html";
 import { prisma } from "@/lib/prisma";
 import { deliverEmail, EMAIL_FROM } from "@/lib/resend";
@@ -13,26 +14,7 @@ function when(date: Date) {
   return `${formatGermanDateTime(date, "full")} Uhr (deutsche Zeit)`;
 }
 
-function button(href: string, label: string) {
-  return `
-    <p style="margin: 24px 0;">
-      <a href="${href}" style="background: #3f6b31; color: #fff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold;">
-        ${escapeHtml(label)}
-      </a>
-    </p>`;
-}
-
-function layout(greetingName: string, body: string, footer: string) {
-  return `
-    <div style="font-family: sans-serif; color: #1f3616; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #3f6b31; font-size: 20px;">Quran Madrasa</h1>
-      <p>Assalamu alaykum ${escapeHtml(greetingName)},</p>
-      ${body}
-      <p style="font-size: 13px; color: #7aa968;">${footer}</p>
-    </div>`;
-}
-
-async function sendSafely(to: string, subject: string, html: string) {
+async function sendSafely(to: string, { subject, html }: { subject: string; html: string }) {
   try {
     await deliverEmail({ from: EMAIL_FROM, to, subject, html });
   } catch (err) {
@@ -70,24 +52,18 @@ export async function sendEnrollmentConfirmation(courseId: string, enrollmentIds
           .join("")}</ul>`
       : "<p>Die Termine werden noch bekannt gegeben. Du bekommst vor jeder Stunde eine Erinnerung.</p>";
 
+  const render = await emailRenderer("enrollment_confirmed");
   for (const recipient of groupRecipients(enrollments)) {
-    const names = recipient.participantNames.map(escapeHtml).join(", ");
-    const body = `
-      <p>die Anmeldung zum Kurs <strong>${escapeHtml(course.title)}</strong> bei
-      ${escapeHtml(course.teacher.name)} ist bestätigt. Teilnehmer: ${names}.</p>
-      ${sessionsHtml}
-      <p>Vor jeder Stunde erinnern wir dich per E-Mail (24 Stunden und 1 Stunde vorher). Im Bereich
-      „Meine Kurse“ findest du alle Termine, den Link zum Unterricht und ein Kalender-Abo für dein
-      Handy oder deinen Computer.</p>
-      ${button(`${appUrl}/dashboard`, "Zu meinen Kursen")}`;
     await sendSafely(
       recipient.email,
-      `Anmeldung bestätigt: "${course.title}"`,
-      layout(
-        recipient.greetingName,
-        body,
-        "Diese E-Mail wurde automatisch nach deiner Anmeldung verschickt. Bei Fragen erreichst du uns unter admin@islamunterfreunden.de.",
-      ),
+      render({
+        name: recipient.greetingName,
+        kurs: course.title,
+        lehrer: course.teacher.name,
+        teilnehmer: recipient.participantNames.join(", "),
+        termine: sessionsHtml,
+        link: `${appUrl}/dashboard`,
+      }),
     );
   }
 }
@@ -108,30 +84,26 @@ export async function sendSessionChangeNotice(
   if (!course || course.enrollments.length === 0) return;
 
   const appUrl = getAppUrl();
-  const subject =
-    kind === "moved"
-      ? `Termin verschoben: "${course.title}"`
-      : `Stunde fällt aus: "${course.title}"`;
+  const renderMoved = await emailRenderer("session_moved");
+  const renderCancelled = await emailRenderer("session_cancelled");
 
   for (const recipient of groupRecipients(course.enrollments)) {
-    const body =
-      kind === "moved" && after
-        ? `<p>die Stunde <strong>${escapeHtml(before.title)}</strong> im Kurs
-           <strong>${escapeHtml(course.title)}</strong> wurde verschoben.</p>
-           <p><strong>Bisher:</strong> <span style="text-decoration: line-through;">${when(before.startsAt)}</span><br />
-           <strong>Neu:</strong> ${when(after.startsAt)} (${after.durationMin} Minuten)</p>
-           <p>Der Link zum Unterricht bleibt gleich. Ein abonnierter Kalender aktualisiert sich von selbst.</p>`
-        : `<p>die Stunde <strong>${escapeHtml(before.title)}</strong> im Kurs
-           <strong>${escapeHtml(course.title)}</strong> am ${when(before.startsAt)} fällt leider aus.</p>
-           <p>Über einen Ersatztermin informieren wir dich gesondert.</p>`;
+    const values = {
+      name: recipient.greetingName,
+      kurs: course.title,
+      stunde: before.title,
+      link: `${appUrl}/dashboard`,
+    };
     await sendSafely(
       recipient.email,
-      subject,
-      layout(
-        recipient.greetingName,
-        `${body}${button(`${appUrl}/dashboard`, "Alle Termine ansehen")}`,
-        "Diese E-Mail wurde automatisch verschickt, weil du bei diesem Kurs eingeschrieben bist.",
-      ),
+      kind === "moved" && after
+        ? renderMoved({
+            ...values,
+            datum_alt: when(before.startsAt),
+            datum: when(after.startsAt),
+            dauer: String(after.durationMin),
+          })
+        : renderCancelled({ ...values, datum: when(before.startsAt) }),
     );
   }
 }
@@ -142,17 +114,12 @@ export async function sendPaymentFailedNotice(stripeCustomerId: string, courseId
   const user = await prisma.user.findUnique({ where: { stripeCustomerId } });
   if (!user) return;
   const course = courseId ? await prisma.course.findUnique({ where: { id: courseId } }) : null;
-  const appUrl = getAppUrl();
-  const courseText = course ? ` für den Kurs <strong>${escapeHtml(course.title)}</strong>` : "";
-  const body = `
-    <p>die letzte Zahlung${courseText} konnte leider nicht eingezogen werden, zum Beispiel weil die
-    Karte abgelaufen ist oder das Konto nicht gedeckt war.</p>
-    <p>Bitte prüfe deine Zahlungsdaten. Wir versuchen es in den nächsten Tagen automatisch noch
-    einmal. Deine Teilnahme läuft bis dahin weiter.</p>
-    ${button(`${appUrl}/dashboard/billing`, "Zahlungsdaten prüfen")}`;
   await sendSafely(
     user.email,
-    "Zahlung fehlgeschlagen: bitte Zahlungsdaten prüfen",
-    layout(user.name, body, "Bei Fragen erreichst du uns unter admin@islamunterfreunden.de."),
+    await buildEmail("payment_failed", {
+      name: user.name,
+      kurs: course?.title ?? "deine Teilnahme",
+      link: `${getAppUrl()}/dashboard/billing`,
+    }),
   );
 }

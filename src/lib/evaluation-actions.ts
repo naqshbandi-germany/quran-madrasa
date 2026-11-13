@@ -58,6 +58,7 @@ export async function saveSessionEvaluation(formData: FormData) {
 
   const lessonContent = optionalText.parse(formData.get("lessonContent"));
   const homework = optionalText.parse(formData.get("homework"));
+  const readingRequest = optionalText.parse(formData.get("readingRequest"));
 
   // Nur Teilnehmer, die (noch) im Kurs sind, plus solche, die schon eine Auswertung zu dieser
   // Stunde haben (z. B. inzwischen ausgetreten).
@@ -96,7 +97,7 @@ export async function saveSessionEvaluation(formData: FormData) {
   });
 
   await prisma.$transaction([
-    prisma.classSession.update({ where: { id: sessionId }, data: { lessonContent, homework } }),
+    prisma.classSession.update({ where: { id: sessionId }, data: { lessonContent, homework, readingRequest } }),
     ...writes,
   ]);
 
