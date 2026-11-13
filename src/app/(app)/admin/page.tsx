@@ -15,6 +15,7 @@ import { CopyButton } from "@/components/copy-button";
 import { isGoogleAuthConfigured } from "@/lib/auth-providers";
 import { DEFAULT_IMPRESSUM, defaultPrivacyPolicy } from "@/lib/legal-defaults";
 import { formatGermanDateTime } from "@/lib/schedule-time";
+import { getStripeAccountStatus, type StripeAccountStatus } from "@/lib/stripe-account";
 import { togglePublish } from "@/lib/teacher-actions";
 
 function minutesSince(date: Date | null) {
@@ -44,6 +45,47 @@ function ReminderStatus({ lastRunAt, minutesAgo }: { lastRunAt: Date | null; min
   );
 }
 
+// Welches Stripe-Konto der hinterlegte Schluessel wirklich anspricht. Nach einem Kontowechsel
+// muss hier das neue Konto stehen, sonst laeuft die Abrechnung weiter ueber das alte.
+function StripeAccountInfo({
+  status,
+  courseNamesByPrice,
+}: {
+  status: StripeAccountStatus;
+  courseNamesByPrice: Map<string, string[]>;
+}) {
+  const ok = status.ok && status.missingPriceIds.length === 0;
+  return (
+    <section
+      className={`border p-4 text-sm ${ok ? "border-brand-200 bg-brand-50" : "border-red-300 bg-red-50"}`}
+    >
+      <h2 className="font-semibold text-azure-800">Stripe-Konto</h2>
+      {status.ok ? (
+        <>
+          <p className="mt-1 text-brand-900">
+            Abgerechnet wird über <strong>{status.accountName}</strong> ({status.accountId},{" "}
+            {status.livemode ? "Live-Modus" : "Testmodus"}). Steht hier noch das alte Konto, ist auf
+            Vercel der alte <code>STRIPE_SECRET_KEY</code> aktiv (siehe README, „Stripe-Konto wechseln“).
+          </p>
+          {status.missingPriceIds.length > 0 && (
+            <ul className="mt-2 list-disc pl-5 text-red-800">
+              {status.missingPriceIds.map((id) => (
+                <li key={id}>
+                  Preis <code>{id}</code> gibt es in diesem Konto nicht (Kurs:{" "}
+                  {(courseNamesByPrice.get(id) ?? []).join(", ")}). Bitte die neue Preis-ID beim Kurs
+                  eintragen.
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      ) : (
+        <p className="mt-1 text-red-800">Stripe nicht erreichbar: {status.error}</p>
+      )}
+    </section>
+  );
+}
+
 export default async function AdminPage() {
   const teachers = await prisma.user.findMany({
     where: { role: "TEACHER" },
@@ -62,11 +104,21 @@ export default async function AdminPage() {
     },
   });
 
+  const courseNamesByPrice = new Map<string, string[]>();
+  for (const course of courses) {
+    for (const id of [course.stripePriceId, course.signupFeePriceId]) {
+      if (id) courseNamesByPrice.set(id, [...(courseNamesByPrice.get(id) ?? []), course.title]);
+    }
+  }
+  const stripeStatus = await getStripeAccountStatus([...courseNamesByPrice.keys()]);
+
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-azure-800">Admin-Bereich</h1>
 
       <ReminderStatus lastRunAt={remindersLastRunAt} minutesAgo={minutesSince(remindersLastRunAt)} />
+
+      <StripeAccountInfo status={stripeStatus} courseNamesByPrice={courseNamesByPrice} />
 
       <section className="border border-gold-400/40 bg-white p-5">
         <h2 className="mb-4 font-semibold text-azure-800">Lehrer</h2>
