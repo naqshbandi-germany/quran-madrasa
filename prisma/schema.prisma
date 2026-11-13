@@ -368,3 +368,14 @@ model ReadingSample {
   @@index([participantId])
   @@index([sessionId])
 }
+
+// Im Admin-Bereich angepasste Texte der automatischen E-Mails (Schluessel siehe
+// src/lib/email-defaults.ts). Fehlt der Eintrag, gilt der Standardtext aus dem Code.
+model EmailTemplate {
+  key         String   @id
+  subject     String
+  body        String
+  buttonLabel String   @default("")
+  footer      String   @default("")
+  updatedAt   DateTime @updatedAt
+}
