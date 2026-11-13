@@ -1,5 +1,6 @@
 import { escapeHtml } from "@/lib/html";
 import { LINK_VALID_DAYS } from "@/lib/media";
+import { SITE_NAME } from "@/lib/site";
 
 export function materialEmailHtml(params: {
   studentName: string;
@@ -22,7 +23,7 @@ export function materialEmailHtml(params: {
 
   return `
     <div style="font-family: sans-serif; color: #1f3616; max-width: 480px; margin: 0 auto;">
-      <h1 style="color: #3f6b31; font-size: 20px;">Quran Madrasa</h1>
+      <h1 style="color: #3f6b31; font-size: 20px;">${SITE_NAME}</h1>
       <p>Salam alaykum ${escapeHtml(studentName)},</p>
       <p style="font-size: 13px; color: #7aa968; margin-bottom: 4px;">
         Neue Nachricht zu deinem Kurs <strong>${courseTitle}</strong>:

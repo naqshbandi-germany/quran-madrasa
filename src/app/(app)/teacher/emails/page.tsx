@@ -4,7 +4,7 @@ import { blobAccess, isBlobConfigured } from "@/lib/blob";
 import { toMediaItem } from "@/lib/media-items";
 import { prisma } from "@/lib/prisma";
 
-export const metadata = { title: "E-Mails – Quran Madrasa" };
+export const metadata = { title: "E-Mails" };
 export const dynamic = "force-dynamic";
 
 export default async function EmailsPage({

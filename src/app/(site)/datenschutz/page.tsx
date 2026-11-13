@@ -5,7 +5,7 @@ import { isGoogleAuthConfigured } from "@/lib/auth-providers";
 import { defaultPrivacyPolicy } from "@/lib/legal-defaults";
 import { prisma } from "@/lib/prisma";
 
-export const metadata = { title: "Datenschutzerklärung – Quran Madrasa" };
+export const metadata = { title: "Datenschutzerklärung" };
 
 // Texte sind im Admin-Bereich pflegbar, daher bei jedem Aufruf frisch laden.
 export const dynamic = "force-dynamic";

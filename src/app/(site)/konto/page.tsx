@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ParticipantEditor, PasswordForm, ProfileForm } from "./konto-forms";
 
-export const metadata = { title: "Mein Konto – Quran Madrasa" };
+export const metadata = { title: "Mein Konto" };
 
 // Hängt von der Anmeldung ab und darf nicht zwischengespeichert werden.
 export const dynamic = "force-dynamic";

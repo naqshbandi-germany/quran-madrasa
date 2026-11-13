@@ -15,7 +15,7 @@ export function getResend() {
   return resendInstance;
 }
 
-// z.B. "Quran Madrasa <meeting@islamunterfreunden.de>" - die Domain muss bei
+// z.B. "Islam unter Freunden <meeting@islamunterfreunden.de>" - die Domain muss bei
 // Resend verifiziert sein (siehe README).
 export const EMAIL_FROM = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 

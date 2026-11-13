@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { useViewAs } from "@/components/view-as-banner";
+
 type Role = "STUDENT" | "TEACHER" | "ADMIN";
 
 type MenuLink = { href: string; label: string; description?: string };
@@ -61,6 +63,7 @@ const ITEM_STYLE =
 // `inline` (mobiles Menue) wird der Inhalt ohne Aufklappen direkt untereinander gezeigt.
 export function UserMenu({ inline = false }: { inline?: boolean }) {
   const { data: session, status } = useSession();
+  const viewAs = useViewAs();
   const pathname = usePathname();
   const [openOnPath, setOpenOnPath] = useState<string | null>(null);
   const open = openOnPath === pathname;
@@ -105,7 +108,8 @@ export function UserMenu({ inline = false }: { inline?: boolean }) {
     );
   }
 
-  const { name, email, image, role } = session.user;
+  // Im Entwicklermodus zeigt das Menue die angesehene Person (die Sitzung bleibt die des Admins).
+  const { name, email, image, role } = viewAs ? { ...viewAs, image: null } : session.user;
   const links = menuLinksFor(role);
   const displayName = name || email || "Konto";
 

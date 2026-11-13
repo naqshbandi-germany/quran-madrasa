@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { UserMenu } from "./user-menu";
+import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
 const COURSE_LINKS = [
   { href: "/quran", label: "Quran-Rezitation" },
@@ -32,11 +33,11 @@ export function SiteNav() {
   return (
     <nav className="mx-auto max-w-5xl px-4">
       <div className="flex items-center justify-between py-3">
-        <Link
-          href="/"
-          className="font-display text-2xl font-semibold uppercase tracking-[0.16em] text-azure-800"
-        >
-          Quran Madrasa
+        <Link href="/" className="flex flex-col leading-tight">
+          <span className="font-display text-2xl font-semibold uppercase tracking-[0.16em] text-azure-800">
+            {SITE_NAME}
+          </span>
+          <span className="text-xs tracking-[0.08em] text-brand-700">{SITE_TAGLINE}</span>
         </Link>
 
         <div className="hidden items-center gap-5 text-sm lg:flex">

@@ -4,7 +4,7 @@ import { DEFAULT_IMPRESSUM } from "@/lib/legal-defaults";
 import { MINIATURES } from "@/lib/miniatures";
 import { prisma } from "@/lib/prisma";
 
-export const metadata = { title: "Impressum – Quran Madrasa" };
+export const metadata = { title: "Impressum" };
 
 // Texte sind im Admin-Bereich pflegbar, daher bei jedem Aufruf frisch laden.
 export const dynamic = "force-dynamic";

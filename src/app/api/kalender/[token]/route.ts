@@ -1,6 +1,7 @@
 import { getAppUrl } from "@/lib/app-url";
 import { buildCalendar } from "@/lib/ics";
 import { prisma } from "@/lib/prisma";
+import { SITE_NAME } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
 
   const appUrl = getAppUrl();
   const body = buildCalendar(
-    "Quran Madrasa",
+    SITE_NAME,
     new URL(appUrl).host,
     sessions.map((s) => ({
       id: s.id,
@@ -46,7 +47,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
   return new Response(body, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": 'inline; filename="quran-madrasa.ics"',
+      "Content-Disposition": 'inline; filename="islam-unter-freunden.ics"',
       "Cache-Control": "no-store",
     },
   });

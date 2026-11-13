@@ -1,5 +1,6 @@
 import { getTemplateDefinition, type EmailContent, type EmailTemplateKey } from "@/lib/email-defaults";
 import { escapeHtml } from "@/lib/html";
+import { SITE_NAME } from "@/lib/site";
 
 // Setzt aus einem (gespeicherten oder Standard-)Text und den Werten einer Mail Betreff und
 // HTML zusammen. Wird beim Versand und fuer die Vorschau im Admin-Bereich verwendet und
@@ -77,7 +78,7 @@ export function renderEmail(
 
   const html = `
     <div style="font-family: sans-serif; color: ${COLORS.text}; max-width: 480px; margin: 0 auto; line-height: 1.5;">
-      <h1 style="color: ${COLORS.title}; font-size: 20px;">Quran Madrasa</h1>
+      <h1 style="color: ${COLORS.title}; font-size: 20px;">${SITE_NAME}</h1>
       ${paragraphs.filter(Boolean).join("\n      ")}
       ${footer}
     </div>`;

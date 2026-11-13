@@ -1,17 +1,19 @@
 import { Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
-import NextAuth from "next-auth";
+import NextAuth, { type Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { cookies } from "next/headers";
 import Google from "next-auth/providers/google";
 
 import { authConfig } from "@/auth.config";
 import { isGoogleAuthConfigured } from "@/lib/auth-providers";
 import { prisma } from "@/lib/prisma";
+import { VIEW_AS_COOKIE } from "@/lib/view-as";
 
 const baseJwt = authConfig.callbacks!.jwt!;
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const nextAuth = NextAuth({
   ...authConfig,
   providers: [
     CredentialsProvider({
@@ -95,3 +97,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+export const { handlers, signIn, signOut } = nextAuth;
+
+// Die echte Anmeldung, ohne Entwicklermodus.
+export const realAuth = nextAuth.auth;
+
+// Wie realAuth(), aber im Entwicklermodus ("Ansehen als", nur fuer Admins) mit der Person, als die
+// der Admin die Website gerade ansieht. Admin-Konten lassen sich nicht ansehen.
+export async function auth(): Promise<Session | null> {
+  const session = await realAuth();
+  if (session?.user.role !== Role.ADMIN) return session;
+
+  const targetId = (await cookies()).get(VIEW_AS_COOKIE)?.value;
+  if (!targetId) return session;
+  const target = await prisma.user.findUnique({
+    where: { id: targetId },
+    select: { id: true, name: true, email: true, image: true, role: true },
+  });
+  if (!target || target.role === Role.ADMIN) return session;
+
+  return { ...session, user: { ...session.user, ...target } };
+}

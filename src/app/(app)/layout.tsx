@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { AppSignOutButton } from "./app-sign-out-button";
+import { SITE_NAME } from "@/lib/site";
 
 // Eigene App-Shell (Sidebar statt Marketing-Nav) fuer Lehrer- und Admin-Bereich,
 // getrennt vom oeffentlichen Seitenlayout in (site)/layout.tsx - siehe README.
@@ -26,7 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <aside className="flex shrink-0 flex-col border-b border-gold-400/40 bg-white sm:min-h-screen sm:w-60 sm:border-b-0 sm:border-r">
         <div className="px-4 py-4">
           <Link href="/" className="text-lg font-semibold text-brand-700">
-            Quran Madrasa
+            {SITE_NAME}
           </Link>
           <p className="text-xs text-brand-600">Verwaltung</p>
         </div>

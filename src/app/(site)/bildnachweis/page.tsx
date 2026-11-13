@@ -3,7 +3,7 @@ import Image from "next/image";
 import { OrnamentDivider } from "@/components/ornament";
 import { MINIATURES } from "@/lib/miniatures";
 
-export const metadata = { title: "Bildnachweis – Quran Madrasa" };
+export const metadata = { title: "Bildnachweis" };
 
 export default function ImageCreditsPage() {
   return (
