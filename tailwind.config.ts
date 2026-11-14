@@ -27,35 +27,38 @@ const config: Config = {
         display: ["var(--font-display)", "Georgia", "serif"],
         quote: ["var(--font-quote)", "Georgia", "serif"],
       },
+      // Farben als CSS-Variablen (Werte in globals.css): Die Website nutzt die Standardwerte,
+      // der Verwaltungsbereich (Lehrer/Admin) setzt unter .app-shell eigene, sachliche Toene
+      // (src/app/(app)/app-theme.css). So bleiben die Klassen gleich, nur das Theme wechselt.
       colors: {
         // Dunkelgruen als Hauptfarbe; die hellen Stufen sind warme Weiss-/Cremetoene.
         brand: {
-          50: "#f8f5ef",
-          100: "#f1ebdd",
-          200: "#e3dac3",
+          50: "rgb(var(--brand-50) / <alpha-value>)",
+          100: "rgb(var(--brand-100) / <alpha-value>)",
+          200: "rgb(var(--brand-200) / <alpha-value>)",
           // Rand von Eingabefeldern und Checkboxen: >= 3:1 gegen Weiss (WCAG 1.4.11)
-          300: "#8f8668",
-          400: "#4f8a6e",
-          600: "#1d6347",
-          700: "#164a37",
-          900: "#1d2a24",
+          300: "rgb(var(--brand-300) / <alpha-value>)",
+          400: "rgb(var(--brand-400) / <alpha-value>)",
+          600: "rgb(var(--brand-600) / <alpha-value>)",
+          700: "rgb(var(--brand-700) / <alpha-value>)",
+          900: "rgb(var(--brand-900) / <alpha-value>)",
         },
         // Tiefes Himmelblau (Akzente, Kopfflaechen)
         azure: {
-          50: "#eaf2fa",
-          100: "#cfe1f3",
-          200: "#9fc3e6",
-          600: "#2166a8",
-          700: "#1b4f8a",
-          800: "#14325c",
-          900: "#0d2240",
+          50: "rgb(var(--azure-50) / <alpha-value>)",
+          100: "rgb(var(--azure-100) / <alpha-value>)",
+          200: "rgb(var(--azure-200) / <alpha-value>)",
+          600: "rgb(var(--azure-600) / <alpha-value>)",
+          700: "rgb(var(--azure-700) / <alpha-value>)",
+          800: "rgb(var(--azure-800) / <alpha-value>)",
+          900: "rgb(var(--azure-900) / <alpha-value>)",
         },
         // Messing: Grundton der Buttons (weisse Schrift, Kontrast 4,6:1); beim Hover wechselt er zu gold-600
-        brass: "#857348",
+        brass: "rgb(var(--brass) / <alpha-value>)",
         gold: {
-          200: "#ecdba8",
-          400: "#c9a85c",
-          600: "#a07f2e",
+          200: "rgb(var(--gold-200) / <alpha-value>)",
+          400: "rgb(var(--gold-400) / <alpha-value>)",
+          600: "rgb(var(--gold-600) / <alpha-value>)",
         },
       },
     },

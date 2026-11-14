@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/auth";
@@ -20,10 +19,7 @@ export default async function EmailTemplatePage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/admin/emails" className="text-sm text-brand-700 underline">
-          ← Alle E-Mail-Texte
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold text-azure-800">{template.label}</h1>
+        <h1 className="text-2xl font-bold text-azure-800">{template.label}</h1>
         <p className="mt-1 text-sm text-brand-700">{template.description}</p>
       </div>
 
