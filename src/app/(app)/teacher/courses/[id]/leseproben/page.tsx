@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
@@ -24,10 +23,7 @@ export default async function TeacherReadingSamplesPage({ params }: { params: Pr
   return (
     <div className="space-y-6">
       <div>
-        <Link href={`/teacher/courses/${id}`} className="text-sm text-brand-700 underline">
-          ← {course.title}
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold text-azure-800">Leseproben</h1>
+        <h1 className="text-2xl font-bold text-azure-800">Leseproben</h1>
         <p className="text-sm text-brand-600">
           {unheard > 0 ? `${unheard} noch nicht gehört. ` : ""}
           Nur du und der Admin können die Aufnahmen hören, andere Teilnehmer nicht. Sie werden nach{" "}

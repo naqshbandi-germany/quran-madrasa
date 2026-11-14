@@ -76,10 +76,7 @@ export default async function EvaluateSessionPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href={`/teacher/courses/${id}`} className="text-sm text-brand-700 underline">
-          ← {classSession.course.title}
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold text-azure-800">Stunde auswerten</h1>
+        <h1 className="text-2xl font-bold text-azure-800">Stunde auswerten</h1>
         <p className="text-brand-700">
           {classSession.title} · {formatTeachingDateTime(classSession.startsAt)} Ortszeit (
           {formatGermanDateTime(classSession.startsAt)} deutsche Zeit)
