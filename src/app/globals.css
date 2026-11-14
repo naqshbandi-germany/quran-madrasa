@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Farbwerte der Website (RGB, fuer Tailwind-Deckkraft wie border-gold-400/40). Der
+ Verwaltungsbereich ueberschreibt sie unter .app-shell, siehe src/app/(app)/app-theme.css. */
+:root {
+  --brand-50: 248 245 239; /* #f8f5ef */
+  --brand-100: 241 235 221; /* #f1ebdd */
+  --brand-200: 227 218 195; /* #e3dac3 */
+  --brand-300: 143 134 104; /* #8f8668 */
+  --brand-400: 79 138 110; /* #4f8a6e */
+  --brand-600: 29 99 71; /* #1d6347 */
+  --brand-700: 22 74 55; /* #164a37 */
+  --brand-900: 29 42 36; /* #1d2a24 */
+  --azure-50: 234 242 250; /* #eaf2fa */
+  --azure-100: 207 225 243; /* #cfe1f3 */
+  --azure-200: 159 195 230; /* #9fc3e6 */
+  --azure-600: 33 102 168; /* #2166a8 */
+  --azure-700: 27 79 138; /* #1b4f8a */
+  --azure-800: 20 50 92; /* #14325c */
+  --azure-900: 13 34 64; /* #0d2240 */
+  --gold-200: 236 219 168; /* #ecdba8 */
+  --gold-400: 201 168 92; /* #c9a85c */
+  --gold-600: 160 127 46; /* #a07f2e */
+  --brass: 133 115 72; /* #857348 */
+}
+
 body {
   @apply bg-brand-50 text-brand-900;
   /* verhindert horizontales Scrollen durch Elemente in Bildschirmbreite (w-screen) */

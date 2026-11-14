@@ -48,10 +48,7 @@ export default async function DeleteAccountPage({ params }: { params: Promise<{ 
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <Link href={`/admin/konten?q=${encodeURIComponent(user.email)}`} className="text-sm text-brand-700 underline">
-          ← Konten
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold text-azure-800">{isTeacher ? "Lehrer-Konto löschen" : "Konto löschen"}</h1>
+        <h1 className="text-2xl font-bold text-azure-800">{isTeacher ? "Lehrer-Konto löschen" : "Konto löschen"}</h1>
         <p className="mt-1 break-all text-sm text-brand-700">
           {user.name} · {user.email}
         </p>

@@ -1,64 +1,87 @@
-import Link from "next/link";
+import { Inter } from "next/font/google";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { AppSignOutButton } from "./app-sign-out-button";
+import { EMAIL_TEMPLATES } from "@/lib/email-defaults";
+import { prisma } from "@/lib/prisma";
 import { SITE_NAME } from "@/lib/site";
+import { AppBreadcrumbs } from "./app-breadcrumbs";
+import { AppNav, type NavGroup } from "./app-nav";
+import "./app-theme.css";
 
-// Eigene App-Shell (Sidebar statt Marketing-Nav) fuer Lehrer- und Admin-Bereich,
-// getrennt vom oeffentlichen Seitenlayout in (site)/layout.tsx - siehe README.
+// Serifenlose Schrift nur fuer den Verwaltungsbereich (auch fuer Ueberschriften).
+const appFont = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-app" });
+
+// Eigene App-Shell (feste Seitenleiste, Pfadleiste, sachliches Theme in app-theme.css) fuer
+// Lehrer- und Admin-Bereich, getrennt vom oeffentlichen Seitenlayout in (site)/layout.tsx.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session || (session.user.role !== "TEACHER" && session.user.role !== "ADMIN")) {
     redirect("/auth/signin");
   }
+  const isAdmin = session.user.role === "ADMIN";
 
-  const navLinks = [
-    session.user.role === "TEACHER" && { href: "/teacher", label: "Meine Kurse" },
-    session.user.role === "ADMIN" && { href: "/admin", label: "Admin-Bereich" },
-    session.user.role === "ADMIN" && { href: "/admin/emails", label: "E-Mail-Texte" },
-    session.user.role === "ADMIN" && { href: "/admin/konten", label: "Konten" },
-    { href: "/teacher/mediathek", label: "Mediathek" },
-    { href: "/teacher/emails", label: "E-Mails" },
-  ].filter((link): link is { href: string; label: string } => Boolean(link));
+  const navGroups: NavGroup[] = isAdmin
+    ? [
+        {
+          title: "Verwaltung",
+          links: [
+            { href: "/admin", label: "Übersicht", icon: "grid" },
+            { href: "/admin/konten", label: "Konten", icon: "users" },
+            { href: "/admin/emails", label: "E-Mail-Texte", icon: "template" },
+          ],
+        },
+        {
+          title: "Unterricht",
+          links: [
+            { href: "/teacher/mediathek", label: "Mediathek", icon: "library" },
+            { href: "/teacher/emails", label: "E-Mails", icon: "mail" },
+          ],
+        },
+      ]
+    : [
+        {
+          title: "Unterricht",
+          links: [
+            { href: "/teacher", label: "Meine Kurse", icon: "book" },
+            { href: "/teacher/mediathek", label: "Mediathek", icon: "library" },
+            { href: "/teacher/emails", label: "E-Mails", icon: "mail" },
+          ],
+        },
+      ];
+
+  // Namen fuer die Pfadleiste (Kurstitel, Bezeichnungen der E-Mail-Texte)
+  const courses = await prisma.course.findMany({
+    where: isAdmin ? {} : { teacherId: session.user.id },
+    select: { id: true, title: true },
+  });
+  const crumbNames: Record<string, string> = Object.fromEntries([
+    ...courses.map((c) => [`/teacher/courses/${c.id}`, c.title]),
+    ...(isAdmin ? Object.entries(EMAIL_TEMPLATES).map(([key, t]) => [`/admin/emails/${key}`, t.label]) : []),
+  ]);
 
   return (
-    <div className="flex min-h-screen flex-col sm:flex-row">
-      <aside className="flex shrink-0 flex-col border-b border-gold-400/40 bg-white sm:min-h-screen sm:w-60 sm:border-b-0 sm:border-r">
-        <div className="px-4 py-4">
-          <Link href="/" className="text-lg font-semibold text-brand-700">
-            {SITE_NAME}
-          </Link>
-          <p className="text-xs text-brand-600">Verwaltung</p>
-        </div>
+    <div className={`${appFont.variable} app-shell flex min-h-screen flex-col bg-brand-50 lg:flex-row`}>
+      <AppNav
+        siteName={SITE_NAME}
+        areaLabel={isAdmin ? "Admin-Bereich" : "Lehrer-Bereich"}
+        groups={navGroups}
+        userName={session.user.name ?? ""}
+        userRole={isAdmin ? "Administrator" : "Lehrkraft"}
+      />
 
-        <nav className="flex gap-1 overflow-x-auto px-2 pb-2 text-sm sm:flex-col sm:overflow-visible sm:pb-0">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="shrink-0 px-3 py-2 font-medium text-brand-700 hover:bg-brand-50"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="mt-2 border-t border-brand-100 px-4 py-4 text-sm sm:mt-auto">
-          <p className="text-brand-600">{session.user.name}</p>
-          <div className="mt-1 flex items-center gap-3">
-            <Link href="/" className="text-brand-700 underline">
-              Zur Webseite
-            </Link>
-            <AppSignOutButton />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="z-30 border-b border-brand-200 bg-white lg:sticky lg:top-0">
+          <div className="mx-auto flex max-w-5xl items-center px-4 py-4 sm:px-8">
+            <AppBreadcrumbs names={crumbNames} isAdmin={isAdmin} />
           </div>
-        </div>
-      </aside>
+        </header>
 
-      <main className="min-w-0 flex-1 px-4 py-8 sm:px-8">
-        {/* Feste Maximalbreite: Zeilen bleiben kurz, Aktionen liegen nah am Text */}
-        <div className="mx-auto max-w-4xl">{children}</div>
-      </main>
+        <main className="flex-1 px-4 py-8 sm:px-8 sm:py-10">
+          {/* Feste Maximalbreite: Zeilen bleiben kurz, Aktionen liegen nah am Text */}
+          <div className="mx-auto max-w-5xl">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

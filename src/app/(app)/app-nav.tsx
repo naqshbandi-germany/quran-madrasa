@@ -1,0 +1,217 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { GridIcon, LibraryIcon, MailIcon, XIcon } from "@/components/icons";
+import { AppSignOutButton } from "./app-sign-out-button";
+
+export type NavIcon = "grid" | "book" | "users" | "template" | "library" | "mail";
+export type NavLink = { href: string; label: string; icon: NavIcon };
+export type NavGroup = { title: string; links: NavLink[] };
+
+function Svg({ children }: { children: React.ReactNode }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {children}
+    </svg>
+  );
+}
+
+const ICONS: Record<NavIcon, React.ReactNode> = {
+  grid: <GridIcon className="h-5 w-5" />,
+  library: <LibraryIcon className="h-5 w-5" />,
+  mail: <MailIcon className="h-5 w-5" />,
+  book: (
+    <Svg>
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5Z" />
+      <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5" />
+    </Svg>
+  ),
+  users: (
+    <Svg>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
+    </Svg>
+  ),
+  template: (
+    <Svg>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M7 9h10M7 13h6" />
+    </Svg>
+  ),
+};
+
+function MenuIcon() {
+  return (
+    <Svg>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </Svg>
+  );
+}
+
+// Aktiv ist der Eintrag mit dem laengsten passenden Pfad (/admin/konten vor /admin).
+function activeHref(pathname: string, groups: NavGroup[]) {
+  const matches = groups
+    .flatMap((g) => g.links.map((l) => l.href))
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`));
+  return matches.sort((a, b) => b.length - a.length)[0];
+}
+
+// Seitenleiste der Verwaltung: ab lg fest am linken Rand (scrollt nicht mit), darunter
+// eine schmale Kopfleiste mit Menue-Knopf, die die Leiste als Schublade einblendet.
+export function AppNav({
+  siteName,
+  areaLabel,
+  groups,
+  userName,
+  userRole,
+}: {
+  siteName: string;
+  areaLabel: string;
+  groups: NavGroup[];
+  userName: string;
+  userRole: string;
+}) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const current = activeHref(pathname, groups);
+
+  // Nach einem Seitenwechsel die Schublade wieder schliessen
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setOpen(false);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  const brand = (
+    <Link href={groups[0]?.links[0]?.href ?? "/"} className="block">
+      <span className="block text-lg font-bold leading-tight text-white">{siteName}</span>
+      <span className="mt-0.5 block text-sm font-medium uppercase tracking-wider text-slate-400">
+        {areaLabel}
+      </span>
+    </Link>
+  );
+
+  const panel = (
+    <div className="flex h-full flex-col">
+      <div className="hidden px-6 py-6 lg:block">{brand}</div>
+
+      <nav aria-label="Verwaltung" className="flex-1 overflow-y-auto px-3 py-4 lg:py-2">
+        {groups.map((group) => (
+          <div key={group.title} className="mb-6">
+            <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              {group.title}
+            </p>
+            <ul className="space-y-1">
+              {group.links.map((link) => {
+                const active = link.href === current;
+                return (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-base font-medium transition-colors ${
+                        active
+                          ? "bg-white/10 text-white shadow-[inset_3px_0_0_0_#7fb0e6]"
+                          : "text-slate-300 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      {ICONS[link.icon]}
+                      {link.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      <div className="border-t border-white/10 px-6 py-5 text-base">
+        <p className="font-medium text-white">{userName}</p>
+        <p className="text-sm text-slate-400">{userRole}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-300 [&_button]:text-slate-300 [&_button:hover]:text-white">
+          <Link href="/" className="underline underline-offset-2 hover:text-white">
+            Zur Website
+          </Link>
+          <AppSignOutButton />
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Kopfleiste auf schmalen Bildschirmen */}
+      <div className="sticky top-0 z-40 flex items-center justify-between gap-4 bg-[#0d2240] px-4 py-3 lg:hidden">
+        {brand}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-expanded={open}
+          aria-controls="app-nav-drawer"
+          className="inline-flex items-center gap-2 rounded-md border border-white/20 px-3 py-2 text-base font-medium text-white hover:bg-white/10"
+        >
+          <MenuIcon />
+          Menü
+        </button>
+      </div>
+
+      {/* Schublade (Handy/Tablet) */}
+      {open && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menü">
+          <button
+            type="button"
+            aria-label="Menü schließen"
+            onClick={() => setOpen(false)}
+            className="absolute inset-0 bg-slate-900/50"
+          />
+          <div
+            id="app-nav-drawer"
+            className="absolute inset-y-0 left-0 flex w-80 max-w-[85vw] flex-col bg-[#0d2240] shadow-xl"
+          >
+            <div className="flex items-center justify-between gap-4 px-6 py-5">
+              {brand}
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Menü schließen"
+                className="rounded-md p-2 text-slate-300 hover:bg-white/10 hover:text-white"
+              >
+                <XIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1">{panel}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Feste Seitenleiste ab lg */}
+      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 bg-[#0d2240] lg:block">{panel}</aside>
+    </>
+  );
+}
