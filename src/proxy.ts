@@ -8,7 +8,7 @@ import { VIEW_AS_COOKIE, VIEW_AS_INFO_COOKIE } from "@/lib/view-as";
 // In Next.js 16 heißt die Datei "proxy.ts" statt "middleware.ts". Sie erledigt zwei Dinge:
 // 1. Vorschau-Schutz: Ist SITE_PREVIEW_CODE gesetzt, sehen Besucher ohne Vorschau-Freigabe auf
 //    den öffentlichen Seiten nur eine "Bald verfügbar"-Seite. Freigabe per Link
-//    "?vorschau=<code>" (setzt ein Cookie). Versteckte Kurse (/zugang/...), Anmeldung, Login,
+//    "?vorschau=<code>" (setzt ein Cookie). Versteckte Kurse (/zugang/...), Einladungen (/einladung/...), Anmeldung, Login,
 //    Dashboard sowie Lehrer- und Admin-Bereich bleiben erreichbar, damit Testnutzer und Team
 //    weiterarbeiten können.
 // 2. Zugriffsprüfung (eingeloggt? Rolle?) über den "authorized"-Callback in auth.config.ts.
@@ -32,6 +32,7 @@ const AUTH_PREFIXES = ["/dashboard", "/teacher", "/admin", "/konto"];
 const OPEN_PREFIXES = [
   "/bald",
   "/zugang/",
+  "/einladung/",
   "/auth/",
   "/api/",
   "/dashboard",

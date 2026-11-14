@@ -38,6 +38,8 @@ type Props = {
   participants: SavedParticipant[];
   // Noch freie Plaetze (Teilnehmerbegrenzung); null = unbegrenzt
   freePlaces: number | null;
+  // Einladung "ohne Zahlung": Teilnehmer werden direkt eingetragen, ohne Stripe.
+  freeInvitationToken?: string | null;
 };
 
 type Draft = { key: number; input: ParticipantInput; errors: ParticipantErrors };
@@ -57,7 +59,8 @@ const PRIMARY_BUTTON =
 const SECONDARY_BUTTON =
   "h-12 border border-brand-300 bg-white px-6 font-medium text-brand-900 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700";
 
-export function EnrollWizard({ course, account, participants, freePlaces }: Props) {
+export function EnrollWizard({ course, account, participants, freePlaces, freeInvitationToken }: Props) {
+  const isFree = Boolean(freeInvitationToken);
   const [step, setStep] = useState<1 | 2>(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -157,6 +160,7 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
         body: JSON.stringify({
           courseId: course.id,
           accessCode: course.accessCode,
+          invitationToken: freeInvitationToken ?? undefined,
           existingParticipantIds: [...selected],
           newParticipants: drafts.map((draft) => draft.input),
         }),
@@ -193,9 +197,15 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
       <p className="text-xs uppercase tracking-[0.18em] text-azure-700">Anmeldung</p>
       <h1 className="mt-1 text-3xl font-semibold leading-tight text-azure-800">{course.title}</h1>
       <p className="mt-1 text-brand-900/75">
-        {formatPrice(course.priceCents, course.currency)} pro Teilnehmer und Monat
-        {fee > 0 && ` · einmalig ${formatPrice(fee, course.currency)} Anmeldegebühr`} · monatlich
-        kündbar
+        {isFree ? (
+          "Du bist eingeladen: Die Teilnahme ist für dich kostenlos."
+        ) : (
+          <>
+            {formatPrice(course.priceCents, course.currency)} pro Teilnehmer und Monat
+            {fee > 0 && ` · einmalig ${formatPrice(fee, course.currency)} Anmeldegebühr`} · monatlich
+            kündbar
+          </>
+        )}
       </p>
 
       <ol className="mt-6 flex gap-3 text-sm" aria-label="Fortschritt">
@@ -231,8 +241,8 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
               </h2>
               <p className="mt-1 text-brand-900/75">
                 Du kannst dich selbst, deine Kinder oder andere Personen anmelden, auch mehrere
-                zugleich. Dein Konto ({account.email}) bucht und bezahlt, du musst nicht selbst
-                teilnehmen.
+                zugleich. Dein Konto ({account.email}) {isFree ? "meldet an" : "bucht und bezahlt"},
+                du musst nicht selbst teilnehmen.
               </p>
             </div>
 
@@ -321,8 +331,9 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
                 Prüfen und anmelden
               </h2>
               <p className="mt-1 text-brand-900/75">
-                Bitte kontrolliere deine Angaben, bevor du zur sicheren Zahlung bei Stripe
-                weitergeleitet wirst.
+                {isFree
+                  ? "Bitte kontrolliere deine Angaben. Die Anmeldung ist kostenlos, eine Zahlung ist nicht nötig."
+                  : "Bitte kontrolliere deine Angaben, bevor du zur sicheren Zahlung bei Stripe weitergeleitet wirst."}
               </p>
             </div>
 
@@ -336,12 +347,20 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
                       <span className="text-brand-900/70">({RELATION_LABELS[row.relation]})</span>
                     </span>
                     <span>
-                      {formatPrice(course.priceCents, course.currency)} / Monat
-                      {fee > 0 && ` + ${formatPrice(fee, course.currency)} einmalig`}
+                      {isFree ? (
+                        "kostenlos"
+                      ) : (
+                        <>
+                          {formatPrice(course.priceCents, course.currency)} / Monat
+                          {fee > 0 && ` + ${formatPrice(fee, course.currency)} einmalig`}
+                        </>
+                      )}
                     </span>
                   </li>
                 ))}
               </ul>
+              {!isFree && (
+              <>
               <p className="mt-3 flex items-center justify-between border-t border-brand-200 pt-3 font-semibold text-brand-900">
                 <span>Gesamt pro Monat</span>
                 <span>{formatPrice(total, course.currency)}</span>
@@ -357,12 +376,15 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
                 Stripe, die erste Zahlung wird sofort fällig
                 {fee > 0 && " (zusammen mit der Anmeldegebühr)"}.
               </p>
+              </>
+              )}
             </div>
 
             <p className="text-sm text-brand-900/75">
-              Mit einem Klick auf „Zahlungspflichtig anmelden“ schließt du ein kostenpflichtiges
-              Abo für die oben genannten Teilnehmer ab. Details zur Verarbeitung der Daten findest
-              du in der{" "}
+              {isFree
+                ? "Mit einem Klick auf „Kostenlos anmelden“ werden die oben genannten Teilnehmer in den Kurs eingetragen. "
+                : "Mit einem Klick auf „Zahlungspflichtig anmelden“ schließt du ein kostenpflichtiges Abo für die oben genannten Teilnehmer ab. "}
+              Details zur Verarbeitung der Daten findest du in der{" "}
               <Link href="/datenschutz" target="_blank" className="font-medium underline">
                 Datenschutzerklärung
               </Link>
@@ -382,7 +404,7 @@ export function EnrollWizard({ course, account, participants, freePlaces }: Prop
                 Zurück
               </button>
               <button type="button" onClick={submit} disabled={loading} className={PRIMARY_BUTTON}>
-                {loading ? "Einen Moment …" : "Zahlungspflichtig anmelden"}
+                {loading ? "Einen Moment …" : isFree ? "Kostenlos anmelden" : "Zahlungspflichtig anmelden"}
               </button>
             </div>
           </>

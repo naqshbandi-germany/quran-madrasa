@@ -324,6 +324,57 @@ export const EMAIL_TEMPLATES = {
       footer: "Ist der Link abgelaufen, kannst du auf der Anmeldeseite über „Passwort vergessen?“ jederzeit einen neuen anfordern.",
     },
   },
+  admin_invite: {
+    label: "Admin-Einladung",
+    group: "Konto",
+    description: "Wenn ein Admin jemanden als weiteren Admin einlädt; die Person legt damit ihr eigenes Passwort fest.",
+    placeholders: [
+      { key: "name", label: "Name der eingeladenen Person", example: "Ahmad" },
+      { key: "email", label: "E-Mail-Adresse (Benutzername)", example: "ahmad@example.org" },
+      { key: "link", label: "Link zum Festlegen des Passworts (Ziel des Buttons)", example: "https://www.islamunterfreunden.de/auth/passwort-zuruecksetzen?token=…&einladung=1" },
+      { key: "tage", label: "Gültigkeit des Links in Tagen", example: "7" },
+      BUTTON,
+    ],
+    hasButton: true,
+    defaults: {
+      subject: "Dein Admin-Zugang bei Islam unter Freunden",
+      body: [
+        GREETING,
+        "für dich wurde ein Admin-Zugang bei Islam unter Freunden angelegt. Dein Benutzername ist deine E-Mail-Adresse **{{email}}**.",
+        "Bitte lege über diesen Link dein eigenes Passwort fest. Der Link ist {{tage}} Tage gültig und nur einmal nutzbar:",
+        "{{button}}",
+        "Danach meldest du dich mit deiner E-Mail-Adresse und dem neuen Passwort an und findest oben im Menü den Admin-Bereich.",
+      ].join("\n\n"),
+      buttonLabel: "Passwort festlegen",
+      footer: "Ist der Link abgelaufen, kannst du auf der Anmeldeseite über „Passwort vergessen?“ jederzeit einen neuen anfordern.",
+    },
+  },
+  student_invite: {
+    label: "Einladung zu einem Kurs",
+    group: "Konto",
+    description: "Wenn ein Admin oder eine Lehrkraft jemanden per E-Mail zu einem Kurs einlädt.",
+    placeholders: [
+      { key: "name", label: "Name der eingeladenen Person", example: "Fatima" },
+      KURS,
+      { key: "von", label: "Name der einladenden Person", example: "Ustadh Yusuf" },
+      { key: "hinweis", label: "Hinweis zur Bezahlung (ohne Zahlung bzw. normale Anmeldung)", example: "Die Teilnahme ist für dich kostenlos." },
+      { key: "link", label: "Einladungslink (Ziel des Buttons)", example: "https://www.islamunterfreunden.de/einladung/…" },
+      { key: "tage", label: "Gültigkeit des Links in Tagen", example: "14" },
+      BUTTON,
+    ],
+    hasButton: true,
+    defaults: {
+      subject: "Einladung zum Kurs „{{kurs}}“",
+      body: [
+        GREETING,
+        "{{von}} lädt dich zum Kurs **{{kurs}}** bei Islam unter Freunden ein. {{hinweis}}",
+        "Über diesen Link meldest du dich an. Hast du noch kein Konto, legst du dabei eines an. Der Link ist {{tage}} Tage gültig:",
+        "{{button}}",
+      ].join("\n\n"),
+      buttonLabel: "Einladung annehmen",
+      footer: CONTACT_FOOTER,
+    },
+  },
 } as const satisfies Record<string, TemplateDefinition>;
 
 export type EmailTemplateKey = keyof typeof EMAIL_TEMPLATES;

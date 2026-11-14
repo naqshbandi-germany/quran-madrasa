@@ -20,7 +20,7 @@ type Errors = Partial<Record<"name" | "email" | "password" | "adult" | "privacy"
 export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
   const searchParams = useSearchParams();
   const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
-  const enrolling = callbackUrl.startsWith("/courses/");
+  const enrolling = callbackUrl.startsWith("/courses/") || callbackUrl.startsWith("/einladung/");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

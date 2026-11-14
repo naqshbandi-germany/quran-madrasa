@@ -1,10 +1,11 @@
 import Link from "next/link";
 
+import { auth } from "@/auth";
+import { InviteForm } from "@/components/invite-form";
+import { inviteStaff, inviteStudent, resendStaffInvite } from "@/lib/invite-actions";
 import { prisma } from "@/lib/prisma";
 import {
-  createTeacherAccount,
   regenerateAccessCode,
-  resendTeacherInvite,
   updateCourseSettings,
   updateLegalTexts,
   updateSiteContent,
@@ -46,18 +47,9 @@ function ReminderStatus({ lastRunAt, minutesAgo }: { lastRunAt: Date | null; min
   );
 }
 
+// Rueckmeldung nach dem Speichern eines Lehrerprofils (?einladung=...).
 const INVITE_NOTICES: Record<string, { ok: boolean; text: string }> = {
-  gesendet: { ok: true, text: "Die Einladung wurde per E-Mail verschickt." },
-  lokal: {
-    ok: true,
-    text: "Kein E-Mail-Dienst eingerichtet (lokal): Der Einladungslink steht in der Server-Konsole.",
-  },
-  fehler: {
-    ok: false,
-    text: "Der Zugang ist gespeichert, aber die E-Mail konnte nicht verschickt werden. Bitte später „Einladung erneut senden“.",
-  },
   vergeben: { ok: false, text: "Diese E-Mail-Adresse gehört schon zu einem anderen Konto." },
-  ungueltig: { ok: false, text: "Bitte Name und eine gültige E-Mail-Adresse angeben." },
 };
 
 export default async function AdminPage({
@@ -68,10 +60,16 @@ export default async function AdminPage({
   const { einladung } = await searchParams;
   const inviteNotice = einladung ? INVITE_NOTICES[einladung] : undefined;
 
+  const session = await auth();
   const teachers = await prisma.user.findMany({
     where: { role: "TEACHER" },
     orderBy: { createdAt: "desc" },
     include: { _count: { select: { taughtCourses: true } } },
+  });
+  const admins = await prisma.user.findMany({
+    where: { role: "ADMIN" },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, name: true, email: true },
   });
 
   // Fuer den Entwicklermodus; die neuesten Schueler zuerst (weitere ueber "Konten").
@@ -105,7 +103,7 @@ export default async function AdminPage({
       />
 
       <section id="lehrer" className="border border-gold-400/40 bg-white p-5">
-        <h2 className="mb-4 font-semibold text-azure-800">Lehrer</h2>
+        <h2 className="mb-4 font-semibold text-azure-800">Lehrer und Admins</h2>
 
         {inviteNotice && (
           <p
@@ -164,18 +162,18 @@ export default async function AdminPage({
                     Profil speichern
                   </button>
                 </form>
-                <form
-                  action={resendTeacherInvite}
-                  className="mt-3 flex flex-wrap items-center gap-3 border-t border-brand-100 pt-3 text-sm"
-                >
-                  <input type="hidden" name="teacherId" value={teacher.id} />
-                  <button className="border border-brand-300 px-3 py-1.5 text-brand-800 hover:bg-brand-50">
-                    Einladung erneut senden
-                  </button>
-                  <span className="text-xs text-brand-600">
-                    Schickt einen neuen Link zum Festlegen des Passworts an {teacher.email}.
-                  </span>
-                </form>
+                <div className="mt-3 border-t border-brand-100 pt-3">
+                  <p className="mb-2 text-xs text-brand-600">
+                    Neuer Link zum Festlegen des Passworts für {teacher.email}:
+                  </p>
+                  <InviteForm
+                    action={resendStaffInvite}
+                    mailLabel="Einladung erneut senden"
+                    linkLabel="Neuen Link erstellen"
+                  >
+                    <input type="hidden" name="userId" value={teacher.id} />
+                  </InviteForm>
+                </div>
                 <p className="mt-3 border-t border-brand-100 pt-3 text-sm">
                   <Link href={`/admin/konten/${teacher.id}`} className="font-medium text-red-800 underline">
                     Lehrer-Konto löschen …
@@ -189,30 +187,100 @@ export default async function AdminPage({
           </div>
         )}
 
-        <h3 className="mb-2 text-sm font-semibold text-azure-800">Lehrer einladen</h3>
+        {admins.length > 0 && (
+          <div className="mb-4">
+            <h3 className="mb-2 text-sm font-semibold text-azure-800">Admins</h3>
+            <ul className="space-y-2">
+              {admins.map((admin) => (
+                <li key={admin.id} className="border border-brand-300 px-3 py-2 text-sm">
+                  <details>
+                    <summary className="cursor-pointer text-brand-900">
+                      {admin.name} ({admin.email})
+                      {admin.id === session?.user.id ? " · du" : ""}
+                    </summary>
+                    {admin.id !== session?.user.id && (
+                      <InviteForm
+                        action={resendStaffInvite}
+                        mailLabel="Einladung erneut senden"
+                        linkLabel="Neuen Link erstellen"
+                        className="mt-3 border-t border-brand-100 pt-3"
+                      >
+                        <input type="hidden" name="userId" value={admin.id} />
+                      </InviteForm>
+                    )}
+                  </details>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <h3 className="mb-2 text-sm font-semibold text-azure-800">Lehrer oder Admin einladen</h3>
         <p className="mb-3 text-sm text-brand-600">
-          Die Lehrkraft bekommt eine E-Mail mit einem Link (7 Tage gültig), über den sie ihr
-          eigenes Passwort festlegt. Danach meldet sie sich mit ihrer E-Mail-Adresse an.
+          Die Person bekommt einen Link (7 Tage gültig, einmal nutzbar), über den sie ihr eigenes
+          Passwort festlegt. Danach meldet sie sich mit ihrer E-Mail-Adresse an. Den Link
+          verschickst du per E-Mail oder kopierst ihn, z. B. für WhatsApp.
         </p>
-        <form action={createTeacherAccount} className="grid gap-3 sm:grid-cols-2">
-          <input
-            name="name"
-            placeholder="Name"
-            required
-            minLength={2}
-            className="border border-brand-300 px-3 py-2"
-          />
-          <input
-            name="email"
-            type="email"
-            placeholder="E-Mail-Adresse der Lehrkraft"
-            required
-            className="border border-brand-300 px-3 py-2"
-          />
-          <button className="btn-primary col-span-full px-4 py-2">
-            Lehrer anlegen und einladen
-          </button>
-        </form>
+        <InviteForm action={inviteStaff}>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <input
+              name="name"
+              placeholder="Name"
+              required
+              minLength={2}
+              className="border border-brand-300 px-3 py-2"
+            />
+            <input
+              name="email"
+              type="email"
+              placeholder="E-Mail-Adresse (Anmeldung)"
+              required
+              className="border border-brand-300 px-3 py-2"
+            />
+            <select name="role" defaultValue="TEACHER" aria-label="Rolle" className="border border-brand-300 bg-white px-3 py-2">
+              <option value="TEACHER">als Lehrer</option>
+              <option value="ADMIN">als Admin (alle Rechte)</option>
+            </select>
+          </div>
+        </InviteForm>
+      </section>
+
+      <section id="schueler-einladen" className="border border-gold-400/40 bg-white p-5">
+        <h2 className="mb-2 font-semibold text-azure-800">Schüler zu einem Kurs einladen</h2>
+        <p className="mb-3 text-sm text-brand-600">
+          Der Link (14 Tage gültig) führt zur Kursanmeldung; wer noch kein Konto hat, legt dabei
+          eines an. Normalerweise wird dort wie gewohnt bezahlt. Mit „ohne Zahlung“ wird direkt
+          eingetragen, z. B. für Tests oder Härtefälle; dieser Link ist nur einmal nutzbar. Name und
+          E-Mail sind nur für den Versand per E-Mail nötig.
+        </p>
+        <InviteForm action={inviteStudent}>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <select name="courseId" required defaultValue="" aria-label="Kurs" className="border border-brand-300 bg-white px-3 py-2">
+              <option value="" disabled>
+                Kurs wählen …
+              </option>
+              {courses
+                .filter((course) => course.isPublished)
+                .map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.title}
+                    {course.isHidden ? " (versteckt)" : ""}
+                  </option>
+                ))}
+            </select>
+            <input name="name" placeholder="Name (optional)" className="border border-brand-300 px-3 py-2" />
+            <input
+              name="email"
+              type="email"
+              placeholder="E-Mail-Adresse (optional)"
+              className="border border-brand-300 px-3 py-2"
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-brand-800">
+            <input type="checkbox" name="free" className="h-4 w-4" />
+            Ohne Zahlung eintragen (nur Admins)
+          </label>
+        </InviteForm>
       </section>
 
       <section className="border border-gold-400/40 bg-white p-5">

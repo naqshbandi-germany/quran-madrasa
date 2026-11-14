@@ -1,5 +1,9 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+
+import { findValidInvitation } from "@/lib/invitations";
+import { sendEnrollmentConfirmation } from "@/lib/notification-email";
 
 import { auth } from "@/auth";
 import { getAppUrl } from "@/lib/app-url";
@@ -67,7 +71,20 @@ export async function POST(request: Request) {
   }
 
   const course = await prisma.course.findUnique({ where: { id: courseId } });
-  if (!course || !canAccessCourse(course, asString(body?.accessCode)) || !course.stripePriceId) {
+
+  // Einladung "ohne Zahlung" (von einem Admin): Teilnehmer werden direkt eingetragen.
+  const invitationToken = asString(body?.invitationToken);
+  const invitation = invitationToken ? await findValidInvitation(invitationToken) : null;
+  const freeInvitation =
+    invitation && course && invitation.courseId === course.id && invitation.freeEnrollment ? invitation : null;
+  if (invitationToken && !freeInvitation) {
+    return NextResponse.json(
+      { error: "Die Einladung ist nicht mehr gültig (abgelaufen oder schon benutzt)." },
+      { status: 400 },
+    );
+  }
+
+  if (!course || !canAccessCourse(course, asString(body?.accessCode)) || (!course.stripePriceId && !freeInvitation)) {
     return NextResponse.json({ error: "Kurs nicht verfügbar." }, { status: 400 });
   }
 
@@ -157,6 +174,36 @@ export async function POST(request: Request) {
 
   const participantIds = [...existing.map((p) => p.id), ...created.map((p) => p.id)];
 
+  if (freeInvitation) {
+    // Einladung genau einmal einloesen (auch bei zwei gleichzeitigen Klicks).
+    const claimed = await prisma.invitation.updateMany({
+      where: { id: freeInvitation.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    if (claimed.count === 0) {
+      return NextResponse.json({ error: "Diese Einladung wurde schon benutzt." }, { status: 400 });
+    }
+    const enrollments = await prisma.$transaction(
+      participantIds.map((participantId) =>
+        prisma.enrollment.create({
+          data: { userId: user.id, participantId, courseId: course.id },
+          select: { id: true },
+        }),
+      ),
+    );
+    revalidatePath("/courses/[slug]", "page");
+    revalidatePath("/");
+    try {
+      await sendEnrollmentConfirmation(course.id, enrollments.map((e) => e.id));
+    } catch (err) {
+      console.error("Bestätigungs-Mail nach kostenloser Anmeldung fehlgeschlagen:", err);
+    }
+    return NextResponse.json({ url: "/dashboard" });
+  }
+
+  // Ab hier nur mit Stripe-Preis (oben geprueft, da ohne Einladung Pflicht).
+  const stripePriceId = course.stripePriceId!;
+
   try {
     const stripe = getStripe();
     const stripeCustomerId = await ensureStripeCustomer(user);
@@ -176,7 +223,7 @@ export async function POST(request: Request) {
       customer: stripeCustomerId,
       // Optional: einmalige Anmeldegebuehr pro Teilnehmer, faellig mit der ersten Rechnung.
       line_items: [
-        { price: course.stripePriceId, quantity: participantIds.length },
+        { price: stripePriceId, quantity: participantIds.length },
         ...(course.signupFeePriceId
           ? [{ price: course.signupFeePriceId, quantity: participantIds.length }]
           : []),
