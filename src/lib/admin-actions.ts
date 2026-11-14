@@ -1,8 +1,6 @@
 "use server";
 
 import { Role } from "@prisma/client";
-import bcrypt from "bcryptjs";
-import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -10,7 +8,6 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { generateAccessCode } from "@/lib/course-access";
 import { prisma } from "@/lib/prisma";
-import { sendTeacherInvite } from "@/lib/teacher-invite";
 
 async function requireAdmin() {
   const session = await auth();
@@ -20,57 +17,7 @@ async function requireAdmin() {
   return session;
 }
 
-const createTeacherSchema = z.object({
-  name: z.string().trim().min(2),
-  email: z.string().trim().email(),
-});
-
-// Ergebnis einer Einladung, wird als ?einladung=... auf der Admin-Seite angezeigt.
-async function inviteAndReport(userId: string): Promise<never> {
-  let outcome: "gesendet" | "lokal" | "fehler";
-  try {
-    outcome = (await sendTeacherInvite(userId)) ? "gesendet" : "lokal";
-  } catch (err) {
-    console.error("Lehrer-Einladung konnte nicht gesendet werden:", err);
-    outcome = "fehler";
-  }
-  revalidatePath("/admin");
-  redirect(`/admin?einladung=${outcome}#lehrer`);
-}
-
-// Legt einen Lehrer-Zugang an und schickt eine Einladung. Das Passwort legt die Lehrkraft
-// selbst ueber den Link fest; bis dahin ist das Konto mit einem unbekannten Zufallspasswort
-// gesperrt.
-export async function createTeacherAccount(formData: FormData) {
-  await requireAdmin();
-
-  const parsed = createTeacherSchema.safeParse({
-    name: formData.get("name"),
-    email: formData.get("email"),
-  });
-  if (!parsed.success) redirect("/admin?einladung=ungueltig#lehrer");
-  const normalizedEmail = parsed.data.email.toLowerCase();
-
-  const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-  if (existing) redirect("/admin?einladung=vergeben#lehrer");
-
-  const passwordHash = await bcrypt.hash(randomBytes(32).toString("hex"), 10);
-  const teacher = await prisma.user.create({
-    data: { name: parsed.data.name, email: normalizedEmail, passwordHash, role: Role.TEACHER },
-  });
-
-  await inviteAndReport(teacher.id);
-}
-
-// Schickt einer Lehrkraft erneut einen Link zum Festlegen des Passworts (z. B. wenn die
-// Einladung abgelaufen ist oder die E-Mail-Adresse geaendert wurde).
-export async function resendTeacherInvite(formData: FormData) {
-  await requireAdmin();
-  const teacherId = z.string().cuid().parse(formData.get("teacherId"));
-  const teacher = await prisma.user.findFirst({ where: { id: teacherId, role: Role.TEACHER } });
-  if (!teacher) throw new Error("Lehrer nicht gefunden.");
-  await inviteAndReport(teacher.id);
-}
+// Lehrer, Admins und Schueler einladen: siehe lib/invite-actions.ts.
 
 const updateTeacherProfileSchema = z.object({
   teacherId: z.string().cuid(),

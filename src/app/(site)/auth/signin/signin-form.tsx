@@ -16,7 +16,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function SignInForm({ googleEnabled }: { googleEnabled: boolean }) {
   const searchParams = useSearchParams();
   const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
-  const enrolling = callbackUrl.startsWith("/courses/");
+  const enrolling = callbackUrl.startsWith("/courses/") || callbackUrl.startsWith("/einladung/");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -8,6 +8,8 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { EmailComposer } from "@/components/email-composer";
 import { CopyButton } from "@/components/copy-button";
 import { EditableRow } from "@/components/editable-row";
+import { InviteForm } from "@/components/invite-form";
+import { inviteStudent } from "@/lib/invite-actions";
 import { TrashIcon } from "@/components/icons";
 import { ParticipantsList, type ParticipantRow } from "@/components/participants-list";
 import { WaitlistContactButton } from "@/components/waitlist-contact-button";
@@ -314,6 +316,37 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
           )}
         </div>
         <ParticipantsList rows={participantRows} />
+      </section>
+
+      <section aria-labelledby="einladen" className="space-y-3">
+        <h2 id="einladen" className="font-semibold text-azure-800">
+          Schüler einladen
+        </h2>
+        <div className="border border-gold-400/40 bg-white p-4 text-sm">
+          <p className="mb-3 text-brand-600">
+            Der Link (14 Tage gültig) führt direkt zur Anmeldung für diesen Kurs, auch wenn er
+            versteckt ist. Wer noch kein Konto hat, legt dabei eines an; bezahlt wird wie gewohnt.
+            Name und E-Mail brauchst du nur für den Versand per E-Mail. Für WhatsApp erstellst du
+            einen Link und schickst ihn selbst weiter.
+          </p>
+          {!course.isPublished ? (
+            <p className="text-brand-800">Einladen ist möglich, sobald der Kurs veröffentlicht ist.</p>
+          ) : (
+            <InviteForm action={inviteStudent}>
+              <input type="hidden" name="courseId" value={course.id} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input name="name" placeholder="Name (optional)" className={INPUT} />
+                <input name="email" type="email" placeholder="E-Mail-Adresse (optional)" className={INPUT} />
+              </div>
+              {session?.user.role === "ADMIN" && (
+                <label className="flex items-center gap-2 text-brand-800">
+                  <input type="checkbox" name="free" className="h-4 w-4" />
+                  Ohne Zahlung eintragen (nur Admins, Link einmal nutzbar)
+                </label>
+              )}
+            </InviteForm>
+          )}
+        </div>
       </section>
 
       <section aria-labelledby="warteliste" className="space-y-4">

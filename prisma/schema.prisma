@@ -58,84 +58,86 @@ enum Weekday {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  passwordHash  String
-  role          Role      @default(STUDENT)
+  id                    String    @id @default(cuid())
+  name                  String
+  email                 String    @unique
+  passwordHash          String
+  role                  Role      @default(STUDENT)
   // Foto-URL fürs Lehrer-Profil (kein eigener Datei-Upload, nur ein Link auf ein
   // gehostetes Bild).
-  image         String?
+  image                 String?
   // Kurze Vita fürs Lehrer-Profil, nur für Rolle TEACHER relevant.
-  bio           String?
+  bio                   String?
   // E-Mail-Adresse des Zoom-Kontos, unter dem dieser Lehrer Meetings leitet (nur
   // relevant bei CLASSROOM_PROVIDER=zoom; sonst gilt ZOOM_HOST_EMAIL).
-  zoomEmail     String?
+  zoomEmail             String?
   // Zeitpunkte der Bestaetigungen bei der Registrierung (Nachweis fuer die Datenschutz-
   // Kenntnisnahme und die Bestaetigung "mindestens 18 Jahre alt").
   privacyAcknowledgedAt DateTime?
   adultConfirmedAt      DateTime?
-  createdAt     DateTime  @default(now())
+  createdAt             DateTime  @default(now())
 
   stripeCustomerId String? @unique
   // Geheimer Schluessel fuer das Kalender-Abo (/api/kalender/<token>), wird beim ersten Aufruf
   // des Dashboards erzeugt.
   calendarToken    String? @unique
 
-  taughtCourses Course[]       @relation("TeacherCourses")
-  enrollments   Enrollment[]
-  subscriptions Subscription[]
+  taughtCourses       Course[]             @relation("TeacherCourses")
+  enrollments         Enrollment[]
+  subscriptions       Subscription[]
   passwordResetTokens PasswordResetToken[]
-  participants  Participant[]
-  mediaFiles    MediaFile[]
+  sentInvitations     Invitation[]         @relation("InvitationsSent")
+  participants        Participant[]
+  mediaFiles          MediaFile[]
 }
 
 model Course {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  description String
+  id               String     @id @default(cuid())
+  slug             String     @unique
+  title            String
+  description      String
   // Kategorie, z.B. "Quran-Rezitation (Tadschwid)", "Hifz", "Arabisch", "Islamische Wissenschaften"
-  category    String
-  level       String?
+  category         String
+  level            String?
   // Zielgruppe(n) nach Alter, für die Filterung im Kursangebot (z.B. Kurse für Kinder).
-  ageGroups   AgeGroup[] @default([])
+  ageGroups        AgeGroup[] @default([])
   // Preis pro Monat in Cent (z.B. 2900 = 29,00 €)
-  priceCents  Int
-  currency    String   @default("eur")
+  priceCents       Int
+  currency         String     @default("eur")
   // ID des Stripe Price-Objekts (recurring, monatlich) für den Checkout
-  stripePriceId String?
-  isPublished Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  stripePriceId    String?
+  isPublished      Boolean    @default(false)
+  createdAt        DateTime   @default(now())
   // Hoechstzahl der Teilnehmer (Personen, nicht Konten); null = unbegrenzt. Ist der Kurs voll,
   // erscheint er als ausgebucht und Interessenten tragen sich in die Warteliste ein.
-  maxParticipants Int?
+  maxParticipants  Int?
   // Versteckter Kurs (z. B. Testphase): erscheint nicht im Kursangebot, Stundenplan und auf der
   // Lehrerseite, ist aber ueber den geheimen Link /zugang/<accessCode> erreichbar und buchbar.
-  isHidden    Boolean  @default(false)
-  accessCode  String?  @unique
+  isHidden         Boolean    @default(false)
+  accessCode       String?    @unique
   // Optionale einmalige Anmeldegebuehr (Stripe-Preis, nicht wiederkehrend), wird mit der ersten
   // Rechnung des Abos faellig. Betrag in Cent nur fuer die Anzeige.
-  signupFeeCents    Int?
-  signupFeePriceId  String?
+  signupFeeCents   Int?
+  signupFeePriceId String?
 
-  teacherId   String
-  teacher     User     @relation("TeacherCourses", fields: [teacherId], references: [id])
+  teacherId String
+  teacher   User   @relation("TeacherCourses", fields: [teacherId], references: [id])
 
-  sessions      ClassSession[]
-  enrollments   Enrollment[]
-  scheduleSlots ScheduleSlot[]
-  waitlist      WaitlistEntry[]
+  sessions       ClassSession[]
+  enrollments    Enrollment[]
+  scheduleSlots  ScheduleSlot[]
+  waitlist       WaitlistEntry[]
   readingSamples ReadingSample[]
+  invitations    Invitation[]
 }
 
 // Wiederkehrender wöchentlicher Termin eines Kurses (z.B. "Mittwoch 18:00-18:40"),
 // unabhängig von den konkreten ClassSession-Terminen mit Zoom-Link. Dient der
 // Anzeige im Kursangebot/Stundenplan und der Filterung nach Wochentag.
 model ScheduleSlot {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   courseId  String
-  course    Course   @relation(fields: [courseId], references: [id])
+  course    Course  @relation(fields: [courseId], references: [id])
   weekday   Weekday
   // Uhrzeit als "HH:MM", z.B. "18:00"
   startTime String
@@ -146,18 +148,18 @@ model ScheduleSlot {
 
 // Eine wiederkehrende oder einmalige Unterrichtseinheit innerhalb eines Kurses.
 model ClassSession {
-  id            String        @id @default(cuid())
-  courseId      String
-  course        Course        @relation(fields: [courseId], references: [id])
-  title         String
-  startsAt      DateTime
-  durationMin   Int           @default(60)
-  classroomType ClassroomType @default(JITSI)
+  id                  String        @id @default(cuid())
+  courseId            String
+  course              Course        @relation(fields: [courseId], references: [id])
+  title               String
+  startsAt            DateTime
+  durationMin         Int           @default(60)
+  classroomType       ClassroomType @default(JITSI)
   // Bei JITSI/ZOOM: der Meeting-Link. Bei IN_APP (zukünftig): Referenz auf den eigenen Klassenraum.
-  joinUrl        String?
+  joinUrl             String?
   // Zoom-Meeting-ID, falls der Link automatisch ueber die Zoom-API erzeugt wurde.
-  zoomMeetingId  String?
-  createdAt      DateTime     @default(now())
+  zoomMeetingId       String?
+  createdAt           DateTime      @default(now())
   // Zeitpunkt, zu dem die jeweilige Erinnerungs-E-Mail verschickt wurde (verhindert
   // doppelten Versand bei jedem Cron-Durchlauf).
   reminder24hSentAt   DateTime?
@@ -165,11 +167,11 @@ model ClassSession {
   reminderStartSentAt DateTime?
   // Notiz der Lehrkraft fuer alle Teilnehmer: was in der Stunde durchgenommen wurde und die
   // Hausaufgabe bis zur naechsten Stunde.
-  lessonContent  String?
-  homework       String?
+  lessonContent       String?
+  homework            String?
   // Bitte der Lehrkraft um eine Leseprobe vor dieser Stunde, z. B. "Sure 67, Verse 1-10".
   // Steht im Dashboard und in der Erinnerung 24 Stunden vorher.
-  readingRequest String?
+  readingRequest      String?
 
   evaluations    SessionEvaluation[]
   readingSamples ReadingSample[]
@@ -208,26 +210,26 @@ model SessionEvaluation {
 // selbst, Kinder und andere Erwachsene. Der Konto-Inhaber bucht und bezahlt, muss aber nicht
 // selbst teilnehmen.
 model Participant {
-  id        String              @id @default(cuid())
-  ownerId   String
-  owner     User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name      String
-  relation  ParticipantRelation
+  id                 String              @id @default(cuid())
+  ownerId            String
+  owner              User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name               String
+  relation           ParticipantRelation
   // Nur bei Kindern: Geburtsjahr zur Alterspruefung (bewusst kein volles Geburtsdatum).
-  birthYear Int?
+  birthYear          Int?
   // Kontakt-E-Mail der Person. Pflicht bei SELF/OTHER (Zugangslinks), bei Kindern optional;
   // ohne eigene Adresse gehen Mails an den Konto-Inhaber.
-  email     String?
+  email              String?
   // Optionale WhatsApp-Nummer (bei Kindern: Nummer der Eltern) und Einwilligung, dass sie an
   // die Lehrkraft weitergegeben und in die Kurs-Gruppe aufgenommen wird.
-  whatsapp          String?
-  whatsappConsentAt DateTime?
+  whatsapp           String?
+  whatsappConsentAt  DateTime?
   // Nachweis: Erziehungsberechtigung (CHILD) bzw. Erwachsenen-Bestaetigung und Einverstaendnis
   // der Person (OTHER).
   consentConfirmedAt DateTime?
-  createdAt DateTime            @default(now())
+  createdAt          DateTime            @default(now())
 
-  enrollments Enrollment[]
+  enrollments    Enrollment[]
   evaluations    SessionEvaluation[]
   readingSamples ReadingSample[]
 
@@ -237,14 +239,14 @@ model Participant {
 // Interessent auf der Warteliste eines vollen Kurses (ohne Konto, ohne Zahlung). Die Reihenfolge
 // ergibt sich aus createdAt (wer sich zuerst einträgt, steht oben).
 model WaitlistEntry {
-  id        String   @id @default(cuid())
-  courseId  String
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  name      String
-  email     String
+  id          String    @id @default(cuid())
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name        String
+  email       String
   // Einwilligung in die Speicherung der Angaben zur Benachrichtigung.
-  consentAt DateTime
-  createdAt DateTime @default(now())
+  consentAt   DateTime
+  createdAt   DateTime  @default(now())
   // Wann die Lehrkraft zuletzt angefragt hat, ob das Interesse weiter besteht.
   contactedAt DateTime?
 
@@ -253,18 +255,18 @@ model WaitlistEntry {
 }
 
 model Enrollment {
-  id        String   @id @default(cuid())
+  id             String        @id @default(cuid())
   // Konto-Inhaber (zahlt das Abo); der Teilnehmer steht in participantId.
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  participantId String
-  participant   Participant @relation(fields: [participantId], references: [id])
-  courseId  String
-  course    Course   @relation(fields: [courseId], references: [id])
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  participantId  String
+  participant    Participant   @relation(fields: [participantId], references: [id])
+  courseId       String
+  course         Course        @relation(fields: [courseId], references: [id])
   // Abo, ueber das die Teilnahme bezahlt wird (ein Abo kann mehrere Teilnehmer abdecken).
   subscriptionId String?
   subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
+  createdAt      DateTime      @default(now())
 
   @@unique([participantId, courseId])
 }
@@ -273,15 +275,15 @@ model Enrollment {
 // z.B. das Statement of Purpose. Admin-editierbar, ohne dass dafür Code-Änderungen
 // nötig sind.
 model SiteContent {
-  id               String   @id @default("main")
-  missionStatement String   @default("")
+  id                 String    @id @default("main")
+  missionStatement   String    @default("")
   // Rechtstexte, im Admin-Bereich pflegbar. Leer = es wird der Standardtext aus
   // src/lib/legal-defaults.ts angezeigt.
-  impressum        String   @default("")
-  privacyPolicy    String   @default("")
+  impressum          String    @default("")
+  privacyPolicy      String    @default("")
   // Letzter Aufruf des Erinnerungs-Endpoints (Ueberwachung des externen Cron-Dienstes).
   remindersLastRunAt DateTime?
-  updatedAt        DateTime @updatedAt
+  updatedAt          DateTime  @updatedAt
 }
 
 // Spiegelt das Stripe-Abo pro Nutzer & Kurs, damit Zugriff (Enrollment)
@@ -321,20 +323,20 @@ model PasswordResetToken {
 // liegt die Datei im Blob-Speicher (blobPathname), sonst als Bytes in der Datenbank (nur bis
 // ca. 4 MB, siehe src/lib/media.ts). Listen laden "data" nie mit.
 model MediaFile {
-  id        String   @id @default(cuid())
-  ownerId   String
-  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  ownerId      String
+  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   // Angezeigter Name, z. B. "Arbeitsblatt Sure Al-Fatiha"
-  title     String
+  title        String
   // Dateiname fuer Download und E-Mail-Anhang, z. B. "arbeitsblatt.pdf"
-  fileName  String
-  mimeType  String
-  sizeBytes Int
-  data      Bytes?
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  data         Bytes?
   // Vercel Blob: Pfad der Datei im Speicher und deren Adresse
   blobPathname String?
   blobUrl      String?
-  createdAt DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   @@index([ownerId, createdAt])
 }
@@ -378,4 +380,26 @@ model EmailTemplate {
   buttonLabel String   @default("")
   footer      String   @default("")
   updatedAt   DateTime @updatedAt
+}
+
+// Einladung eines Schuelers zu einem Kurs, per E-Mail oder als Link (z. B. per WhatsApp).
+// Gespeichert wird nur der Hash des Tokens. Normalerweise fuehrt der Link zur normalen
+// Anmeldung mit Bezahlung; mit freeEnrollment (nur Admins) wird ohne Zahlung eingetragen.
+model Invitation {
+  id             String    @id @default(cuid())
+  tokenHash      String    @unique
+  courseId       String
+  course         Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  // Nur fuer die Anzeige und die Mail; bei Link-Einladungen optional.
+  name           String?
+  email          String?
+  freeEnrollment Boolean   @default(false)
+  invitedById    String
+  invitedBy      User      @relation("InvitationsSent", fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt      DateTime
+  // Ohne Zahlung: einmal nutzbar, danach gesetzt.
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([courseId])
 }

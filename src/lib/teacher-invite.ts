@@ -6,14 +6,23 @@ import { hashResetToken } from "@/lib/password-reset";
 import { prisma } from "@/lib/prisma";
 import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
 
-// Einladungslinks fuer Lehrkraefte sind laenger gueltig als normale Passwort-Links, weil
-// die Lehrkraft die Mail vielleicht erst nach ein paar Tagen liest.
+// Einladungslinks fuer Lehrkraefte und Admins sind laenger gueltig als normale
+// Passwort-Links, weil die Mail vielleicht erst nach ein paar Tagen gelesen wird.
 export const INVITE_TTL_DAYS = 7;
 
-// Legt einen Einladungslink an und verschickt ihn. Aeltere, noch offene Links des Kontos
-// werden dabei entwertet. Gibt zurueck, ob die Mail rausging (lokal ohne Mail-Dienst: false,
-// der Link steht dann in der Server-Konsole).
-export async function sendTeacherInvite(userId: string) {
+export type InviteDelivery = "mail" | "link";
+
+// Ergebnis: Der Link (fuer die Variante "per Link", z. B. zum Weitergeben per WhatsApp) und
+// ob eine Mail rausging (lokal ohne Mail-Dienst: false, der Link steht dann in der Konsole).
+export type AccountInviteResult = { link: string; mailed: boolean };
+
+// Legt fuer ein Lehrer- oder Admin-Konto einen Einladungslink an, ueber den die Person ihr
+// eigenes Passwort festlegt. Aeltere, noch offene Links des Kontos werden dabei entwertet.
+// Bei delivery "mail" wird der Link zusaetzlich per E-Mail verschickt.
+export async function createAccountInvite(
+  userId: string,
+  delivery: InviteDelivery = "mail",
+): Promise<AccountInviteResult> {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
 
   const token = randomBytes(32).toString("hex");
@@ -29,22 +38,18 @@ export async function sendTeacherInvite(userId: string) {
   ]);
 
   const link = `${getAppUrl()}/auth/passwort-zuruecksetzen?token=${token}&einladung=1`;
+  if (delivery === "link") return { link, mailed: false };
 
-  const email = await buildEmail("teacher_invite", {
+  const email = await buildEmail(user.role === "ADMIN" ? "admin_invite" : "teacher_invite", {
     name: user.name,
     email: user.email,
     link,
     tage: String(INVITE_TTL_DAYS),
   });
 
-  // Lokal ohne Mail-Dienst: Link in der Konsole ausgeben (deliverEmail schreibt dann auch den
-  // Text der Mail dorthin) und melden, dass nichts verschickt wurde.
-  if (!process.env.RESEND_API_KEY && process.env.NODE_ENV !== "production") {
-    console.log(`[Lehrer-Einladung] ${user.email}: ${link}`);
-    await deliverEmail({ from: EMAIL_FROM, to: user.email, ...email });
-    return false;
-  }
-
   await deliverEmail({ from: EMAIL_FROM, to: user.email, ...email });
-  return true;
+  // Lokal ohne Mail-Dienst schreibt deliverEmail die Mail nur in die Konsole.
+  const mailed = Boolean(process.env.RESEND_API_KEY) || process.env.NODE_ENV === "production";
+  if (!mailed) console.log(`[Einladung] ${user.email}: ${link}`);
+  return { link, mailed };
 }
