@@ -90,6 +90,8 @@ model User {
   participants        Participant[]
   mediaFiles          MediaFile[]
   teacherPhoto        TeacherPhoto?
+  notifications       Notification[]
+  notificationPrefs   NotificationPreference[]
 }
 
 // Hochgeladenes Foto fürs Lehrer-Profil, beim Hochladen auf 512 x 512 Pixel verkleinert (ca.
@@ -413,4 +415,59 @@ model Invitation {
   createdAt      DateTime  @default(now())
 
   @@index([courseId])
+}
+
+// Ereignisse fuer Lehrkraefte und Admins (Feed unter /teacher/benachrichtigungen bzw.
+// /admin/benachrichtigungen). Wer welches Ereignis bekommt, steht in src/lib/notifications.ts.
+enum NotificationType {
+  ENROLLMENT_CREATED
+  SUBSCRIPTION_CANCELED
+  SUBSCRIPTION_ENDED
+  PAYMENT_FAILED
+  READING_SAMPLE_UPLOADED
+  WAITLIST_JOINED
+}
+
+// Ein Ereignis (z. B. "neuer Teilnehmer angemeldet"). Kein Fremdschluessel auf Kurs oder
+// Teilnehmer, damit der Verlauf beim Loeschen erhalten bleibt; die Namen stehen in "data".
+// dedupeKey verhindert doppelte Eintraege, weil Stripe Ereignisse mehrfach schickt.
+model ActivityEvent {
+  id            String           @id @default(cuid())
+  type          NotificationType
+  courseId      String?
+  participantId String?
+  data          Json             @default("{}")
+  dedupeKey     String           @unique
+  createdAt     DateTime         @default(now())
+
+  notifications Notification[]
+
+  @@index([createdAt])
+  @@index([courseId])
+}
+
+// Ein Ereignis fuer eine empfangende Person (Lehrkraft oder Admin).
+model Notification {
+  id        String        @id @default(cuid())
+  eventId   String
+  event     ActivityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt    DateTime?
+  emailedAt DateTime?
+  createdAt DateTime      @default(now())
+
+  @@unique([eventId, userId])
+  @@index([userId, readAt])
+}
+
+// E-Mail an/aus pro Nutzer und Ereignistyp. Fehlt der Eintrag, gilt der Standard aus dem Code.
+model NotificationPreference {
+  id     String           @id @default(cuid())
+  userId String
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   NotificationType
+  email  Boolean
+
+  @@unique([userId, type])
 }

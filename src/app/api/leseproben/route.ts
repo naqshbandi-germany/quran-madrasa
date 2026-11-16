@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 import { formatBytes } from "@/lib/media";
+import { recordEvent } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import {
   READING_SAMPLE_MAX_BYTES,
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       mimeType,
       bytes: Buffer.from(await file.arrayBuffer()),
     });
-    await prisma.readingSample.create({
+    const sample = await prisma.readingSample.create({
       data: {
         participantId,
         courseId,
@@ -84,6 +85,14 @@ export async function POST(request: Request) {
         note,
         ...stored,
       },
+      select: { id: true, participant: { select: { name: true } }, course: { select: { title: true } } },
+    });
+    await recordEvent({
+      type: "READING_SAMPLE_UPLOADED",
+      dedupeKey: `reading-sample:${sample.id}`,
+      courseId,
+      participantId,
+      data: { course: sample.course.title, participants: [sample.participant.name], note: note ?? undefined },
     });
   } catch (err) {
     console.error("Leseprobe konnte nicht gespeichert werden:", err);

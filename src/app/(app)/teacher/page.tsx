@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { auth } from "@/auth";
+import { NotificationsFeed } from "@/components/notifications-feed";
 import { prisma } from "@/lib/prisma";
 import { createCourse, togglePublish } from "@/lib/teacher-actions";
 import { AGE_GROUP_LABELS } from "@/lib/course-labels";
@@ -18,6 +19,16 @@ export default async function TeacherPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-azure-800">Meine Kurse (Lehrer-Bereich)</h1>
+
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-semibold text-azure-800">Neueste Benachrichtigungen</h2>
+          <Link href="/teacher/benachrichtigungen" className="text-sm font-medium text-brand-700 underline">
+            Alle ansehen
+          </Link>
+        </div>
+        <NotificationsFeed userId={session.user.id} role={session.user.role} basePath="/teacher/benachrichtigungen" compact />
+      </section>
 
       <div className="space-y-3">
         {courses.map((course) => (

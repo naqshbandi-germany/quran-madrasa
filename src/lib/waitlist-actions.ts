@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import type { ActionResult } from "@/lib/account-actions";
 import { getAppUrl } from "@/lib/app-url";
 import { getCourseCapacity } from "@/lib/course-capacity";
+import { recordEvent } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
 import { buildEmail } from "@/lib/email-templates";
@@ -84,8 +85,14 @@ export async function joinWaitlist(_prev: ActionResult, formData: FormData): Pro
   if (existing) return { ok: true, message: "Du stehst bereits auf der Warteliste für diesen Kurs." };
 
   try {
-    await prisma.waitlistEntry.create({
+    const entry = await prisma.waitlistEntry.create({
       data: { courseId, name, email, consentAt: new Date() },
+    });
+    await recordEvent({
+      type: "WAITLIST_JOINED",
+      dedupeKey: `waitlist:${entry.id}`,
+      courseId,
+      data: { course: course.title, owner: name },
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {

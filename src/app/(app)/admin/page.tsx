@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { auth } from "@/auth";
 import { InviteForm } from "@/components/invite-form";
+import { NotificationsFeed } from "@/components/notifications-feed";
 import { TeacherPhotoForm } from "@/components/teacher-photo-form";
 import { inviteStaff, inviteStudent, resendStaffInvite } from "@/lib/invite-actions";
 import { prisma } from "@/lib/prisma";
@@ -95,6 +96,18 @@ export default async function AdminPage({
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-azure-800">Admin-Bereich</h1>
+
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-semibold text-azure-800">Neueste Benachrichtigungen</h2>
+          <Link href="/admin/benachrichtigungen" className="text-sm font-medium text-brand-700 underline">
+            Alle ansehen
+          </Link>
+        </div>
+        {session && (
+          <NotificationsFeed userId={session.user.id} role={session.user.role} basePath="/admin/benachrichtigungen" compact />
+        )}
+      </section>
 
       <ReminderStatus lastRunAt={remindersLastRunAt} minutesAgo={minutesSince(remindersLastRunAt)} />
 

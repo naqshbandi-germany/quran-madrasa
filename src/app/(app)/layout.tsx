@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { EMAIL_TEMPLATES } from "@/lib/email-defaults";
+import { countUnreadNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { SITE_NAME } from "@/lib/site";
 import { AppBreadcrumbs } from "./app-breadcrumbs";
@@ -20,6 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/auth/signin");
   }
   const isAdmin = session.user.role === "ADMIN";
+  const unread = await countUnreadNotifications(session.user.id);
 
   const navGroups: NavGroup[] = isAdmin
     ? [
@@ -27,6 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           title: "Verwaltung",
           links: [
             { href: "/admin", label: "Übersicht", icon: "grid" },
+            { href: "/admin/benachrichtigungen", label: "Benachrichtigungen", icon: "bell", badge: unread },
             { href: "/admin/konten", label: "Konten", icon: "users" },
             { href: "/admin/emails", label: "E-Mail-Texte", icon: "template" },
           ],
@@ -44,6 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           title: "Unterricht",
           links: [
             { href: "/teacher", label: "Meine Kurse", icon: "book" },
+            { href: "/teacher/benachrichtigungen", label: "Benachrichtigungen", icon: "bell", badge: unread },
             { href: "/teacher/mediathek", label: "Mediathek", icon: "library" },
             { href: "/teacher/emails", label: "E-Mails", icon: "mail" },
           ],

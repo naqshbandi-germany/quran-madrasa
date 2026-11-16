@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import type Stripe from "stripe";
 
 import { sendEnrollmentConfirmation } from "@/lib/notification-email";
+import { recordEvent } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
 function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionStatus {
@@ -40,6 +41,12 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
     quantity: item?.quantity ?? 1,
   };
 
+  // Vorheriger Stand, um Kuendigung und Ende des Abos zu erkennen.
+  const previous = await prisma.subscription.findUnique({
+    where: { stripeSubscriptionId: subscription.id },
+    select: { status: true, cancelAtPeriodEnd: true },
+  });
+
   const saved = await prisma.subscription.upsert({
     where: { stripeSubscriptionId: subscription.id },
     create: { stripeSubscriptionId: subscription.id, ...data },
@@ -55,9 +62,38 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
 
   if (data.status === "CANCELED") {
     // Abo beendet: Teilnahme entfaellt (Zugang zu Sitzungen und Mails).
+    const ended = previous && previous.status !== "CANCELED";
+    const eventData = ended ? await subscriptionEventData(saved.id, userId, courseId) : null;
     await prisma.enrollment.deleteMany({ where: { subscriptionId: saved.id } });
     refreshCourses();
+    if (eventData) {
+      await recordEvent({
+        type: "SUBSCRIPTION_ENDED",
+        dedupeKey: `subscription-ended:${subscription.id}`,
+        courseId,
+        data: eventData,
+      });
+    }
     return;
+  }
+
+  // Zum Ende des Zeitraums gekuendigt (vorher nicht): Lehrkraft informieren. Der Zeitraum steht
+  // im Schluessel, damit eine spaetere erneute Kuendigung wieder gemeldet wird.
+  if (data.cancelAtPeriodEnd && previous && !previous.cancelAtPeriodEnd) {
+    await recordEvent({
+      type: "SUBSCRIPTION_CANCELED",
+      dedupeKey: `subscription-canceled:${subscription.id}:${data.currentPeriodEnd.getTime()}`,
+      courseId,
+      data: {
+        ...(await subscriptionEventData(saved.id, userId, courseId)),
+        periodEnd: data.currentPeriodEnd.toLocaleDateString("de-DE", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          timeZone: "Europe/Berlin",
+        }),
+      },
+    });
   }
 
   if (data.status !== "ACTIVE") return;
@@ -109,9 +145,45 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
   }
   refreshCourses();
 
+  const newParticipantIds = participants.map((p) => p.id).filter((id) => !alreadyEnrolled.has(id));
+  if (newEnrollmentIds.length > 0) {
+    const eventData = await subscriptionEventData(saved.id, userId, courseId, newEnrollmentIds);
+    await recordEvent({
+      type: "ENROLLMENT_CREATED",
+      dedupeKey: `enrollment:${[...newEnrollmentIds].sort().join(",")}`,
+      courseId,
+      participantId: newParticipantIds.length === 1 ? newParticipantIds[0] : null,
+      data: eventData,
+    });
+  }
+
   try {
     await sendEnrollmentConfirmation(courseId, newEnrollmentIds);
   } catch (err) {
     console.error("Bestätigungs-Mail nach der Anmeldung fehlgeschlagen:", err);
   }
+}
+
+// Namen fuer Benachrichtigungen: Kurs, Konto-Inhaber und die Teilnehmer des Abos (bzw. nur die
+// angegebenen Einschreibungen).
+async function subscriptionEventData(
+  subscriptionId: string,
+  userId: string,
+  courseId: string,
+  enrollmentIds?: string[],
+) {
+  const [course, owner, enrollments] = await Promise.all([
+    prisma.course.findUnique({ where: { id: courseId }, select: { title: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+    prisma.enrollment.findMany({
+      where: enrollmentIds ? { id: { in: enrollmentIds } } : { subscriptionId },
+      orderBy: { createdAt: "asc" },
+      select: { participant: { select: { name: true } } },
+    }),
+  ]);
+  return {
+    course: course?.title,
+    owner: owner?.name,
+    participants: enrollments.map((e) => e.participant.name),
+  };
 }

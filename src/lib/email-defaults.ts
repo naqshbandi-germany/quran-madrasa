@@ -375,6 +375,27 @@ export const EMAIL_TEMPLATES = {
       footer: CONTACT_FOOTER,
     },
   },
+  staff_notification: {
+    label: "Benachrichtigung an Lehrkraft oder Admin",
+    group: "Benachrichtigungen",
+    description:
+      "Wenn im Kurs etwas passiert (z. B. neue Anmeldung, Kündigung, Leseprobe) an die Lehrkraft, bei fehlgeschlagenen Zahlungen an die Admins. Wer was per E-Mail bekommt, stellt jede Person unter „Benachrichtigungen“ selbst ein.",
+    placeholders: [
+      { key: "name", label: "Name der Lehrkraft bzw. des Admins", example: "Ustadh Yusuf" },
+      { key: "titel", label: "Kurze Überschrift des Ereignisses", example: "Neue Anmeldung: Tajweed für Anfänger" },
+      { key: "details", label: "Beschreibung des Ereignisses", example: "Ali (Konto: Fatima Yilmaz) ist jetzt im Kurs „Tajweed für Anfänger“ eingeschrieben." },
+      { key: "link", label: "Link zur passenden Seite im Lehrer- bzw. Admin-Bereich (Ziel des Buttons)", example: "https://www.islamunterfreunden.de/teacher/benachrichtigungen" },
+      { key: "einstellungen", label: "Link zu den Benachrichtigungs-Einstellungen", example: "https://www.islamunterfreunden.de/teacher/benachrichtigungen/einstellungen" },
+      BUTTON,
+    ],
+    hasButton: true,
+    defaults: {
+      subject: "{{titel}}",
+      body: [GREETING, "{{details}}", "{{button}}"].join("\n\n"),
+      buttonLabel: "Ansehen",
+      footer: "Diese E-Mail wurde automatisch verschickt. Welche Ereignisse du per E-Mail bekommst, stellst du hier ein: {{einstellungen}}",
+    },
+  },
 } as const satisfies Record<string, TemplateDefinition>;
 
 export type EmailTemplateKey = keyof typeof EMAIL_TEMPLATES;
@@ -385,7 +406,7 @@ export type EmailValues<K extends EmailTemplateKey> = Record<
   string
 >;
 
-export const EMAIL_GROUPS = ["Kurs und Termine", "Zahlung und Abo", "Warteliste", "Konto"] as const;
+export const EMAIL_GROUPS = ["Kurs und Termine", "Zahlung und Abo", "Warteliste", "Konto", "Benachrichtigungen"] as const;
 
 export function isEmailTemplateKey(key: string): key is EmailTemplateKey {
   return Object.prototype.hasOwnProperty.call(EMAIL_TEMPLATES, key);

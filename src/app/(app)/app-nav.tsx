@@ -7,8 +7,9 @@ import { useEffect, useState } from "react";
 import { GridIcon, LibraryIcon, MailIcon, XIcon } from "@/components/icons";
 import { AppSignOutButton } from "./app-sign-out-button";
 
-export type NavIcon = "grid" | "book" | "users" | "template" | "library" | "mail";
-export type NavLink = { href: string; label: string; icon: NavIcon };
+export type NavIcon = "grid" | "book" | "users" | "template" | "library" | "mail" | "bell";
+// badge: Zahl neben dem Eintrag, z. B. ungelesene Benachrichtigungen (0 = keine Anzeige).
+export type NavLink = { href: string; label: string; icon: NavIcon; badge?: number };
 export type NavGroup = { title: string; links: NavLink[] };
 
 function Svg({ children }: { children: React.ReactNode }) {
@@ -44,6 +45,12 @@ const ICONS: Record<NavIcon, React.ReactNode> = {
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
       <circle cx="9" cy="7" r="4" />
       <path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
+    </Svg>
+  ),
+  bell: (
+    <Svg>
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
     </Svg>
   ),
   template: (
@@ -142,6 +149,12 @@ export function AppNav({
                     >
                       {ICONS[link.icon]}
                       {link.label}
+                      {!!link.badge && (
+                        <span className="ml-auto rounded-full bg-[#7fb0e6] px-2 py-0.5 text-xs font-semibold text-[#0d2240]">
+                          {link.badge}
+                          <span className="sr-only"> ungelesen</span>
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
