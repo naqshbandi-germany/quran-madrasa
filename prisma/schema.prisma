@@ -63,8 +63,8 @@ model User {
   email                 String    @unique
   passwordHash          String
   role                  Role      @default(STUDENT)
-  // Foto-URL fürs Lehrer-Profil (kein eigener Datei-Upload, nur ein Link auf ein
-  // gehostetes Bild).
+  // Foto fürs Lehrer-Profil: entweder ein hochgeladenes Foto (TeacherPhoto, dann steht hier
+  // /api/lehrer/<id>/foto?v=...) oder ein Link auf ein gehostetes Bild (z. B. Google-Profilbild).
   image                 String?
   // Kurze Vita fürs Lehrer-Profil, nur für Rolle TEACHER relevant.
   bio                   String?
@@ -89,6 +89,17 @@ model User {
   sentInvitations     Invitation[]         @relation("InvitationsSent")
   participants        Participant[]
   mediaFiles          MediaFile[]
+  teacherPhoto        TeacherPhoto?
+}
+
+// Hochgeladenes Foto fürs Lehrer-Profil, beim Hochladen auf 512 x 512 Pixel verkleinert (ca.
+// 30 KB, daher direkt in der Datenbank). Öffentlich abrufbar über /api/lehrer/<id>/foto.
+model TeacherPhoto {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mimeType  String
+  data      Bytes
+  updatedAt DateTime @updatedAt
 }
 
 model Course {

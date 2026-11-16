@@ -26,11 +26,6 @@ const updateTeacherProfileSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v && v.trim() !== "" ? v.trim() : null)),
-  image: z
-    .string()
-    .optional()
-    .transform((v) => (v && v.trim() !== "" ? v.trim() : null))
-    .refine((v) => !v || z.string().url().safeParse(v).success, "Muss eine gültige URL sein."),
   zoomEmail: z
     .string()
     .optional()
@@ -45,7 +40,6 @@ export async function updateTeacherProfile(formData: FormData) {
     teacherId: formData.get("teacherId"),
     email: formData.get("email"),
     bio: formData.get("bio"),
-    image: formData.get("image"),
     zoomEmail: formData.get("zoomEmail"),
   });
 
@@ -63,7 +57,8 @@ export async function updateTeacherProfile(formData: FormData) {
 
   await prisma.user.update({
     where: { id: parsed.teacherId, role: Role.TEACHER },
-    data: { email: parsed.email, bio: parsed.bio, image: parsed.image, zoomEmail: parsed.zoomEmail },
+    // Das Foto wird getrennt hochgeladen (lib/teacher-photo-actions.ts).
+    data: { email: parsed.email, bio: parsed.bio, zoomEmail: parsed.zoomEmail },
   });
 
   revalidatePath("/admin");
