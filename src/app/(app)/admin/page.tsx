@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { auth } from "@/auth";
 import { InviteForm } from "@/components/invite-form";
+import { TeacherPhotoForm } from "@/components/teacher-photo-form";
 import { inviteStaff, inviteStudent, resendStaffInvite } from "@/lib/invite-actions";
 import { prisma } from "@/lib/prisma";
 import {
@@ -123,6 +124,9 @@ export default async function AdminPage({
                 <summary className="cursor-pointer text-sm text-brand-900">
                   {teacher.name} ({teacher.email}) · {teacher._count.taughtCourses} Kurse
                 </summary>
+                <div className="mt-3 border-t border-brand-100 pt-3">
+                  <TeacherPhotoForm teacherId={teacher.id} teacherName={teacher.name} image={teacher.image} />
+                </div>
                 <form
                   action={updateTeacherProfile}
                   className="mt-3 grid gap-2 border-t border-brand-100 pt-3 sm:grid-cols-2"
@@ -138,12 +142,6 @@ export default async function AdminPage({
                       className="mt-1 border border-brand-300 px-3 py-2 text-sm"
                     />
                   </label>
-                  <input
-                    name="image"
-                    placeholder="Foto-URL (https://...)"
-                    defaultValue={teacher.image ?? ""}
-                    className="border border-brand-300 px-3 py-2 text-sm"
-                  />
                   <input
                     name="zoomEmail"
                     type="email"
@@ -179,7 +177,9 @@ export default async function AdminPage({
                     Lehrer-Konto löschen …
                   </Link>{" "}
                   <span className="text-xs text-brand-600">
-                    Vorher werden die Kurse und die Mediathek einer anderen Lehrkraft zugeordnet.
+                    Vorher werden die Kurse und die Mediathek einer anderen Lehrkraft zugeordnet. Hat
+                    die Lehrkraft nur eine neue E-Mail-Adresse, nicht löschen: oben die Adresse ändern
+                    und die Einladung erneut senden.
                   </span>
                 </p>
               </details>

@@ -54,6 +54,17 @@ export default async function DeleteAccountPage({ params }: { params: Promise<{ 
         </p>
       </div>
 
+      {isTeacher && !blocked && (
+        <p className="border border-gold-400/60 bg-gold-200/30 px-4 py-3 text-sm text-brand-900">
+          <strong>Nur eine neue E-Mail-Adresse?</strong> Dann das Konto nicht löschen, sondern im{" "}
+          <Link href="/admin#lehrer" className="underline">
+            Lehrerprofil
+          </Link>{" "}
+          die Adresse ändern und „Einladung erneut senden“. So bleiben Kurse, Foto, Vita, Mediathek
+          und Verlauf erhalten.
+        </p>
+      )}
+
       {blocked ? (
         <p className="border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
           Admin-Konten und das eigene Konto lassen sich hier nicht löschen.
