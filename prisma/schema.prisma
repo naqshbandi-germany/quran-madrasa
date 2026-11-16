@@ -60,6 +60,9 @@ enum Weekday {
 model User {
   id                    String    @id @default(cuid())
   name                  String
+  // Optionaler muslimischer Name (z. B. bei Konvertiten zusaetzlich zum Namen im Ausweis).
+  // Wird fuer die Anrede in Mails verwendet und bei Lehrkraeften neben dem Namen angezeigt.
+  muslimName            String?
   email                 String    @unique
   passwordHash          String
   role                  Role      @default(STUDENT)
@@ -71,6 +74,9 @@ model User {
   // E-Mail-Adresse des Zoom-Kontos, unter dem dieser Lehrer Meetings leitet (nur
   // relevant bei CLASSROOM_PROVIDER=zoom; sonst gilt ZOOM_HOST_EMAIL).
   zoomEmail             String?
+  // Zeitzone der Lehrkraft (IANA-Name, z. B. "Europe/Istanbul"); leer = deutsche Zeit. Im
+  // Lehrer-Bereich werden Zeiten in dieser Zone angezeigt und eingegeben (src/lib/time-zones.ts).
+  timeZone              String?
   // Zeitpunkte der Bestaetigungen bei der Registrierung (Nachweis fuer die Datenschutz-
   // Kenntnisnahme und die Bestaetigung "mindestens 18 Jahre alt").
   privacyAcknowledgedAt DateTime?
@@ -90,6 +96,9 @@ model User {
   participants        Participant[]
   mediaFiles          MediaFile[]
   teacherPhoto        TeacherPhoto?
+  notifications       Notification[]
+  notificationPrefs   NotificationPreference[]
+  trialLessons        TrialLesson[]
 }
 
 // Hochgeladenes Foto fürs Lehrer-Profil, beim Hochladen auf 512 x 512 Pixel verkleinert (ca.
@@ -140,6 +149,7 @@ model Course {
   waitlist       WaitlistEntry[]
   readingSamples ReadingSample[]
   invitations    Invitation[]
+  trialLessons   TrialLesson[]
 }
 
 // Wiederkehrender wöchentlicher Termin eines Kurses (z.B. "Mittwoch 18:00-18:40"),
@@ -225,6 +235,8 @@ model Participant {
   ownerId            String
   owner              User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name               String
+  // Optionaler muslimischer Name, siehe User.muslimName. Bei SELF folgt er dem Konto.
+  muslimName         String?
   relation           ParticipantRelation
   // Nur bei Kindern: Geburtsjahr zur Alterspruefung (bewusst kein volles Geburtsdatum).
   birthYear          Int?
@@ -413,4 +425,96 @@ model Invitation {
   createdAt      DateTime  @default(now())
 
   @@index([courseId])
+}
+
+// Ereignisse fuer Lehrkraefte und Admins (Feed unter /teacher/benachrichtigungen bzw.
+// /admin/benachrichtigungen). Wer welches Ereignis bekommt, steht in src/lib/notifications.ts.
+enum NotificationType {
+  ENROLLMENT_CREATED
+  SUBSCRIPTION_CANCELED
+  SUBSCRIPTION_ENDED
+  PAYMENT_FAILED
+  READING_SAMPLE_UPLOADED
+  WAITLIST_JOINED
+}
+
+// Ein Ereignis (z. B. "neuer Teilnehmer angemeldet"). Kein Fremdschluessel auf Kurs oder
+// Teilnehmer, damit der Verlauf beim Loeschen erhalten bleibt; die Namen stehen in "data".
+// dedupeKey verhindert doppelte Eintraege, weil Stripe Ereignisse mehrfach schickt.
+model ActivityEvent {
+  id            String           @id @default(cuid())
+  type          NotificationType
+  courseId      String?
+  participantId String?
+  data          Json             @default("{}")
+  dedupeKey     String           @unique
+  createdAt     DateTime         @default(now())
+
+  notifications Notification[]
+
+  @@index([createdAt])
+  @@index([courseId])
+}
+
+// Ein Ereignis fuer eine empfangende Person (Lehrkraft oder Admin).
+model Notification {
+  id        String        @id @default(cuid())
+  eventId   String
+  event     ActivityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt    DateTime?
+  emailedAt DateTime?
+  createdAt DateTime      @default(now())
+
+  @@unique([eventId, userId])
+  @@index([userId, readAt])
+}
+
+// E-Mail an/aus pro Nutzer und Ereignistyp. Fehlt der Eintrag, gilt der Standard aus dem Code.
+model NotificationPreference {
+  id     String           @id @default(cuid())
+  userId String
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   NotificationType
+  email  Boolean
+
+  @@unique([userId, type])
+}
+
+// Kostenlose Probestunde zu einem Kurs: Lehrkraft oder Admin laedt eine oder mehrere Personen
+// (ohne Konto) zu einem gemeinsamen Termin ein. Die Gaeste bekommen den Link zum
+// Unterrichtsraum per E-Mail (mit Kalendereintrag) und Erinnerungen vorher.
+model TrialLesson {
+  id                String        @id @default(cuid())
+  courseId          String
+  course            Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  startsAt          DateTime
+  durationMin       Int           @default(30)
+  classroomType     ClassroomType @default(JITSI)
+  joinUrl           String
+  zoomMeetingId     String?
+  // Wer eingeladen hat (Lehrkraft oder Admin).
+  createdById       String
+  createdBy         User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt         DateTime      @default(now())
+  canceledAt        DateTime?
+  reminder24hSentAt DateTime?
+  reminder1hSentAt  DateTime?
+
+  guests TrialGuest[]
+
+  @@index([startsAt])
+  @@index([courseId])
+}
+
+model TrialGuest {
+  id            String      @id @default(cuid())
+  trialLessonId String
+  trialLesson   TrialLesson @relation(fields: [trialLessonId], references: [id], onDelete: Cascade)
+  name          String
+  email         String
+  createdAt     DateTime    @default(now())
+
+  @@index([trialLessonId])
 }

@@ -483,6 +483,15 @@ function DraftCard({
             onChange={(event) => onChange({ name: event.target.value })}
             error={errors.name}
           />
+          <FloatingField
+            id={id("muslimName")}
+            label="Muslimischer Name (optional)"
+            autoComplete="off"
+            value={input.muslimName}
+            onChange={(event) => onChange({ muslimName: event.target.value })}
+            hint="Falls ein muslimischer Rufname verwendet wird, sprechen Lehrkraft und E-Mails die Person damit an."
+            error={errors.muslimName}
+          />
           {input.relation === "CHILD" && (
             <FloatingField
               id={id("birthYear")}

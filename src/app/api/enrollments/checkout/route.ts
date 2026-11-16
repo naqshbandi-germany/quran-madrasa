@@ -35,6 +35,7 @@ function parseNewParticipant(raw: unknown): ParticipantInput | null {
   return {
     relation,
     name: asString(value.name),
+    muslimName: asString(value.muslimName),
     email: asString(value.email),
     birthYear: asString(value.birthYear),
     whatsapp: asString(value.whatsapp),
@@ -140,6 +141,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Du bist bereits als Teilnehmer angelegt." }, { status: 400 });
       }
       input.name = user.name;
+      input.muslimName = user.muslimName ?? "";
       input.email = user.email;
     }
     const { errors, clean } = validateParticipant(input);
@@ -160,6 +162,7 @@ export async function POST(request: Request) {
         data: {
           ownerId: user.id,
           name: p.name,
+          muslimName: p.muslimName,
           relation: p.relation,
           birthYear: p.birthYear,
           email: p.email,

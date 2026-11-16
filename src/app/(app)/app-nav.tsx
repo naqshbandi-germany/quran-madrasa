@@ -7,8 +7,9 @@ import { useEffect, useState } from "react";
 import { GridIcon, LibraryIcon, MailIcon, XIcon } from "@/components/icons";
 import { AppSignOutButton } from "./app-sign-out-button";
 
-export type NavIcon = "grid" | "book" | "users" | "template" | "library" | "mail";
-export type NavLink = { href: string; label: string; icon: NavIcon };
+export type NavIcon = "grid" | "book" | "users" | "template" | "library" | "mail" | "bell" | "student" | "calendar";
+// badge: Zahl neben dem Eintrag, z. B. ungelesene Benachrichtigungen (0 = keine Anzeige).
+export type NavLink = { href: string; label: string; icon: NavIcon; badge?: number };
 export type NavGroup = { title: string; links: NavLink[] };
 
 function Svg({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,24 @@ const ICONS: Record<NavIcon, React.ReactNode> = {
       <path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" />
     </Svg>
   ),
+  bell: (
+    <Svg>
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+    </Svg>
+  ),
+  calendar: (
+    <Svg>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4M8 3v4M3 11h18" />
+    </Svg>
+  ),
+  student: (
+    <Svg>
+      <path d="M22 10 12 5 2 10l10 5 10-5Z" />
+      <path d="M6 12v5c3 2 9 2 12 0v-5" />
+    </Svg>
+  ),
   template: (
     <Svg>
       <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -63,7 +82,9 @@ function MenuIcon() {
 }
 
 // Aktiv ist der Eintrag mit dem laengsten passenden Pfad (/admin/konten vor /admin).
-function activeHref(pathname: string, groups: NavGroup[]) {
+function activeHref(rawPathname: string, groups: NavGroup[]) {
+  // Einzelne Kurse (/teacher/courses/...) gehoeren zum Menuepunkt "Kurse".
+  const pathname = rawPathname.startsWith("/teacher/courses/") ? "/teacher/kurse" : rawPathname;
   const matches = groups
     .flatMap((g) => g.links.map((l) => l.href))
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`));
@@ -142,6 +163,12 @@ export function AppNav({
                     >
                       {ICONS[link.icon]}
                       {link.label}
+                      {!!link.badge && (
+                        <span className="ml-auto rounded-full bg-[#7fb0e6] px-2 py-0.5 text-xs font-semibold text-[#0d2240]">
+                          {link.badge}
+                          <span className="sr-only"> ungelesen</span>
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );

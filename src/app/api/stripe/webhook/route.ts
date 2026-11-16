@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
 import { sendPaymentFailedNotice } from "@/lib/notification-email";
+import { recordEvent } from "@/lib/notifications";
+import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { syncSubscription } from "@/lib/subscription-sync";
 
@@ -48,6 +50,17 @@ export async function POST(request: Request) {
       if (customerId && invoice.billing_reason === "subscription_cycle") {
         const courseId = invoice.parent?.subscription_details?.metadata?.courseId ?? null;
         await sendPaymentFailedNotice(customerId, courseId);
+        // Admins informieren (einmal pro Rechnung, auch wenn Stripe mehrmals versucht).
+        const [owner, course] = await Promise.all([
+          prisma.user.findUnique({ where: { stripeCustomerId: customerId }, select: { name: true, email: true } }),
+          courseId ? prisma.course.findUnique({ where: { id: courseId }, select: { title: true } }) : null,
+        ]);
+        await recordEvent({
+          type: "PAYMENT_FAILED",
+          dedupeKey: `payment-failed:${invoice.id}`,
+          courseId,
+          data: { owner: owner?.name, ownerEmail: owner?.email, course: course?.title },
+        });
       }
       break;
     }

@@ -34,6 +34,8 @@ export function normalizeWhatsapp(input: string): string | null {
 export type ParticipantInput = {
   relation: ParticipantRelationValue;
   name: string;
+  // Optional, z. B. bei Konvertiten zusaetzlich zum Namen im Ausweis.
+  muslimName: string;
   email: string;
   birthYear: string;
   whatsapp: string;
@@ -44,6 +46,7 @@ export type ParticipantInput = {
 
 export type ParticipantField =
   | "name"
+  | "muslimName"
   | "email"
   | "birthYear"
   | "whatsapp"
@@ -55,6 +58,7 @@ export type ParticipantErrors = Partial<Record<ParticipantField, string>>;
 export type CleanParticipant = {
   relation: ParticipantRelationValue;
   name: string;
+  muslimName: string | null;
   email: string | null;
   birthYear: number | null;
   whatsapp: string | null;
@@ -66,6 +70,7 @@ export function emptyParticipantInput(relation: ParticipantRelationValue): Parti
   return {
     relation,
     name: "",
+    muslimName: "",
     email: "",
     birthYear: "",
     whatsapp: "",
@@ -86,6 +91,8 @@ export function validateParticipant(
 
   if (name.length < 2) errors.name = "Bitte gib den vollständigen Namen an.";
   else if (name.length > 80) errors.name = "Der Name ist zu lang.";
+  const muslimName = (input.muslimName ?? "").trim().replace(/\s+/g, " ");
+  if (muslimName.length > 80) errors.muslimName = "Der Name ist zu lang.";
 
   let birthYear: number | null = null;
   if (input.relation === "CHILD") {
@@ -135,6 +142,7 @@ export function validateParticipant(
     clean: {
       relation: input.relation,
       name,
+      muslimName: muslimName || null,
       email: email || null,
       birthYear,
       whatsapp,

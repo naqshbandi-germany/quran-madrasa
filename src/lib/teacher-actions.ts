@@ -8,7 +8,8 @@ import { auth } from "@/auth";
 import { createClassroomMeeting, createClassroomMeetings } from "@/lib/classroom";
 import { sendSessionChangeNotice } from "@/lib/notification-email";
 import { prisma } from "@/lib/prisma";
-import { fromTeachingLocal, parseTeachingDateTime } from "@/lib/schedule-time";
+import { fromZonedLocal, parseZonedDateTime } from "@/lib/schedule-time";
+import { resolveViewTimeZone } from "@/lib/view-time-zone";
 import { deleteZoomMeeting, updateZoomMeeting } from "@/lib/zoom";
 
 async function requireTeacher() {
@@ -67,6 +68,7 @@ export async function createCourse(formData: FormData) {
   });
 
   revalidatePath("/teacher");
+  revalidatePath("/teacher/kurse");
 }
 
 const createScheduleSlotSchema = z.object({
@@ -150,7 +152,9 @@ export async function createClassSession(formData: FormData) {
   });
   assertOwnsCourse(session, course.teacherId);
 
-  const startsAt = parseTeachingDateTime(parsed.startsAt);
+  // Eingaben gelten in der Zeitzone, in der der Lehrer-Bereich gerade anzeigt.
+  const { timeZone } = await resolveViewTimeZone(session.user.id);
+  const startsAt = parseZonedDateTime(parsed.startsAt, timeZone);
 
   // Eigener Link: wird unveraendert uebernommen. Sonst wird je nach CLASSROOM_PROVIDER
   // automatisch ein Jitsi-Link erzeugt oder ein Zoom-Meeting angelegt.
@@ -234,9 +238,10 @@ export async function createRecurringSessions(formData: FormData) {
   const safeDuration = durationMin > 0 ? durationMin : 60;
 
   const [year, month, day] = parsed.firstDate.split("-").map(Number);
+  const { timeZone } = await resolveViewTimeZone(session.user.id);
   const startTimes = Array.from({ length: parsed.occurrences }, (_, i) => {
     const date = addInterval({ year, month, day }, parsed.interval, i);
-    return fromTeachingLocal(date.year, date.month, date.day, hours, minutes);
+    return fromZonedLocal(date, hours, minutes, timeZone);
   });
 
   const meetings = await createClassroomMeetings(
@@ -281,6 +286,7 @@ export async function togglePublish(formData: FormData) {
   });
 
   revalidatePath("/teacher");
+  revalidatePath("/teacher/kurse");
   revalidatePath("/");
   revalidatePath(`/courses/${course.slug}`);
 }
@@ -350,7 +356,8 @@ export async function updateClassSession(formData: FormData) {
   });
   assertOwnsCourse(session, existing.course.teacherId);
 
-  const startsAt = parseTeachingDateTime(parsed.startsAt);
+  const { timeZone } = await resolveViewTimeZone(session.user.id);
+  const startsAt = parseZonedDateTime(parsed.startsAt, timeZone);
   const data: {
     title: string;
     startsAt: Date;

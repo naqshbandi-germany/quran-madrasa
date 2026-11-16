@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { EMAIL_TEMPLATES } from "@/lib/email-defaults";
+import { countUnreadNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { SITE_NAME } from "@/lib/site";
 import { AppBreadcrumbs } from "./app-breadcrumbs";
@@ -20,6 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/auth/signin");
   }
   const isAdmin = session.user.role === "ADMIN";
+  const unread = await countUnreadNotifications(session.user.id);
 
   const navGroups: NavGroup[] = isAdmin
     ? [
@@ -27,6 +29,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           title: "Verwaltung",
           links: [
             { href: "/admin", label: "Übersicht", icon: "grid" },
+            { href: "/admin/benachrichtigungen", label: "Benachrichtigungen", icon: "bell", badge: unread },
+            { href: "/teacher/kurse", label: "Kurse", icon: "book" },
+            { href: "/teacher/schueler", label: "Schüler", icon: "student" },
+            { href: "/teacher/termine", label: "Termine", icon: "calendar" },
             { href: "/admin/konten", label: "Konten", icon: "users" },
             { href: "/admin/emails", label: "E-Mail-Texte", icon: "template" },
           ],
@@ -36,6 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           links: [
             { href: "/teacher/mediathek", label: "Mediathek", icon: "library" },
             { href: "/teacher/emails", label: "E-Mails", icon: "mail" },
+            { href: "/teacher/profil", label: "Mein Profil", icon: "users" },
           ],
         },
       ]
@@ -43,9 +50,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {
           title: "Unterricht",
           links: [
-            { href: "/teacher", label: "Meine Kurse", icon: "book" },
+            { href: "/teacher", label: "Übersicht", icon: "grid" },
+            { href: "/teacher/benachrichtigungen", label: "Benachrichtigungen", icon: "bell", badge: unread },
+            { href: "/teacher/kurse", label: "Kurse", icon: "book" },
+            { href: "/teacher/schueler", label: "Schüler", icon: "student" },
+            { href: "/teacher/termine", label: "Termine", icon: "calendar" },
             { href: "/teacher/mediathek", label: "Mediathek", icon: "library" },
             { href: "/teacher/emails", label: "E-Mails", icon: "mail" },
+            { href: "/teacher/profil", label: "Mein Profil", icon: "users" },
           ],
         },
       ];
@@ -73,7 +85,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="z-30 border-b border-brand-200 bg-white lg:sticky lg:top-0">
           <div className="mx-auto flex max-w-5xl items-center px-4 py-4 sm:px-8">
-            <AppBreadcrumbs names={crumbNames} isAdmin={isAdmin} />
+            <AppBreadcrumbs names={crumbNames} />
           </div>
         </header>
 

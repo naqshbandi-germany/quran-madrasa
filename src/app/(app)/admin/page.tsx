@@ -2,24 +2,21 @@ import Link from "next/link";
 
 import { auth } from "@/auth";
 import { InviteForm } from "@/components/invite-form";
+import { NotificationsFeed } from "@/components/notifications-feed";
 import { TeacherPhotoForm } from "@/components/teacher-photo-form";
-import { inviteStaff, inviteStudent, resendStaffInvite } from "@/lib/invite-actions";
+import { inviteStaff, resendStaffInvite } from "@/lib/invite-actions";
 import { prisma } from "@/lib/prisma";
+import { TIME_ZONE_OPTIONS, teacherTimeZone } from "@/lib/time-zones";
 import {
-  regenerateAccessCode,
-  updateCourseSettings,
   updateLegalTexts,
   updateSiteContent,
   updateTeacherProfile,
 } from "@/lib/admin-actions";
-import { getAppUrl } from "@/lib/app-url";
 import { isZoomProvider } from "@/lib/classroom";
-import { CopyButton } from "@/components/copy-button";
 import { ViewAsPicker } from "@/components/view-as-picker";
 import { isGoogleAuthConfigured } from "@/lib/auth-providers";
 import { DEFAULT_IMPRESSUM, defaultPrivacyPolicy } from "@/lib/legal-defaults";
 import { formatGermanDateTime } from "@/lib/schedule-time";
-import { togglePublish } from "@/lib/teacher-actions";
 
 function minutesSince(date: Date | null) {
   return date ? Math.round((Date.now() - date.getTime()) / 60_000) : null;
@@ -96,6 +93,18 @@ export default async function AdminPage({
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-azure-800">Admin-Bereich</h1>
 
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-semibold text-azure-800">Neueste Benachrichtigungen</h2>
+          <Link href="/admin/benachrichtigungen" className="text-sm font-medium text-brand-700 underline">
+            Alle ansehen
+          </Link>
+        </div>
+        {session && (
+          <NotificationsFeed userId={session.user.id} role={session.user.role} basePath="/admin/benachrichtigungen" compact />
+        )}
+      </section>
+
       <ReminderStatus lastRunAt={remindersLastRunAt} minutesAgo={minutesSince(remindersLastRunAt)} />
 
       <ViewAsPicker
@@ -149,6 +158,20 @@ export default async function AdminPage({
                     defaultValue={teacher.zoomEmail ?? ""}
                     className="border border-brand-300 px-3 py-2 text-sm sm:col-span-2"
                   />
+                  <label className="flex flex-col text-sm text-brand-700 sm:col-span-2">
+                    Zeitzone (für Kurszeiten und die Anzeige im Lehrer-Bereich)
+                    <select
+                      name="timeZone"
+                      defaultValue={teacherTimeZone(teacher)}
+                      className="mt-1 border border-brand-300 bg-white px-3 py-2 text-sm"
+                    >
+                      {TIME_ZONE_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <textarea
                     name="bio"
                     placeholder="Kurze Vita"
@@ -245,43 +268,6 @@ export default async function AdminPage({
         </InviteForm>
       </section>
 
-      <section id="schueler-einladen" className="border border-gold-400/40 bg-white p-5">
-        <h2 className="mb-2 font-semibold text-azure-800">Schüler zu einem Kurs einladen</h2>
-        <p className="mb-3 text-sm text-brand-600">
-          Der Link (14 Tage gültig) führt zur Kursanmeldung; wer noch kein Konto hat, legt dabei
-          eines an. Normalerweise wird dort wie gewohnt bezahlt. Mit „ohne Zahlung“ wird direkt
-          eingetragen, z. B. für Tests oder Härtefälle; dieser Link ist nur einmal nutzbar. Name und
-          E-Mail sind nur für den Versand per E-Mail nötig.
-        </p>
-        <InviteForm action={inviteStudent}>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <select name="courseId" required defaultValue="" aria-label="Kurs" className="border border-brand-300 bg-white px-3 py-2">
-              <option value="" disabled>
-                Kurs wählen …
-              </option>
-              {courses
-                .filter((course) => course.isPublished)
-                .map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.title}
-                    {course.isHidden ? " (versteckt)" : ""}
-                  </option>
-                ))}
-            </select>
-            <input name="name" placeholder="Name (optional)" className="border border-brand-300 px-3 py-2" />
-            <input
-              name="email"
-              type="email"
-              placeholder="E-Mail-Adresse (optional)"
-              className="border border-brand-300 px-3 py-2"
-            />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-brand-800">
-            <input type="checkbox" name="free" className="h-4 w-4" />
-            Ohne Zahlung eintragen (nur Admins)
-          </label>
-        </InviteForm>
-      </section>
 
       <section className="border border-gold-400/40 bg-white p-5">
         <h2 className="mb-4 font-semibold text-azure-800">Website-Inhalte</h2>
@@ -336,118 +322,6 @@ export default async function AdminPage({
         </form>
       </section>
 
-      <section className="border border-gold-400/40 bg-white p-5">
-        <h2 className="mb-4 font-semibold text-azure-800">Alle Kurse</h2>
-
-        {courses.length === 0 ? (
-          <p className="text-sm text-brand-600">Noch keine Kurse angelegt.</p>
-        ) : (
-          <ul className="space-y-2">
-            {courses.map((course) => {
-              const secretLink =
-                course.isHidden && course.accessCode ? `${getAppUrl()}/zugang/${course.accessCode}` : null;
-              return (
-                <li key={course.id} className="bg-brand-50 px-3 py-2 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span>
-                      {course.title} · Lehrer: {course.teacher.name} · {course._count.enrollments}{" "}
-                      Schüler · {course.isPublished ? "veröffentlicht" : "Entwurf"}
-                      {course.isHidden && " · versteckt"}
-                    </span>
-                    <div className="flex gap-3">
-                      <Link href={`/teacher/courses/${course.id}`} className="underline">
-                        Sitzungen
-                      </Link>
-                      <form action={togglePublish}>
-                        <input type="hidden" name="courseId" value={course.id} />
-                        <button className="underline">
-                          {course.isPublished ? "Entwurf setzen" : "Veröffentlichen"}
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                  <details className="mt-2">
-                    <summary className="cursor-pointer text-brand-700">Preis, Plätze und Sichtbarkeit</summary>
-                    <form action={updateCourseSettings} className="mt-2 grid gap-2 sm:grid-cols-2">
-                      <input type="hidden" name="courseId" value={course.id} />
-                      <label className="text-brand-700">
-                        Preis pro Monat in € (0 = kostenlos)
-                        <input
-                          name="price"
-                          inputMode="decimal"
-                          defaultValue={(course.priceCents / 100).toFixed(2).replace(".", ",")}
-                          className="mt-1 w-full border border-brand-300 px-3 py-1.5"
-                        />
-                      </label>
-                      <label className="text-brand-700">
-                        Stripe-Preis-ID (monatlich, price_...)
-                        <input
-                          name="stripePriceId"
-                          defaultValue={course.stripePriceId ?? ""}
-                          className="mt-1 w-full border border-brand-300 px-3 py-1.5 font-mono"
-                        />
-                      </label>
-                      <label className="text-brand-700">
-                        Einmalige Anmeldegebühr in € (leer = keine)
-                        <input
-                          name="signupFee"
-                          inputMode="decimal"
-                          defaultValue={
-                            course.signupFeeCents != null
-                              ? (course.signupFeeCents / 100).toFixed(2).replace(".", ",")
-                              : ""
-                          }
-                          className="mt-1 w-full border border-brand-300 px-3 py-1.5"
-                        />
-                      </label>
-                      <label className="text-brand-700">
-                        Stripe-Preis-ID der Gebühr (einmalig, price_...)
-                        <input
-                          name="signupFeePriceId"
-                          defaultValue={course.signupFeePriceId ?? ""}
-                          className="mt-1 w-full border border-brand-300 px-3 py-1.5 font-mono"
-                        />
-                      </label>
-                      <label className="text-brand-700">
-                        Höchstzahl Teilnehmer (leer = unbegrenzt)
-                        <input
-                          name="maxParticipants"
-                          type="number"
-                          min={1}
-                          defaultValue={course.maxParticipants ?? ""}
-                          className="mt-1 w-full border border-brand-300 px-3 py-1.5"
-                        />
-                      </label>
-                      <label className="flex items-center gap-2 self-end text-brand-700">
-                        <input type="checkbox" name="isHidden" defaultChecked={course.isHidden} />
-                        Versteckt (nur über geheimen Link erreichbar)
-                      </label>
-                      <button className="btn-primary px-4 py-1.5 sm:col-span-2 sm:w-fit">
-                        Einstellungen speichern
-                      </button>
-                    </form>
-                    {secretLink && (
-                      <div className="mt-3 border-t border-brand-200 pt-3">
-                        <p className="text-brand-700">
-                          Geheimer Link (der Kurs muss außerdem veröffentlicht sein):
-                        </p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <code className="break-all bg-white px-2 py-1">{secretLink}</code>
-                          <CopyButton text={secretLink} />
-                          <form action={regenerateAccessCode}>
-                            <input type="hidden" name="courseId" value={course.id} />
-                            <button className="underline">Neuen Link erzeugen</button>
-                          </form>
-                        </div>
-                      </div>
-                    )}
-                  </details>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { EmailComposer, type ComposerCourse } from "@/components/email-composer";
 import { blobAccess, isBlobConfigured } from "@/lib/blob";
 import { toMediaItem } from "@/lib/media-items";
+import { callName, fullName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 
 export const metadata = { title: "E-Mails" };
@@ -24,8 +25,8 @@ export default async function EmailsPage({
       enrollments: {
         orderBy: { createdAt: "asc" },
         include: {
-          participant: { select: { id: true, name: true, email: true, relation: true } },
-          user: { select: { name: true, email: true } },
+          participant: { select: { id: true, name: true, muslimName: true, email: true, relation: true } },
+          user: { select: { name: true, muslimName: true, email: true } },
         },
       },
     },
@@ -51,7 +52,7 @@ export default async function EmailsPage({
     title: course.title,
     participants: course.enrollments.map(({ participant, user }) => ({
       id: participant.id,
-      name: participant.name,
+      name: fullName(participant),
       detail: participant.email
         ? `(${participant.email})`
         : `(Mail an ${user.name}, ${user.email})`,

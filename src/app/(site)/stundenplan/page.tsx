@@ -12,7 +12,7 @@ export default async function TimetablePage() {
   const courses = await prisma.course.findMany({
     where: { isPublished: true, isHidden: false },
     orderBy: { title: "asc" },
-    include: { scheduleSlots: true },
+    include: { scheduleSlots: true, teacher: { select: { timeZone: true } } },
   });
 
   const timetable = buildTimetable(courses);

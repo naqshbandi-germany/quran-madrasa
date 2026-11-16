@@ -2,6 +2,7 @@ import { getAppUrl } from "@/lib/app-url";
 import { groupRecipients } from "@/lib/enrollment-recipients";
 import { buildEmail, emailRenderer } from "@/lib/email-templates";
 import { escapeHtml } from "@/lib/html";
+import { callName, fullName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { deliverEmail, EMAIL_FROM } from "@/lib/resend";
 import { formatGermanDateTime } from "@/lib/schedule-time";
@@ -23,8 +24,8 @@ async function sendSafely(to: string, { subject, html }: { subject: string; html
 }
 
 const enrollmentInclude = {
-  user: { select: { name: true, email: true } },
-  participant: { select: { name: true, email: true } },
+  user: { select: { name: true, muslimName: true, email: true } },
+  participant: { select: { name: true, muslimName: true, email: true } },
 } as const;
 
 // Nach erfolgreicher Zahlung: Bestaetigung an die neu eingeschriebenen Teilnehmer (bzw. den
@@ -117,7 +118,7 @@ export async function sendPaymentFailedNotice(stripeCustomerId: string, courseId
   await sendSafely(
     user.email,
     await buildEmail("payment_failed", {
-      name: user.name,
+      name: callName(user),
       kurs: course?.title ?? "deine Teilnahme",
       link: `${getAppUrl()}/dashboard/billing`,
     }),

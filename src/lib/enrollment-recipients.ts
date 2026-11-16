@@ -3,9 +3,11 @@
 // Teilnehmer mit derselben Adresse (zwei Kinder eines Elternteils) erhalten eine gemeinsame
 // Mail statt mehrerer gleicher.
 
+import { callName } from "@/lib/names";
+
 type EnrollmentLike = {
-  participant: { name: string; email: string | null };
-  user: { name: string; email: string };
+  participant: { name: string; muslimName?: string | null; email: string | null };
+  user: { name: string; muslimName?: string | null; email: string };
 };
 
 export type Recipient = {
@@ -22,8 +24,10 @@ export function groupRecipients(enrollments: EnrollmentLike[]): Recipient[] {
     const ownMail = Boolean(participant.email);
     const email = (participant.email ?? user.email).trim();
     const key = email.toLowerCase();
-    const entry = byEmail.get(key) ?? { email, ownerName: user.name, ownMail, names: [] };
-    if (!entry.names.includes(participant.name)) entry.names.push(participant.name);
+    // Angeredet wird mit dem muslimischen Namen, falls angegeben.
+    const entry = byEmail.get(key) ?? { email, ownerName: callName(user), ownMail, names: [] };
+    const participantName = callName(participant);
+    if (!entry.names.includes(participantName)) entry.names.push(participantName);
     byEmail.set(key, entry);
   }
 

@@ -5,7 +5,8 @@ import { auth } from "@/auth";
 import { REVIEW_SAMPLE_SELECT, ReadingSampleReviewList } from "@/components/reading-sample-review-list";
 import { saveSessionEvaluation } from "@/lib/evaluation-actions";
 import { prisma } from "@/lib/prisma";
-import { formatGermanDateTime, formatTeachingDateTime } from "@/lib/schedule-time";
+import { formatGermanDateTime, formatZonedDateTime } from "@/lib/schedule-time";
+import { resolveViewTimeZone } from "@/lib/view-time-zone";
 import {
   ATTENDANCE_LABELS,
   SURAH_OPTIONS,
@@ -72,14 +73,17 @@ export default async function EvaluateSessionPage({
   });
 
   const isFuture = classSession.startsAt > new Date();
+  const { timeZone: viewTimeZone } = await resolveViewTimeZone(session!.user.id);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-azure-800">Stunde auswerten</h1>
         <p className="text-brand-700">
-          {classSession.title} · {formatTeachingDateTime(classSession.startsAt)} Ortszeit (
-          {formatGermanDateTime(classSession.startsAt)} deutsche Zeit)
+          {classSession.title} ·{" "}
+          {viewTimeZone === "Europe/Berlin"
+            ? `${formatGermanDateTime(classSession.startsAt)} Uhr`
+            : `${formatZonedDateTime(classSession.startsAt, viewTimeZone)} Uhr (${formatGermanDateTime(classSession.startsAt)} deutsche Zeit)`}
         </p>
       </div>
 

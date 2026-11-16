@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import { getAppUrl } from "@/lib/app-url";
+import { callName, fullName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { buildEmail } from "@/lib/email-templates";
 import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
@@ -50,7 +51,7 @@ export async function requestPasswordReset(email: string) {
       from: EMAIL_FROM,
       to: user.email,
       ...(await buildEmail("password_reset", {
-        name: user.name,
+        name: callName(user),
         link,
         minuten: String(RESET_TOKEN_TTL_MINUTES),
       })),

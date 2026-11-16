@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { auth } from "@/auth";
 import { generateAccessCode } from "@/lib/course-access";
+import { DEFAULT_TIME_ZONE, isKnownTimeZone } from "@/lib/time-zones";
 import { prisma } from "@/lib/prisma";
 
 async function requireAdmin() {
@@ -42,6 +43,9 @@ export async function updateTeacherProfile(formData: FormData) {
     bio: formData.get("bio"),
     zoomEmail: formData.get("zoomEmail"),
   });
+  const timeZoneValue = String(formData.get("timeZone") ?? "");
+  // Deutsche Zeit wird als "leer" gespeichert (Standard).
+  const timeZone = isKnownTimeZone(timeZoneValue) && timeZoneValue !== DEFAULT_TIME_ZONE ? timeZoneValue : null;
 
   const taken = await prisma.user.findFirst({
     where: { email: parsed.email, id: { not: parsed.teacherId } },
@@ -58,11 +62,16 @@ export async function updateTeacherProfile(formData: FormData) {
   await prisma.user.update({
     where: { id: parsed.teacherId, role: Role.TEACHER },
     // Das Foto wird getrennt hochgeladen (lib/teacher-photo-actions.ts).
-    data: { email: parsed.email, bio: parsed.bio, zoomEmail: parsed.zoomEmail },
+    data: { email: parsed.email, bio: parsed.bio, zoomEmail: parsed.zoomEmail, timeZone },
   });
 
   revalidatePath("/admin");
   revalidatePath("/lehrer");
+  // Stundenplan-Zeiten haengen an der Zeitzone der Lehrkraft.
+  revalidatePath("/");
+  revalidatePath("/quran");
+  revalidatePath("/stundenplan");
+  revalidatePath("/courses/[slug]", "page");
 }
 
 const updateSiteContentSchema = z.object({
@@ -192,6 +201,7 @@ export async function regenerateAccessCode(formData: FormData) {
 function revalidateCoursePages(slug: string) {
   revalidatePath("/admin");
   revalidatePath("/teacher");
+  revalidatePath("/teacher/kurse");
   revalidatePath("/");
   revalidatePath("/quran");
   revalidatePath("/stundenplan");
