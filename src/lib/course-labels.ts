@@ -4,6 +4,7 @@
 // heraus liefert auf dem Server nur eine Client-Referenz statt der echten Werte.
 
 import { toGermanTime } from "@/lib/schedule-time";
+import { DEFAULT_TIME_ZONE } from "@/lib/time-zones";
 
 export type ScheduleSlot = {
   weekday: string;
@@ -26,6 +27,8 @@ export type CatalogCourse = {
   // Teilnehmerbegrenzung erreicht (Anzeige "Ausgebucht")
   isFull: boolean;
   scheduleSlots: ScheduleSlot[];
+  // Zeitzone der Lehrkraft, in der die Stundenplan-Zeiten gespeichert sind.
+  timeZone: string;
 };
 
 export const AGE_GROUP_LABELS: Record<string, string> = {
@@ -68,12 +71,12 @@ export function formatPrice(cents: number, currency: string) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(cents / 100);
 }
 
-// Slot-Zeiten sind in Nordzypern-Ortszeit gespeichert, angezeigt wird deutsche Zeit
+// Slot-Zeiten sind in der Ortszeit der Lehrkraft gespeichert, angezeigt wird deutsche Zeit
 // (siehe schedule-time.ts).
-export function formatSchedule(slots: ScheduleSlot[]) {
+export function formatSchedule(slots: ScheduleSlot[], timeZone: string = DEFAULT_TIME_ZONE) {
   return slots
     .map((slot) => {
-      const s = toGermanTime(slot);
+      const s = toGermanTime(slot, new Date(), timeZone);
       const day = WEEKDAY_SHORT[s.weekday] ?? s.weekday;
       const note = s.note ? ` (${s.note})` : "";
       return `${day} ${s.startTime}–${s.endTime}${note}`;

@@ -9,6 +9,9 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { createStudentInvitation, STUDENT_INVITE_TTL_DAYS } from "@/lib/invitations";
 import { prisma } from "@/lib/prisma";
+import { formatZonedDateTime, parseZonedDateTime } from "@/lib/schedule-time";
+import { resolveViewTimeZone } from "@/lib/view-time-zone";
+import { createTrialLesson, TRIAL_DURATIONS } from "@/lib/trial-lessons";
 import { createAccountInvite, INVITE_TTL_DAYS, type InviteDelivery } from "@/lib/teacher-invite";
 
 export type InviteState = {
@@ -110,29 +113,41 @@ export async function resendStaffInvite(_prev: InviteState, formData: FormData):
   }
 }
 
-const studentSchema = z.object({
-  courseId: z.string().min(1, "Bitte einen Kurs wählen."),
+const studentEntrySchema = z.object({
   name: z.string().trim().max(100),
   email: z.union([z.literal(""), z.string().trim().toLowerCase().email("Bitte eine gültige E-Mail-Adresse angeben.")]),
 });
 
-// Laedt jemanden zu einem Kurs ein. Lehrkraefte nur zu eigenen Kursen und immer zur normalen
-// Anmeldung mit Bezahlung; Admins koennen zusaetzlich "ohne Zahlung eintragen" waehlen.
-export async function inviteStudent(_prev: InviteState, formData: FormData): Promise<InviteState> {
+export type StudentInviteResult = {
+  name: string;
+  email: string;
+  ok: boolean;
+  message: string;
+  link?: string;
+  shareText?: string;
+};
+
+export type StudentInviteState = {
+  ok: boolean;
+  message: string;
+  results?: StudentInviteResult[];
+} | null;
+
+const MAX_STUDENTS_PER_INVITE = 50;
+
+// Laedt einen oder mehrere Schueler zu einem Kurs ein (Feld "students" als JSON-Liste mit
+// name und email). Lehrkraefte nur zu eigenen Kursen und immer zur normalen Anmeldung mit
+// Bezahlung; Admins koennen zusaetzlich "ohne Zahlung eintragen" waehlen. Ohne Eintrag wird
+// bei "Link erstellen" ein Link ohne Namen erzeugt.
+export async function inviteStudents(_prev: StudentInviteState, formData: FormData): Promise<StudentInviteState> {
   const session = await auth();
   if (!session || (session.user.role !== Role.ADMIN && session.user.role !== Role.TEACHER)) {
     return { ok: false, message: "Nicht berechtigt." };
   }
   const isAdmin = session.user.role === Role.ADMIN;
 
-  const parsed = studentSchema.safeParse({
-    courseId: formData.get("courseId") ?? "",
-    name: formData.get("name") ?? "",
-    email: formData.get("email") ?? "",
-  });
-  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Ungültige Eingaben." };
-  const { courseId, name, email } = parsed.data;
-
+  const courseId = text(formData, "courseId");
+  if (!courseId) return { ok: false, message: "Bitte einen Kurs wählen." };
   const course = await prisma.course.findUnique({ where: { id: courseId } });
   if (!course || (!isAdmin && course.teacherId !== session.user.id)) {
     return { ok: false, message: "Kurs nicht gefunden." };
@@ -141,35 +156,134 @@ export async function inviteStudent(_prev: InviteState, formData: FormData): Pro
     return { ok: false, message: "Der Kurs ist noch nicht veröffentlicht. Bitte erst veröffentlichen, dann einladen." };
   }
 
-  const freeEnrollment = isAdmin && formData.get("free") === "on";
-  if (!freeEnrollment && !course.stripePriceId) {
+  const isTrial = formData.get("trial") === "on";
+  const freeEnrollment = !isTrial && isAdmin && formData.get("free") === "on";
+  if (!isTrial && !freeEnrollment && !course.stripePriceId) {
     return { ok: false, message: "Für diesen Kurs ist noch kein Stripe-Preis hinterlegt, eine Anmeldung mit Bezahlung ist nicht möglich." };
   }
 
+  let raw: unknown = [];
+  try {
+    raw = JSON.parse(text(formData, "students") || "[]");
+  } catch {
+    return { ok: false, message: "Ungültige Eingaben." };
+  }
+  const parsed = z.array(studentEntrySchema).max(MAX_STUDENTS_PER_INVITE, `Höchstens ${MAX_STUDENTS_PER_INVITE} Schüler auf einmal.`).safeParse(raw);
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Ungültige Eingaben." };
+
   const mode = delivery(formData);
-  if (mode === "mail" && (!email || name.length < 2)) {
-    return { ok: false, message: "Für den Versand per E-Mail bitte Name und E-Mail-Adresse angeben." };
+  const students = parsed.data.filter((s) => s.name || s.email);
+  if (students.length === 0) {
+    if (mode === "mail") return { ok: false, message: "Bitte mindestens einen Schüler mit Name und E-Mail-Adresse eingeben." };
+    students.push({ name: "", email: "" });
+  }
+  if (mode === "mail") {
+    const missing = students.find((s) => !s.email || s.name.length < 2);
+    if (missing) {
+      return {
+        ok: false,
+        message: `Für den Versand per E-Mail braucht jeder Schüler Name und E-Mail-Adresse (fehlt bei „${missing.name || missing.email}“).`,
+      };
+    }
   }
 
+  if (isTrial) return inviteToTrial(session.user.id, course.id, students, mode, formData);
+
+  const results: StudentInviteResult[] = [];
+  for (const { name, email } of students) {
+    try {
+      const { link, mailed } = await createStudentInvitation({
+        courseId,
+        invitedById: session.user.id,
+        name: name || null,
+        email: email || null,
+        freeEnrollment,
+        delivery: mode,
+      });
+      const greeting = name ? `Salam alaykum ${name}, ` : "Salam alaykum, ";
+      results.push({
+        name,
+        email,
+        ok: true,
+        message: successMessage(mode, mailed, email || null),
+        link,
+        shareText: `${greeting}hier ist deine Einladung zum Kurs „${course.title}“ bei Islam unter Freunden${freeEnrollment ? " (für dich kostenlos)" : ""}. Der Link ist ${STUDENT_INVITE_TTL_DAYS} Tage gültig: ${link}`,
+      });
+    } catch (err) {
+      console.error("Kurs-Einladung fehlgeschlagen:", err);
+      results.push({ name, email, ok: false, message: "Die Einladung konnte nicht verschickt werden. Erstelle stattdessen einen Link." });
+    }
+  }
+
+  const okCount = results.filter((r) => r.ok).length;
+  const free = freeEnrollment ? " Die Anmeldung erfolgt ohne Zahlung (jeder Link einmal nutzbar)." : "";
+  let message: string;
+  if (results.length === 1) message = `${results[0].message}${results[0].ok ? free : ""}`;
+  else if (mode === "link") message = `${okCount} von ${results.length} Einladungslinks erstellt. Kopiere sie und schicke sie selbst weiter, z. B. per WhatsApp.${free}`;
+  else message = `${okCount} von ${results.length} Einladungen verschickt.${free}`;
+  return { ok: okCount > 0, message, results };
+}
+
+// Probestunde: ein gemeinsamer Termin fuer alle Eingeladenen. Die Uhrzeit gilt in der Zeitzone,
+// in der der Lehrer-Bereich gerade anzeigt.
+async function inviteToTrial(
+  userId: string,
+  courseId: string,
+  students: { name: string; email: string }[],
+  mode: InviteDelivery,
+  formData: FormData,
+): Promise<StudentInviteState> {
+  if (students.some((s) => s.name.length < 2)) {
+    return { ok: false, message: "Für die Probestunde braucht jeder Eingeladene einen Namen." };
+  }
+  // Gleiche Zeitzone wie die Anzeige im Lehrer-Bereich (eigene Zeitzone oder per Schalter MEZ).
+  const { timeZone } = await resolveViewTimeZone(userId);
+  let startsAt: Date;
   try {
-    const { link, mailed } = await createStudentInvitation({
+    startsAt = parseZonedDateTime(text(formData, "trialStartsAt"), timeZone);
+  } catch {
+    return { ok: false, message: "Bitte Datum und Uhrzeit der Probestunde angeben." };
+  }
+  if (startsAt.getTime() < Date.now() + 15 * 60_000) {
+    return { ok: false, message: "Die Probestunde muss in der Zukunft liegen (mindestens 15 Minuten ab jetzt)." };
+  }
+  const durationValue = Number(text(formData, "trialDuration"));
+  const durationMin = (TRIAL_DURATIONS as readonly number[]).includes(durationValue) ? durationValue : 30;
+
+  try {
+    const { results } = await createTrialLesson({
       courseId,
-      invitedById: session.user.id,
-      name: name || null,
-      email: email || null,
-      freeEnrollment,
+      createdById: userId,
+      startsAt,
+      durationMin,
+      guests: students,
       delivery: mode,
     });
-    const greeting = name ? `Salam alaykum ${name}, ` : "Salam alaykum, ";
-    const shareText = `${greeting}hier ist deine Einladung zum Kurs „${course.title}“ bei Islam unter Freunden${freeEnrollment ? " (für dich kostenlos)" : ""}. Der Link ist ${STUDENT_INVITE_TTL_DAYS} Tage gültig: ${link}`;
+    revalidatePath("/teacher/termine");
+    const when = `${formatZonedDateTime(startsAt, timeZone, "full")} Uhr`;
+    const okCount = results.filter((r) => r.ok).length;
+    const anyMailed = results.some((r) => r.mailed);
+    const mailNote =
+      mode === "mail" && !anyMailed && okCount > 0
+        ? " Kein E-Mail-Dienst eingerichtet (lokal): Die Mails stehen in der Server-Konsole."
+        : "";
     return {
-      ok: true,
-      message: `${successMessage(mode, mailed, email || null)}${freeEnrollment ? " Die Anmeldung erfolgt ohne Zahlung (einmal nutzbar)." : ""}`,
-      link,
-      shareText,
+      ok: okCount > 0,
+      message:
+        mode === "mail"
+          ? `Probestunde am ${when} angelegt, ${okCount} von ${results.length} Einladungen verschickt.${mailNote} Du findest sie unter „Termine“.`
+          : `Probestunde am ${when} angelegt. Schicke die Nachrichten selbst weiter, z. B. per WhatsApp. Du findest sie unter „Termine“.`,
+      results: results.map((r) => ({
+        name: r.name,
+        email: r.email,
+        ok: r.ok,
+        message: r.ok ? "" : "Die Einladung konnte nicht verschickt werden.",
+        shareText: r.shareText,
+      })),
     };
   } catch (err) {
-    console.error("Kurs-Einladung fehlgeschlagen:", err);
-    return { ok: false, message: "Die Einladung konnte nicht verschickt werden. Erstelle stattdessen einen Link." };
+    console.error("Probestunde konnte nicht angelegt werden:", err);
+    const detail = err instanceof Error && err.message.includes("Zoom") ? ` ${err.message}` : "";
+    return { ok: false, message: `Die Probestunde konnte nicht angelegt werden.${detail}` };
   }
 }

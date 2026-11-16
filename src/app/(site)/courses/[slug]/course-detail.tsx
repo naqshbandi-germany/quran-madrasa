@@ -10,11 +10,12 @@ import { AGE_GROUP_LABELS, WEEKDAY_LABELS } from "@/lib/course-labels";
 import { priceSummary } from "@/lib/course-pricing";
 import { miniatureFor } from "@/lib/miniatures";
 import { toGermanTime } from "@/lib/schedule-time";
+import { teacherTimeZone } from "@/lib/time-zones";
 import { SubscribeButton } from "./subscribe-button";
 import { WaitlistForm } from "./waitlist-form";
 
 export const courseDetailInclude = {
-  teacher: { select: { id: true, name: true } },
+  teacher: { select: { id: true, name: true, timeZone: true } },
   scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
   _count: { select: { enrollments: true } },
 } satisfies Prisma.CourseInclude;
@@ -76,7 +77,7 @@ export function CourseDetail({ course }: { course: CourseDetailData }) {
           <h2 className="text-2xl font-semibold text-azure-800">Wöchentlicher Unterricht</h2>
           <ul className="mt-2 space-y-1 text-sm text-brand-900">
             {course.scheduleSlots.map((rawSlot) => {
-              const slot = toGermanTime(rawSlot);
+              const slot = toGermanTime(rawSlot, new Date(), teacherTimeZone(course.teacher));
               return (
                 <li key={slot.id}>
                   {WEEKDAY_LABELS[slot.weekday] ?? slot.weekday}: {slot.startTime}–{slot.endTime}

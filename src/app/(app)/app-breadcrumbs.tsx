@@ -14,14 +14,19 @@ const STATIC_LABELS: Record<string, string> = {
   "/admin/benachrichtigungen/einstellungen": "E-Mail-Einstellungen",
   "/teacher/benachrichtigungen": "Benachrichtigungen",
   "/teacher/benachrichtigungen/einstellungen": "E-Mail-Einstellungen",
-  "/teacher": "Meine Kurse",
+  "/teacher": "Übersicht",
+  "/teacher/kurse": "Kurse",
+  "/teacher/schueler": "Schüler",
+  "/teacher/schueler/einladen": "Schüler einladen",
+  "/teacher/termine": "Termine",
+  "/teacher/profil": "Mein Profil",
   "/teacher/mediathek": "Mediathek",
   "/teacher/emails": "E-Mails",
 };
 
 // Baut die Pfadleiste aus der URL. Namen aus der Datenbank (Kurstitel, Konten, E-Mail-Texte)
 // reicht das Layout als `names` (Pfad -> Name) herein.
-function buildCrumbs(pathname: string, names: Record<string, string>, isAdmin: boolean): Crumb[] {
+function buildCrumbs(pathname: string, names: Record<string, string>): Crumb[] {
   const parts = pathname.split("/").filter(Boolean);
   const crumbs: Crumb[] = [];
   let path = "";
@@ -31,13 +36,13 @@ function buildCrumbs(pathname: string, names: Record<string, string>, isAdmin: b
     const prev = parts[i - 1];
 
     if (path === "/teacher/courses") {
-      // Admins kommen ueber "Alle Kurse" im Admin-Bereich zu einem Kurs.
-      if (isAdmin) crumbs.splice(0, crumbs.length, { label: "Admin-Bereich", href: "/admin" });
+      // Einzelne Kurse haengen unter "Kurse" (fuer Lehrkraefte und Admins).
+      crumbs.splice(0, crumbs.length, { label: "Kurse", href: "/teacher/kurse" });
       continue;
     }
     if (part === "sitzungen") continue;
-    // Mediathek und E-Mails stehen im Menue neben "Meine Kurse", nicht darunter.
-    if (path === "/teacher" && i < parts.length - 1 && parts[i + 1] !== "courses") continue;
+    // Kurse, Schueler, Mediathek usw. stehen im Menue neben der Uebersicht, nicht darunter.
+    if (path === "/teacher" && i < parts.length - 1) continue;
 
     let label = STATIC_LABELS[path] ?? names[path];
     if (!label && prev === "sitzungen") label = "Stunde auswerten";
@@ -51,9 +56,9 @@ function buildCrumbs(pathname: string, names: Record<string, string>, isAdmin: b
   return crumbs;
 }
 
-export function AppBreadcrumbs({ names, isAdmin }: { names: Record<string, string>; isAdmin: boolean }) {
+export function AppBreadcrumbs({ names }: { names: Record<string, string> }) {
   const pathname = usePathname();
-  const crumbs = buildCrumbs(pathname, names, isAdmin);
+  const crumbs = buildCrumbs(pathname, names);
 
   return (
     <nav aria-label="Pfad" className="min-w-0">

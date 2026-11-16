@@ -23,6 +23,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
   const enrolling = callbackUrl.startsWith("/courses/") || callbackUrl.startsWith("/einladung/");
 
   const [name, setName] = useState("");
+  const [muslimName, setMuslimName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [adult, setAdult] = useState(false);
@@ -62,6 +63,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: name.trim(),
+        muslimName: muslimName.trim(),
         email: email.trim(),
         password,
         adultConfirmed: true,
@@ -144,6 +146,15 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
               clearError("name");
             }}
             error={errors.name}
+          />
+          <FloatingField
+            id="signup-muslim-name"
+            name="muslimName"
+            label="Muslimischer Name (optional)"
+            autoComplete="nickname"
+            value={muslimName}
+            onChange={(event) => setMuslimName(event.target.value)}
+            hint="Optional, z. B. wenn du als Muslim einen anderen Rufnamen als im Ausweis trägst. Damit sprechen wir dich in E-Mails an."
           />
           <FloatingField
             id="signup-email"

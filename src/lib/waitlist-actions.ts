@@ -9,6 +9,7 @@ import type { ActionResult } from "@/lib/account-actions";
 import { getAppUrl } from "@/lib/app-url";
 import { getCourseCapacity } from "@/lib/course-capacity";
 import { recordEvent } from "@/lib/notifications";
+import { callName, fullName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
 import { buildEmail } from "@/lib/email-templates";
@@ -158,7 +159,7 @@ export async function removeParticipantFromCourse(enrollmentId: string): Promise
     where: { id: enrollmentId },
     include: {
       participant: { select: { id: true, name: true } },
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, muslimName: true, email: true } },
       subscription: true,
       course: { select: { id: true, slug: true, title: true } },
     },
@@ -221,7 +222,7 @@ export async function removeParticipantFromCourse(enrollmentId: string): Promise
       from: EMAIL_FROM,
       to: enrollment.user.email,
       ...(await buildEmail("participant_removed", {
-        name: enrollment.user.name,
+        name: callName(enrollment.user),
         teilnehmer: enrollment.participant.name,
         kurs: enrollment.course.title,
         abo: subscriptionInOtherAccount

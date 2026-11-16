@@ -43,7 +43,7 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
       enrollments: {
         include: {
           participant: { select: { id: true, name: true, email: true } },
-          user: { select: { name: true, email: true } },
+          user: { select: { name: true, muslimName: true, email: true } },
         },
       },
     },

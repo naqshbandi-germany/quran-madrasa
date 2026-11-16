@@ -6,6 +6,7 @@ import { OrnamentDivider } from "@/components/ornament";
 import { formatPrice, formatSchedule } from "@/lib/course-labels";
 import { MINIATURES } from "@/lib/miniatures";
 import { capacityOf } from "@/lib/course-capacity";
+import { teacherTimeZone } from "@/lib/time-zones";
 import { prisma } from "@/lib/prisma";
 
 export const metadata = { title: "Quran-Unterricht für alle Level" };
@@ -26,6 +27,7 @@ export default async function QuranPage() {
   const courses = await prisma.course.findMany({
     where: { isPublished: true, isHidden: false, slug: { in: LEVEL_SLUGS } },
     include: {
+      teacher: { select: { timeZone: true } },
       scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
       _count: { select: { enrollments: true } },
     },
@@ -114,7 +116,7 @@ export default async function QuranPage() {
                     <span className="mr-1.5 rounded-full border border-gold-400/60 px-2 py-0.5 font-medium text-azure-800">
                       {course.scheduleSlots.length}× / Woche
                     </span>
-                    {formatSchedule(course.scheduleSlots)}
+                    {formatSchedule(course.scheduleSlots, teacherTimeZone(course.teacher))}
                   </p>
                 )}
 

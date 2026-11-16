@@ -36,10 +36,11 @@ function Feedback({ result }: { result: ActionResult }) {
   );
 }
 
-export function ProfileForm({ name, email }: { name: string; email: string }) {
+export function ProfileForm({ name, muslimName, email }: { name: string; muslimName: string | null; email: string }) {
   const [state, action, pending] = useActionState(updateProfile, INITIAL);
   // Eingaben als State halten: React leert unkontrollierte Felder nach jeder Formular-Aktion.
   const [value, setValue] = useState(name);
+  const [muslim, setMuslim] = useState(muslimName ?? "");
   return (
     <form action={action} className="space-y-4 border border-gold-400/40 bg-white p-5">
       <FloatingField
@@ -51,6 +52,16 @@ export function ProfileForm({ name, email }: { name: string; email: string }) {
         value={value}
         onChange={(event) => setValue(event.target.value)}
         error={state.errors?.name}
+      />
+      <FloatingField
+        id="profile-muslim-name"
+        name="muslimName"
+        label="Muslimischer Name (optional)"
+        autoComplete="nickname"
+        value={muslim}
+        onChange={(event) => setMuslim(event.target.value)}
+        hint="Optional, z. B. wenn du als Muslim einen anderen Rufnamen als im Ausweis trägst. Damit sprechen wir dich in E-Mails an."
+        error={state.errors?.muslimName}
       />
       <div>
         <p className="text-sm text-brand-900/70">E-Mail-Adresse (Anmeldung und Zugangslinks)</p>
@@ -111,6 +122,7 @@ export function PasswordForm() {
 type EditableParticipant = {
   id: string;
   name: string;
+  muslimName: string | null;
   relation: "SELF" | "CHILD" | "OTHER";
   birthYear: number | null;
   email: string | null;
@@ -126,6 +138,7 @@ export function ParticipantEditor({ participant }: { participant: EditablePartic
   const [deleteState, deleteAction] = useActionState(deleteParticipant, INITIAL);
   // Alle Eingaben als State halten, damit sie nach einem Fehler nicht zurueckspringen.
   const [name, setName] = useState(participant.name);
+  const [muslimName, setMuslimName] = useState(participant.muslimName ?? "");
   const [email, setEmail] = useState(participant.email ?? "");
   const [birthYear, setBirthYear] = useState(participant.birthYear ? String(participant.birthYear) : "");
   const [whatsapp, setWhatsapp] = useState(participant.whatsapp ?? "");
@@ -202,6 +215,15 @@ export function ParticipantEditor({ participant }: { participant: EditablePartic
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 error={state.errors?.name}
+              />
+              <FloatingField
+                id={fid("muslimName")}
+                name="muslimName"
+                label="Muslimischer Name (optional)"
+                value={muslimName}
+                onChange={(event) => setMuslimName(event.target.value)}
+                hint="Falls die Person einen muslimischen Rufnamen trägt, sprechen wir sie damit an."
+                error={state.errors?.muslimName}
               />
               {participant.relation === "CHILD" && (
                 <FloatingField

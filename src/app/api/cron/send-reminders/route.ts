@@ -12,6 +12,7 @@ import {
   type ReminderKind,
 } from "@/lib/reminder-email";
 import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
+import { sendTrialReminders } from "@/lib/trial-lessons";
 
 export const maxDuration = 60;
 
@@ -42,8 +43,8 @@ async function findDueSessions(minutesBefore: number, windowMinutes: number, fie
         include: {
           enrollments: {
             include: {
-              user: { select: { name: true, email: true } },
-              participant: { select: { name: true, email: true } },
+              user: { select: { name: true, muslimName: true, email: true } },
+              participant: { select: { name: true, muslimName: true, email: true } },
             },
           },
         },
@@ -120,6 +121,17 @@ export async function POST(request: Request) {
   const sessionsStart = await findDueSessions(0, 8, "reminderStartSentAt");
   const sentStart = await sendRemindersFor(sessionsStart, "start", "reminderStartSentAt");
 
+  // Probestunden (Gaeste ohne Konto): 24 Stunden und 1 Stunde vorher.
+  const trialEmails =
+    (await sendTrialReminders(24 * 60, 20, "reminder24hSentAt").catch((err) => {
+      console.error("Erinnerungen an Probestunden (24 h) fehlgeschlagen:", err);
+      return 0;
+    })) +
+    (await sendTrialReminders(60, 20, "reminder1hSentAt").catch((err) => {
+      console.error("Erinnerungen an Probestunden (1 h) fehlgeschlagen:", err);
+      return 0;
+    }));
+
   // Leseproben nach Ablauf der Aufbewahrungsfrist loeschen.
   const deletedSamples = await deleteExpiredSamples().catch((err) => {
     console.error("Abgelaufene Leseproben konnten nicht geloescht werden:", err);
@@ -132,5 +144,6 @@ export async function POST(request: Request) {
     sessions1h: sessions1h.length,
     sessionsStart: sessionsStart.length,
     emailsSent: sent24h + sent1h + sentStart,
+    trialEmails,
   });
 }

@@ -8,6 +8,7 @@ import {
   eventHref,
   type EventData,
 } from "@/lib/notification-types";
+import { callName, fullName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { deliverEmail, EMAIL_FROM } from "@/lib/resend";
 
@@ -29,12 +30,12 @@ type RecordEventInput = {
 // Admins. Sollen Admins spaeter weitere Ereignisse bekommen, nur hier ergaenzen.
 async function recipientsFor(type: NotificationType, courseId: string | null | undefined) {
   if (NOTIFICATION_TYPE_INFO[type].audience === "admins") {
-    return prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true, name: true, email: true, role: true } });
+    return prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true, name: true, muslimName: true, email: true, role: true } });
   }
   if (!courseId) return [];
   const course = await prisma.course.findUnique({
     where: { id: courseId },
-    select: { teacher: { select: { id: true, name: true, email: true, role: true } } },
+    select: { teacher: { select: { id: true, name: true, muslimName: true, email: true, role: true } } },
   });
   return course ? [course.teacher] : [];
 }
@@ -85,7 +86,7 @@ export async function recordEvent(input: RecordEventInput) {
           from: EMAIL_FROM,
           to: recipient.email,
           ...(await buildEmail("staff_notification", {
-            name: recipient.name,
+            name: callName(recipient),
             titel: title,
             details: detail,
             link: `${appUrl}${href ?? base}`,

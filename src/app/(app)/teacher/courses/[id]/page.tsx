@@ -3,13 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
+import { callName, fullName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { ConfirmButton } from "@/components/confirm-button";
 import { EmailComposer } from "@/components/email-composer";
 import { CopyButton } from "@/components/copy-button";
 import { EditableRow } from "@/components/editable-row";
-import { InviteForm } from "@/components/invite-form";
-import { inviteStudent } from "@/lib/invite-actions";
 import { TrashIcon } from "@/components/icons";
 import { ParticipantsList, type ParticipantRow } from "@/components/participants-list";
 import { WaitlistContactButton } from "@/components/waitlist-contact-button";
@@ -29,7 +28,10 @@ import { blobAccess, isBlobConfigured } from "@/lib/blob";
 import { toMediaItem } from "@/lib/media-items";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
 import { formatAttendance, getProgressSummaries, type ProgressSummary } from "@/lib/progress";
-import { formatGermanDateTime, formatTeachingDateTime, toTeachingInputValue } from "@/lib/schedule-time";
+import { formatGermanDateTime, formatZonedDateTime, toZonedInputValue } from "@/lib/schedule-time";
+import { TimeZoneNotice } from "@/components/time-zone-notice";
+import { teacherTimeZone, timeZoneLabel } from "@/lib/time-zones";
+import { resolveViewTimeZone } from "@/lib/view-time-zone";
 
 const INPUT = "border border-brand-300 px-3 py-2";
 const SAVE_BUTTON = "btn-primary px-4 py-2";
@@ -71,8 +73,10 @@ function progressLine(s: ProgressSummary | undefined) {
     .join(" · ");
 }
 
-function formatDateTime(date: Date) {
-  return `${formatTeachingDateTime(date)} Ortszeit (${formatGermanDateTime(date)} deutsche Zeit)`;
+// In der angezeigten Zeitzone; ausserhalb deutscher Zeit zusaetzlich die deutsche Zeit.
+function formatDateTime(date: Date, timeZone: string) {
+  if (timeZone === "Europe/Berlin") return `${formatGermanDateTime(date)} Uhr`;
+  return `${formatZonedDateTime(date, timeZone)} Uhr (${formatGermanDateTime(date)} deutsche Zeit)`;
 }
 
 type SessionData = {
@@ -95,10 +99,12 @@ function SessionRow({
   classSession,
   courseId,
   isUpcoming,
+  timeZone,
 }: {
   classSession: SessionData;
   courseId: string;
   isUpcoming: boolean;
+  timeZone: string;
 }) {
   const linkLabel = classSession.classroomType === "JITSI" ? "Jitsi-Link" : "Zoom-Link";
   return (
@@ -107,7 +113,7 @@ function SessionRow({
         <div>
           <p className="font-medium">{classSession.title}</p>
           <p className="text-brand-600">
-            {formatDateTime(classSession.startsAt)} · {classSession.durationMin} Min. ·{" "}
+            {formatDateTime(classSession.startsAt, timeZone)} · {classSession.durationMin} Min. ·{" "}
             {classSession.joinUrl ? (
               <a href={classSession.joinUrl} className="underline">
                 {linkLabel}
@@ -151,12 +157,12 @@ function SessionRow({
           className={`col-span-full ${INPUT}`}
         />
         <label className="flex flex-col text-brand-700">
-          Beginn (Ortszeit Nordzypern)
+          Beginn
           <input
             name="startsAt"
             type="datetime-local"
             required
-            defaultValue={toTeachingInputValue(classSession.startsAt)}
+            defaultValue={toZonedInputValue(classSession.startsAt, timeZone)}
             className={`mt-1 ${INPUT}`}
           />
         </label>
@@ -202,10 +208,11 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
       },
       scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
       enrollments: {
-        include: { participant: true, user: { select: { name: true, email: true } } },
+        include: { participant: true, user: { select: { name: true, muslimName: true, email: true } } },
         orderBy: { createdAt: "asc" },
       },
       waitlist: { orderBy: { createdAt: "asc" } },
+      teacher: { select: { timeZone: true } },
     },
   });
   if (!course) notFound();
@@ -213,14 +220,17 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
   // Lehrer sehen nur ihre eigenen Kurse (Teilnehmerdaten), Admins alle.
   const session = await auth();
   if (session?.user.role !== "ADMIN" && session?.user.id !== course.teacherId) notFound();
+  const { timeZone: viewTimeZone, ownTimeZone, showingOwn } = await resolveViewTimeZone(session!.user.id);
+  // Stundenplan-Eintraege gelten immer in der Zeitzone der Lehrkraft des Kurses.
+  const courseTimeZone = teacherTimeZone(course.teacher);
 
   // WhatsApp-Nummern nur mit Einwilligung, je Nummer einmal (Geschwister teilen oft die Nummer).
   const whatsappMembers: { id: string; name: string; whatsapp: string }[] = [];
   for (const { participant } of course.enrollments) {
     if (!participant.whatsapp || !participant.whatsappConsentAt) continue;
     const existing = whatsappMembers.find((m) => m.whatsapp === participant.whatsapp);
-    if (existing) existing.name += `, ${participant.name}`;
-    else whatsappMembers.push({ id: participant.id, name: participant.name, whatsapp: participant.whatsapp });
+    if (existing) existing.name += `, ${fullName(participant)}`;
+    else whatsappMembers.push({ id: participant.id, name: fullName(participant), whatsapp: participant.whatsapp });
   }
 
   const capacity = capacityOf(course.maxParticipants, course.enrollments.length);
@@ -232,7 +242,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
   const participantRows: ParticipantRow[] = course.enrollments.map(({ id, participant, user, createdAt }) => ({
     progress: progressLine(progress.get(participant.id)),
     enrollmentId: id,
-    name: participant.name,
+    name: fullName(participant),
     detail:
       participant.relation === "CHILD"
         ? `(Kind${participant.birthYear ? `, Jahrgang ${participant.birthYear}` : ""})`
@@ -271,6 +281,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-azure-800">{course.title}</h1>
+      <TimeZoneNotice timeZone={viewTimeZone} ownTimeZone={ownTimeZone} showingOwn={showingOwn} />
 
       <section aria-labelledby="begrenzung" className="space-y-3">
         <h2 id="begrenzung" className="font-semibold text-azure-800">
@@ -318,35 +329,20 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         <ParticipantsList rows={participantRows} />
       </section>
 
-      <section aria-labelledby="einladen" className="space-y-3">
+      <section aria-labelledby="einladen" className="space-y-2">
         <h2 id="einladen" className="font-semibold text-azure-800">
           Schüler einladen
         </h2>
-        <div className="border border-gold-400/40 bg-white p-4 text-sm">
-          <p className="mb-3 text-brand-600">
-            Der Link (14 Tage gültig) führt direkt zur Anmeldung für diesen Kurs, auch wenn er
-            versteckt ist. Wer noch kein Konto hat, legt dabei eines an; bezahlt wird wie gewohnt.
-            Name und E-Mail brauchst du nur für den Versand per E-Mail. Für WhatsApp erstellst du
-            einen Link und schickst ihn selbst weiter.
+        {course.isPublished ? (
+          <p className="text-sm text-brand-700">
+            Zur Anmeldung oder zu einer kostenlosen Probestunde, auch mehrere auf einmal:{" "}
+            <Link href={`/teacher/schueler/einladen?kurs=${course.id}`} className="font-medium underline">
+              Schüler einladen
+            </Link>
           </p>
-          {!course.isPublished ? (
-            <p className="text-brand-800">Einladen ist möglich, sobald der Kurs veröffentlicht ist.</p>
-          ) : (
-            <InviteForm action={inviteStudent}>
-              <input type="hidden" name="courseId" value={course.id} />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input name="name" placeholder="Name (optional)" className={INPUT} />
-                <input name="email" type="email" placeholder="E-Mail-Adresse (optional)" className={INPUT} />
-              </div>
-              {session?.user.role === "ADMIN" && (
-                <label className="flex items-center gap-2 text-brand-800">
-                  <input type="checkbox" name="free" className="h-4 w-4" />
-                  Ohne Zahlung eintragen (nur Admins, Link einmal nutzbar)
-                </label>
-              )}
-            </InviteForm>
-          )}
-        </div>
+        ) : (
+          <p className="text-sm text-brand-800">Einladen ist möglich, sobald der Kurs veröffentlicht ist.</p>
+        )}
       </section>
 
       <section aria-labelledby="warteliste" className="space-y-4">
@@ -392,8 +388,8 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         <h2 className="font-semibold text-azure-800">Wöchentlicher Stundenplan</h2>
         <p className="text-sm text-brand-600">
           Feste Wochentermine für das Kursangebot (z.B. &bdquo;Mittwoch 18:00–18:40&ldquo;) –
-          unabhängig von den einzelnen Sitzungen mit Meeting-Link unten. Uhrzeiten bitte in
-          Ortszeit Nordzypern (UTC+3) eintragen; auf der Website werden sie automatisch in
+          unabhängig von den einzelnen Sitzungen mit Meeting-Link unten. Uhrzeiten in der Zeitzone
+          der Lehrkraft ({timeZoneLabel(courseTimeZone)}); auf der Website werden sie automatisch in
           deutsche Zeit umgerechnet.
         </p>
 
@@ -486,7 +482,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         )}
         <ul className="space-y-2">
           {upcomingSessions.map((classSession) => (
-            <SessionRow key={sessionKey(classSession)} classSession={classSession} courseId={course.id} isUpcoming />
+            <SessionRow key={sessionKey(classSession)} classSession={classSession} courseId={course.id} isUpcoming timeZone={viewTimeZone} />
           ))}
         </ul>
         {pastSessions.length > 0 && (
@@ -501,6 +497,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                   classSession={classSession}
                   courseId={course.id}
                   isUpcoming={false}
+                  timeZone={viewTimeZone}
                 />
               ))}
             </ul>
@@ -510,8 +507,8 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
         <div className="border border-gold-400/40 bg-white p-5">
           <h3 className="mb-4 font-semibold text-azure-800">Einzelne Sitzung anlegen</h3>
           <p className="mb-3 text-sm text-brand-600">
-            Ohne eigenen Link wird automatisch {meetingDescription} erzeugt. Beginn bitte in
-            Ortszeit Nordzypern angeben.
+            Ohne eigenen Link wird automatisch {meetingDescription} erzeugt. Beginn in der oben
+            angezeigten Zeitzone.
           </p>
           <form action={createClassSession} className="grid gap-3 sm:grid-cols-2">
             <input type="hidden" name="courseId" value={course.id} />
@@ -522,7 +519,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               className="col-span-full border border-brand-300 px-3 py-2"
             />
             <label className="flex flex-col text-sm text-brand-700">
-              Beginn (Ortszeit Nordzypern)
+              Beginn
               <input
                 name="startsAt"
                 type="datetime-local"
@@ -557,7 +554,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
           <h3 className="mb-1 font-semibold text-azure-800">Wiederkehrende Sitzungen anlegen</h3>
           <p className="mb-3 text-sm text-brand-600">
             Legt mehrere Termine auf einmal an, jeweils mit eigenem, automatisch erzeugtem
-            Meeting-Link ({meetingKind}). Datum und Uhrzeit in Ortszeit Nordzypern.
+            Meeting-Link ({meetingKind}). Datum und Uhrzeit in der oben angezeigten Zeitzone.
           </p>
           <form action={createRecurringSessions} className="grid gap-3 sm:grid-cols-3">
             <input type="hidden" name="courseId" value={course.id} />
@@ -652,7 +649,7 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               title: course.title,
               participants: course.enrollments.map(({ participant, user }) => ({
                 id: participant.id,
-                name: participant.name,
+                name: fullName(participant),
                 detail: participant.email
                   ? `(${participant.email})`
                   : `(Mail an ${user.name}, ${user.email})`,

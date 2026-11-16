@@ -1,4 +1,5 @@
 import { ConfirmButton } from "@/components/confirm-button";
+import { fullName } from "@/lib/names";
 import { deleteReadingSample, reviewReadingSample } from "@/lib/reading-sample-actions";
 import { formatGermanDateTime } from "@/lib/schedule-time";
 
@@ -30,7 +31,7 @@ export function ReadingSampleReviewList({ samples }: { samples: ReviewSample[] }
         >
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="font-medium text-brand-900">
-              {s.participant.name}
+              {fullName(s.participant)}
               <span className="font-normal text-brand-600">
                 {" "}
                 · {formatGermanDateTime(s.createdAt)} Uhr{formatDuration(s.durationSec)}
@@ -49,7 +50,7 @@ export function ReadingSampleReviewList({ samples }: { samples: ReviewSample[] }
               maxLength={2000}
               defaultValue={s.teacherComment ?? ""}
               placeholder="Rückmeldung an den Teilnehmer (optional)"
-              aria-label={`Rückmeldung an ${s.participant.name}`}
+              aria-label={`Rückmeldung an ${fullName(s.participant)}`}
               className="w-full border border-brand-300 px-3 py-2"
             />
             <div className="flex flex-wrap items-center gap-4">
@@ -63,7 +64,7 @@ export function ReadingSampleReviewList({ samples }: { samples: ReviewSample[] }
           <form action={deleteReadingSample}>
             <input type="hidden" name="sampleId" value={s.id} />
             <ConfirmButton
-              message={`Leseprobe von ${s.participant.name} endgültig löschen?`}
+              message={`Leseprobe von ${fullName(s.participant)} endgültig löschen?`}
               className="text-xs font-medium text-red-800 underline hover:text-red-700"
             >
               Löschen
@@ -82,6 +83,6 @@ export const REVIEW_SAMPLE_SELECT = {
   note: true,
   listenedAt: true,
   teacherComment: true,
-  participant: { select: { name: true } },
+  participant: { select: { name: true, muslimName: true } },
   session: { select: { title: true, startsAt: true } },
 } as const;

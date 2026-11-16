@@ -396,6 +396,74 @@ export const EMAIL_TEMPLATES = {
       footer: "Diese E-Mail wurde automatisch verschickt. Welche Ereignisse du per E-Mail bekommst, stellst du hier ein: {{einstellungen}}",
     },
   },
+  trial_invite: {
+    label: "Einladung zur Probestunde",
+    group: "Probestunde",
+    description:
+      "Wenn eine Lehrkraft oder ein Admin jemanden zu einer kostenlosen Probestunde einlädt. Mit Kalendereintrag im Anhang.",
+    placeholders: [
+      { key: "name", label: "Name der eingeladenen Person", example: "Yusuf" },
+      KURS,
+      LEHRER,
+      { key: "datum", label: "Datum und Uhrzeit der Probestunde", example: "Freitag, 14. November 2026 um 18:00 Uhr (deutsche Zeit)" },
+      { key: "dauer", label: "Dauer in Minuten", example: "30" },
+      { key: "link", label: "Link zum Unterrichtsraum (Ziel des Buttons)", example: "https://meet.jit.si/islamunterfreunden-probestunde-abc123" },
+      BUTTON,
+    ],
+    hasButton: true,
+    defaults: {
+      subject: "Einladung zur Probestunde: „{{kurs}}“",
+      body: [
+        GREETING,
+        "{{lehrer}} lädt dich zu einer kostenlosen Probestunde im Kurs **{{kurs}}** ein.",
+        "**Wann:** {{datum}}\n**Dauer:** {{dauer}} Minuten",
+        "Zur Probestunde kommst du über diesen Link, ein Konto brauchst du nicht. Den Termin findest du auch im Anhang für deinen Kalender. Wir erinnern dich einen Tag und eine Stunde vorher.",
+        "{{button}}",
+      ].join("\n\n"),
+      buttonLabel: "Zur Probestunde",
+      footer: CONTACT_FOOTER,
+    },
+  },
+  trial_reminder: {
+    label: "Erinnerung an die Probestunde",
+    group: "Probestunde",
+    description: "Automatisch 24 Stunden und 1 Stunde vor der Probestunde an alle eingeladenen Personen.",
+    placeholders: [
+      { key: "name", label: "Name der eingeladenen Person", example: "Yusuf" },
+      KURS,
+      { key: "wann", label: "„morgen“ oder „in einer Stunde“", example: "morgen" },
+      { key: "datum", label: "Datum und Uhrzeit der Probestunde", example: "Freitag, 14. November 2026 um 18:00 Uhr (deutsche Zeit)" },
+      { key: "link", label: "Link zum Unterrichtsraum (Ziel des Buttons)", example: "https://meet.jit.si/islamunterfreunden-probestunde-abc123" },
+      BUTTON,
+    ],
+    hasButton: true,
+    defaults: {
+      subject: "Erinnerung: Probestunde „{{kurs}}“ {{wann}}",
+      body: [GREETING, "deine Probestunde im Kurs **{{kurs}}** ist {{wann}}.", "**Wann:** {{datum}}", "{{button}}"].join("\n\n"),
+      buttonLabel: "Zur Probestunde",
+      footer: CONTACT_FOOTER,
+    },
+  },
+  trial_cancelled: {
+    label: "Probestunde abgesagt",
+    group: "Probestunde",
+    description: "Wenn eine Probestunde unter „Termine“ abgesagt wird, an alle eingeladenen Personen.",
+    placeholders: [
+      { key: "name", label: "Name der eingeladenen Person", example: "Yusuf" },
+      KURS,
+      { key: "datum", label: "Datum und Uhrzeit der abgesagten Probestunde", example: "Freitag, 14. November 2026 um 18:00 Uhr (deutsche Zeit)" },
+    ],
+    hasButton: false,
+    defaults: {
+      subject: "Probestunde abgesagt: „{{kurs}}“",
+      body: [
+        GREETING,
+        "die Probestunde im Kurs **{{kurs}}** am {{datum}} muss leider ausfallen. Die Lehrkraft meldet sich mit einem neuen Termin bei dir.",
+      ].join("\n\n"),
+      buttonLabel: "",
+      footer: CONTACT_FOOTER,
+    },
+  },
 } as const satisfies Record<string, TemplateDefinition>;
 
 export type EmailTemplateKey = keyof typeof EMAIL_TEMPLATES;
@@ -406,7 +474,7 @@ export type EmailValues<K extends EmailTemplateKey> = Record<
   string
 >;
 
-export const EMAIL_GROUPS = ["Kurs und Termine", "Zahlung und Abo", "Warteliste", "Konto", "Benachrichtigungen"] as const;
+export const EMAIL_GROUPS = ["Kurs und Termine", "Zahlung und Abo", "Warteliste", "Konto", "Probestunde", "Benachrichtigungen"] as const;
 
 export function isEmailTemplateKey(key: string): key is EmailTemplateKey {
   return Object.prototype.hasOwnProperty.call(EMAIL_TEMPLATES, key);

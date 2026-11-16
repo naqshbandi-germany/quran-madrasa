@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { getAppUrl } from "@/lib/app-url";
 import { buildEmail } from "@/lib/email-templates";
 import { hashResetToken } from "@/lib/password-reset";
+import { callName, fullName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
 
@@ -41,7 +42,7 @@ export async function createAccountInvite(
   if (delivery === "link") return { link, mailed: false };
 
   const email = await buildEmail(user.role === "ADMIN" ? "admin_invite" : "teacher_invite", {
-    name: user.name,
+    name: callName(user),
     email: user.email,
     link,
     tage: String(INVITE_TTL_DAYS),

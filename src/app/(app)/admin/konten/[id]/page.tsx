@@ -22,7 +22,7 @@ export default async function DeleteAccountPage({ params }: { params: Promise<{ 
       email: true,
       role: true,
       participants: { select: { name: true, _count: { select: { readingSamples: true } } } },
-      enrollments: { select: { participant: { select: { name: true } }, course: { select: { title: true } } } },
+      enrollments: { select: { participant: { select: { name: true, muslimName: true } }, course: { select: { title: true } } } },
       subscriptions: { where: { status: { not: "CANCELED" } }, select: { id: true } },
       taughtCourses: {
         orderBy: { title: "asc" },

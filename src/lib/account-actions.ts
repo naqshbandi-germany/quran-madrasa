@@ -38,12 +38,14 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
 
   if (name.length < 2) return { ok: false, errors: { name: "Bitte gib deinen Namen ein." } };
   if (name.length > 80) return { ok: false, errors: { name: "Der Name ist zu lang." } };
+  const muslimName = text(formData, "muslimName").trim().replace(/\s+/g, " ") || null;
+  if (muslimName && muslimName.length > 80) return { ok: false, errors: { muslimName: "Der Name ist zu lang." } };
 
-  const user = await prisma.user.update({ where: { id: userId }, data: { name } });
+  const user = await prisma.user.update({ where: { id: userId }, data: { name, muslimName } });
   // Der Teilnehmer "Du selbst" folgt dem Namen des Kontos.
   await prisma.participant.updateMany({
     where: { ownerId: user.id, relation: "SELF" },
-    data: { name },
+    data: { name, muslimName },
   });
 
   revalidatePath("/konto");
@@ -92,6 +94,7 @@ export async function updateParticipant(_prev: ActionResult, formData: FormData)
     relation: participant.relation,
     // "Du selbst" folgt dem Konto: Name und E-Mail sind dort festgelegt.
     name: isSelf ? participant.name : text(formData, "name"),
+    muslimName: isSelf ? (participant.muslimName ?? "") : text(formData, "muslimName"),
     email: isSelf ? (participant.email ?? "") : text(formData, "email"),
     birthYear: participant.relation === "CHILD" ? text(formData, "birthYear") : "",
     whatsapp: text(formData, "whatsapp"),
@@ -114,6 +117,7 @@ export async function updateParticipant(_prev: ActionResult, formData: FormData)
     where: { id },
     data: {
       name: clean.name,
+      muslimName: clean.muslimName,
       email: clean.email,
       birthYear: clean.birthYear,
       whatsapp: clean.whatsapp,

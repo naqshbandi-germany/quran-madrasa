@@ -35,7 +35,7 @@ export default async function AccountPage() {
         <h2 id="profil" className="text-2xl font-semibold text-azure-800">
           Profil
         </h2>
-        <ProfileForm name={user.name} email={user.email} />
+        <ProfileForm name={user.name} muslimName={user.muslimName} email={user.email} />
       </section>
 
       <section aria-labelledby="passwort" className="space-y-4">
@@ -75,6 +75,7 @@ export default async function AccountPage() {
                   participant={{
                     id: participant.id,
                     name: participant.name,
+                    muslimName: participant.muslimName,
                     relation: participant.relation,
                     birthYear: participant.birthYear,
                     email: participant.email,

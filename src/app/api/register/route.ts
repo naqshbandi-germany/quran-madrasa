@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 
 const registerSchema = z.object({
   name: z.string().trim().min(2).max(100),
+  muslimName: z.string().trim().max(80).optional(),
   email: z.string().trim().email().max(254),
   password: z.string().refine(passwordMeetsRules),
   // Pflicht-Bestaetigungen, deren Zeitpunkt gespeichert wird
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Ungültige Eingaben." }, { status: 400 });
   }
 
-  const { name, email, password } = parsed.data;
+  const { name, muslimName, email, password } = parsed.data;
   const normalizedEmail = email.toLowerCase();
 
   const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
   await prisma.user.create({
     data: {
       name,
+      muslimName: muslimName || null,
       email: normalizedEmail,
       passwordHash,
       role: Role.STUDENT,

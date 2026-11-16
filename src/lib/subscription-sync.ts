@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 
 import { sendEnrollmentConfirmation } from "@/lib/notification-email";
 import { recordEvent } from "@/lib/notifications";
+import { callName, fullName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 
 function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionStatus {
@@ -112,7 +113,7 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
     const self =
       (await prisma.participant.findFirst({ where: { ownerId: userId, relation: "SELF" } })) ??
       (await prisma.participant.create({
-        data: { ownerId: userId, name: owner.name, relation: "SELF", email: owner.email },
+        data: { ownerId: userId, name: owner.name, muslimName: owner.muslimName, relation: "SELF", email: owner.email },
       }));
     participantIds = [self.id];
   }
@@ -178,12 +179,12 @@ async function subscriptionEventData(
     prisma.enrollment.findMany({
       where: enrollmentIds ? { id: { in: enrollmentIds } } : { subscriptionId },
       orderBy: { createdAt: "asc" },
-      select: { participant: { select: { name: true } } },
+      select: { participant: { select: { name: true, muslimName: true } } },
     }),
   ]);
   return {
     course: course?.title,
     owner: owner?.name,
-    participants: enrollments.map((e) => e.participant.name),
+    participants: enrollments.map((e) => fullName(e.participant)),
   };
 }

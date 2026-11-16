@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { GridIcon, LibraryIcon, MailIcon, XIcon } from "@/components/icons";
 import { AppSignOutButton } from "./app-sign-out-button";
 
-export type NavIcon = "grid" | "book" | "users" | "template" | "library" | "mail" | "bell";
+export type NavIcon = "grid" | "book" | "users" | "template" | "library" | "mail" | "bell" | "student" | "calendar";
 // badge: Zahl neben dem Eintrag, z. B. ungelesene Benachrichtigungen (0 = keine Anzeige).
 export type NavLink = { href: string; label: string; icon: NavIcon; badge?: number };
 export type NavGroup = { title: string; links: NavLink[] };
@@ -53,6 +53,18 @@ const ICONS: Record<NavIcon, React.ReactNode> = {
       <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
     </Svg>
   ),
+  calendar: (
+    <Svg>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4M8 3v4M3 11h18" />
+    </Svg>
+  ),
+  student: (
+    <Svg>
+      <path d="M22 10 12 5 2 10l10 5 10-5Z" />
+      <path d="M6 12v5c3 2 9 2 12 0v-5" />
+    </Svg>
+  ),
   template: (
     <Svg>
       <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -70,7 +82,9 @@ function MenuIcon() {
 }
 
 // Aktiv ist der Eintrag mit dem laengsten passenden Pfad (/admin/konten vor /admin).
-function activeHref(pathname: string, groups: NavGroup[]) {
+function activeHref(rawPathname: string, groups: NavGroup[]) {
+  // Einzelne Kurse (/teacher/courses/...) gehoeren zum Menuepunkt "Kurse".
+  const pathname = rawPathname.startsWith("/teacher/courses/") ? "/teacher/kurse" : rawPathname;
   const matches = groups
     .flatMap((g) => g.links.map((l) => l.href))
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`));

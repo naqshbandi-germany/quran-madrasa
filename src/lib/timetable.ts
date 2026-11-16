@@ -6,6 +6,7 @@ import {
   toGermanTimeRange,
 } from "@/lib/schedule-time";
 import type { IconName } from "@/lib/timetable-art";
+import { DEFAULT_TIME_ZONE, teacherTimeZone } from "@/lib/time-zones";
 
 export type BlockPalette = { bg: string; border: string; text: string };
 
@@ -32,6 +33,8 @@ type TimetableCourse = {
   title: string;
   category: string;
   scheduleSlots: { weekday: string; startTime: string; endTime: string; note: string | null }[];
+  // Lehrkraft des Kurses: die Stundenplan-Zeiten gelten in ihrer Zeitzone.
+  teacher?: { timeZone: string | null } | null;
 };
 
 // 5-Minuten-Raster, damit auch Termine wie 15:50 oder 17:40 exakt im Raster liegen.
@@ -102,7 +105,7 @@ export function buildTimetable(courses: TimetableCourse[], now: Date = new Date(
     const icon = ICON_BY_KEY[key] ?? "book";
 
     for (const rawSlot of course.scheduleSlots) {
-      const slot = toGermanTime(rawSlot, now);
+      const slot = toGermanTime(rawSlot, now, teacherTimeZone(course.teacher));
       const startMinutes = timeToMinutes(slot.startTime);
       const endMinutes = timeToMinutes(slot.endTime);
       blocks.push({
@@ -140,13 +143,17 @@ export function buildTimetable(courses: TimetableCourse[], now: Date = new Date(
   }
   legend.sort((a, b) => PALETTES.indexOf(a.palette) - PALETTES.indexOf(b.palette));
 
+  // Hinweis auf Lehrkraefte in anderen Zeitzonen (z. B. Nordzypern), damit die Zeiten klar sind.
+  const otherZones = [...new Set(courses.map((c) => teacherTimeZone(c.teacher)))].filter((tz) => tz !== DEFAULT_TIME_ZONE);
   const footnotes = [
-    `Alle Zeiten in deutscher Zeit (MEZ/MESZ). Der Unterricht findet zu festen Zeiten in Nordzypern statt (Ortszeit UTC+3, ohne Zeitumstellung); dort ist es aktuell ${pluralHours(hoursAheadOfGermany(now))} später als in Deutschland.`,
+    otherZones.includes("Europe/Istanbul")
+      ? `Alle Zeiten in deutscher Zeit (MEZ/MESZ). Ein Teil des Unterrichts findet zu festen Zeiten in Nordzypern statt (Ortszeit UTC+3, ohne Zeitumstellung); dort ist es aktuell ${pluralHours(hoursAheadOfGermany("Europe/Istanbul", now))} später als in Deutschland.`
+      : "Alle Zeiten in deutscher Zeit (MEZ/MESZ).",
   ];
   const alternatives = ALTERNATIVE_TIMES.flatMap((alt) => {
     const course = courses.find((c) => c.slug === alt.slug);
     if (!course || !blocks.some((b) => b.slug === alt.slug)) return [];
-    const range = toGermanTimeRange(alt.startTime, alt.endTime, now);
+    const range = toGermanTimeRange(alt.startTime, alt.endTime, now, teacherTimeZone(course.teacher));
     return [`${course.title}: ${range.startTime}–${range.endTime} Uhr`];
   });
   if (alternatives.length > 0) {

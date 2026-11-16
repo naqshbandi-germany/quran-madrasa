@@ -107,7 +107,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
                       <span className="mr-1.5 rounded-full border border-gold-400/60 px-2 py-0.5 font-medium text-azure-800">
                         {course.scheduleSlots.length}× / Woche
                       </span>
-                      {formatSchedule(course.scheduleSlots)}
+                      {formatSchedule(course.scheduleSlots, course.timeZone)}
                     </p>
                   )}
 
