@@ -8,7 +8,7 @@ import { isZoomProvider } from "@/lib/classroom";
 import { WEEKDAY_LABELS } from "@/lib/course-labels";
 import { requireManagedCourse } from "@/lib/course-manage";
 import { prisma } from "@/lib/prisma";
-import { formatGermanDateTime, formatZonedDateTime, toZonedInputValue } from "@/lib/schedule-time";
+import { convertSlotZone, formatGermanDateTime, formatZonedDateTime, toZonedInputValue } from "@/lib/schedule-time";
 import {
   createClassSession,
   createRecurringSessions,
@@ -164,7 +164,7 @@ function WeekdaySelect({ defaultValue }: { defaultValue?: string }) {
 // woechentliche Stundenplan fuer die Website und die Leseproben.
 export default async function CourseSessionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, course } = await requireManagedCourse(id);
+  const { session, course, isAdmin } = await requireManagedCourse(id);
   const { timeZone: viewTimeZone, ownTimeZone, showingOwn } = await resolveViewTimeZone(session.user.id);
 
   const [sessions, scheduleSlots, teacher, unheardSamples] = await Promise.all([
@@ -179,6 +179,9 @@ export default async function CourseSessionsPage({ params }: { params: Promise<{
   ]);
   // Stundenplan-Eintraege gelten immer in der Zeitzone der Lehrkraft des Kurses.
   const courseTimeZone = teacherTimeZone(teacher ?? { timeZone: null });
+  // Admins sehen und bearbeiten den Stundenplan in deutscher Zeit (Umrechnung beim Speichern).
+  const slotZone = isAdmin ? "Europe/Berlin" : courseTimeZone;
+  const slots = scheduleSlots.map((slot) => convertSlotZone(slot, courseTimeZone, slotZone));
 
   const now = new Date();
   const upcomingSessions = sessions.filter((s) => s.startsAt >= now);
@@ -186,6 +189,8 @@ export default async function CourseSessionsPage({ params }: { params: Promise<{
 
   const zoom = isZoomProvider();
   const meetingKind = zoom ? "Zoom" : "Jitsi";
+  // Hinweis zur Zeitzone nur, wenn nicht ohnehin deutsche Zeit gilt (Lehrkraft mit eigener Zeitzone).
+  const zoneHint = viewTimeZone === "Europe/Berlin" ? "" : ` Datum und Uhrzeit in ${timeZoneLabel(viewTimeZone)}.`;
   const meetingDescription = zoom ? "ein Zoom-Meeting im Zoom-Konto des Lehrers" : "ein kostenloser Jitsi-Meeting-Link";
 
   return (
@@ -227,8 +232,7 @@ export default async function CourseSessionsPage({ params }: { params: Promise<{
         <div className="border border-gold-400/40 bg-white p-5">
           <h3 className="mb-4 font-semibold text-azure-800">Einzelne Sitzung anlegen</h3>
           <p className="mb-3 text-sm text-brand-600">
-            Ohne eigenen Link wird automatisch {meetingDescription} erzeugt. Beginn in der oben angezeigten
-            Zeitzone.
+            Ohne eigenen Link wird automatisch {meetingDescription} erzeugt. {zoneHint}
           </p>
           <form action={createClassSession} className="grid gap-3 sm:grid-cols-2">
             <input type="hidden" name="courseId" value={course.id} />
@@ -260,7 +264,7 @@ export default async function CourseSessionsPage({ params }: { params: Promise<{
           <h3 className="mb-1 font-semibold text-azure-800">Wiederkehrende Sitzungen anlegen</h3>
           <p className="mb-3 text-sm text-brand-600">
             Legt mehrere Termine auf einmal an, jeweils mit eigenem, automatisch erzeugtem Meeting-Link (
-            {meetingKind}). Datum und Uhrzeit in der oben angezeigten Zeitzone.
+            {meetingKind}).{zoneHint}
           </p>
           <form action={createRecurringSessions} className="grid gap-3 sm:grid-cols-3">
             <input type="hidden" name="courseId" value={course.id} />
@@ -301,12 +305,14 @@ export default async function CourseSessionsPage({ params }: { params: Promise<{
         <h2 className="font-semibold text-azure-800">Wöchentlicher Stundenplan</h2>
         <p className="text-sm text-brand-600">
           Feste Wochentermine für das Kursangebot (z.B. &bdquo;Mittwoch 18:00–18:40&ldquo;) – unabhängig von den
-          einzelnen Sitzungen mit Meeting-Link oben. Uhrzeiten in der Zeitzone der Lehrkraft (
-          {timeZoneLabel(courseTimeZone)}); auf der Website werden sie automatisch in deutsche Zeit umgerechnet.
+          einzelnen Sitzungen mit Meeting-Link oben.
+          {slotZone === "Europe/Berlin"
+            ? ""
+            : ` Uhrzeiten immer in deiner Ortszeit (${timeZoneLabel(slotZone)}), auch wenn oben MEZ gewählt ist; auf der Website werden sie automatisch in deutsche Zeit umgerechnet.`}
         </p>
 
         <ul className="space-y-2">
-          {scheduleSlots.map((slot) => (
+          {slots.map((slot) => (
             <EditableRow
               key={`${slot.id}-${slot.weekday}-${slot.startTime}-${slot.endTime}-${slot.note ?? ""}`}
               summary={
