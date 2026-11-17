@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { TrashIcon } from "@/components/icons";
@@ -18,6 +19,10 @@ export type ParticipantRow = {
   since: string;
   // Anwesenheit und Lernstand, z. B. "8 von 10 Stunden anwesend · Sure 67 Al-Mulk, Vers 12"
   progress?: string;
+  // Schuelerprofil mit Hoerproben und Lernfortschritt; ohne Link ist der Name nicht klickbar.
+  profileHref?: string;
+  // "Nachricht schreiben" mit diesem Teilnehmer als Empfaenger.
+  messageHref?: string;
 };
 
 type Offer = NonNullable<RemoveParticipantResult["next"]>;
@@ -63,27 +68,38 @@ export function ParticipantsList({ rows }: { rows: ParticipantRow[] }) {
       ) : (
         <ul className="divide-y divide-brand-100 border border-gold-400/40 bg-white text-sm">
           {rows.map((row) => (
-            <li key={row.enrollmentId} className="flex items-start justify-between gap-4 px-4 py-3">
+            <li key={row.enrollmentId} className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2 px-4 py-3">
               <div className="min-w-0">
-                <p className="font-medium text-brand-900">
-                  {row.name}{" "}
-                  {row.detail && <span className="font-normal text-brand-600">{row.detail}</span>}
+                <p className="text-lg font-semibold leading-snug text-brand-900">
+                  {row.profileHref ? (
+                    <Link href={row.profileHref} className="hover:text-azure-800 hover:underline">
+                      {row.name}
+                    </Link>
+                  ) : (
+                    row.name
+                  )}{" "}
+                  {row.detail && <span className="text-sm font-normal text-brand-600">{row.detail}</span>}
                 </p>
-                <p className="text-brand-600">
-                  {row.contact}
-                  {" · "}angemeldet am {row.since}
-                </p>
+                <p className="break-all text-brand-600">{row.contact}</p>
+                <p className="text-xs text-brand-600">angemeldet am {row.since}</p>
                 {row.progress && <p className="text-xs text-brand-700">{row.progress}</p>}
               </div>
-              <button
-                type="button"
-                onClick={() => remove(row)}
-                disabled={pendingId === row.enrollmentId}
-                className="inline-flex shrink-0 items-center gap-1.5 font-medium text-red-800 hover:text-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 disabled:opacity-60"
-              >
-                <TrashIcon />
-                {pendingId === row.enrollmentId ? "Wird entfernt …" : "Aus Kurs entfernen"}
-              </button>
+              <div className="flex shrink-0 flex-wrap items-center gap-4">
+                {row.messageHref && (
+                  <Link href={row.messageHref} className="font-medium text-azure-800 underline">
+                    Nachricht schreiben
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={() => remove(row)}
+                  disabled={pendingId === row.enrollmentId}
+                  className="inline-flex items-center gap-1.5 font-medium text-red-800 hover:text-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 disabled:opacity-60"
+                >
+                  <TrashIcon />
+                  {pendingId === row.enrollmentId ? "Wird entfernt …" : "Aus Kurs entfernen"}
+                </button>
+              </div>
             </li>
           ))}
         </ul>

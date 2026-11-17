@@ -19,6 +19,7 @@ async function loadSample(id: string) {
 
 function revalidateSamplePages(courseId: string) {
   revalidatePath(`/teacher/courses/${courseId}`, "layout");
+  revalidatePath("/teacher/schueler", "layout");
   revalidatePath("/dashboard", "layout");
 }
 

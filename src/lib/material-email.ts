@@ -8,8 +8,13 @@ export function materialEmailHtml(params: {
   message: string;
   attachmentNames?: string[];
   links?: { name: string; url: string }[];
+  // Optionaler Knopf unter der Nachricht, z. B. "Hörprobe aufnehmen".
+  button?: { label: string; url: string };
 }) {
-  const { studentName, courseTitle, message, attachmentNames = [], links = [] } = params;
+  const { studentName, courseTitle, message, attachmentNames = [], links = [], button } = params;
+  const buttonHtml = button
+    ? `<p style="margin: 20px 0;"><a href="${escapeHtml(button.url)}" style="background: #3f6b31; color: #ffffff; padding: 10px 18px; text-decoration: none; font-weight: bold; display: inline-block;">${escapeHtml(button.label)}</a></p>`
+    : "";
   const attachments =
     attachmentNames.length > 0
       ? `<p style="font-size: 13px; color: #1f3616;">Anhänge: ${attachmentNames.map(escapeHtml).join(", ")}</p>`
@@ -29,6 +34,7 @@ export function materialEmailHtml(params: {
         Neue Nachricht zu deinem Kurs <strong>${courseTitle}</strong>:
       </p>
       <div style="white-space: pre-line; margin: 16px 0;">${escapeHtml(message)}</div>
+      ${buttonHtml}
       ${attachments}
       ${linkList}
       <p style="font-size: 13px; color: #7aa968;">

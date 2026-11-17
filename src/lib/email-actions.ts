@@ -12,6 +12,7 @@ import { signedMediaPath } from "@/lib/media-links";
 import { materialEmailHtml } from "@/lib/material-email";
 import { prisma } from "@/lib/prisma";
 import { MATERIAL_EMAIL_FROM, deliverEmail } from "@/lib/resend";
+import { formatSurahPosition, surahAyahCount } from "@/lib/surahs";
 
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -29,20 +30,40 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
   const isAdmin = session.user.role === "ADMIN";
 
   const errors: Record<string, string> = {};
-  const subject = text(formData, "subject").trim();
-  const message = text(formData, "message").trim();
-  if (subject.length < 3) errors.subject = "Bitte gib einen Betreff an.";
-  else if (subject.length > 200) errors.subject = "Der Betreff ist zu lang.";
-  if (message.length < 10) errors.message = "Die Nachricht ist zu kurz.";
-  else if (message.length > 5000) errors.message = "Die Nachricht ist zu lang (höchstens 5000 Zeichen).";
-
   const courseId = text(formData, "courseId");
+  // Hoerprobe anfordern: Betreff und Text entstehen aus Sure und Versbereich, dazu ein Knopf zur
+  // Aufnahme-Seite des Kurses.
+  const isSampleRequest = text(formData, "kind") === "sample";
+  let subject = text(formData, "subject").trim();
+  let message = text(formData, "message").trim();
+  let button: { label: string; url: string } | undefined;
+  if (isSampleRequest) {
+    const range = sampleRange(formData, errors);
+    const note = text(formData, "sampleNote").trim();
+    if (note.length > 1000) errors.sampleNote = "Der Hinweis ist zu lang (höchstens 1000 Zeichen).";
+    if (range) {
+      subject = `Bitte um eine Hörprobe: ${range}`;
+      message = `bitte lies ${range} laut vor und nimm es als Hörprobe auf. So kann ich mich gezielt auf die nächste Stunde vorbereiten.${note ? `
+
+${note}` : ""}`;
+      button = {
+        label: "Hörprobe aufnehmen",
+        url: `${getAppUrl()}/dashboard/kurse/${courseId}/leseprobe?abschnitt=${encodeURIComponent(range)}`,
+      };
+    }
+  } else {
+    if (subject.length < 3) errors.subject = "Bitte gib einen Betreff an.";
+    else if (subject.length > 200) errors.subject = "Der Betreff ist zu lang.";
+    if (message.length < 10) errors.message = "Die Nachricht ist zu kurz.";
+    else if (message.length > 5000) errors.message = "Die Nachricht ist zu lang (höchstens 5000 Zeichen).";
+  }
+
   const course = await prisma.course.findUnique({
     where: { id: courseId },
     include: {
       enrollments: {
         include: {
-          participant: { select: { id: true, name: true, email: true } },
+          participant: { select: { id: true, name: true, muslimName: true, email: true } },
           user: { select: { name: true, muslimName: true, email: true } },
         },
       },
@@ -121,6 +142,7 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
           message,
           attachmentNames,
           links,
+          button,
         }),
         attachments: attachments.length > 0 ? attachments : undefined,
       });
@@ -140,9 +162,36 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
   if (attachmentNames.length > 0) {
     parts.push(`${attachmentNames.length} ${attachmentNames.length === 1 ? "Anhang" : "Anhänge"}`);
   }
-  const base = `E-Mail an ${sent} Empfänger verschickt (${parts.join(", ")}).`;
+  const base = isSampleRequest
+    ? `Hörprobe bei ${sent} Empfänger${sent === 1 ? "" : "n"} angefordert (${parts.join(", ")}).`
+    : `E-Mail an ${sent} Empfänger verschickt (${parts.join(", ")}).`;
   return {
     ok: failed.length === 0,
     message: failed.length ? `${base} Nicht zugestellt an: ${failed.join(", ")}.` : base,
   };
+}
+
+// Sure und Versbereich der Hoerprobe, z. B. "Sure 67 Al-Mulk, Verse 1–10". Fehler landen in errors.
+function sampleRange(formData: FormData, errors: Record<string, string>) {
+  const surah = Number(text(formData, "surah"));
+  const ayahs = surahAyahCount(surah);
+  if (!Number.isInteger(surah) || !ayahs) {
+    errors.surah = "Bitte wähle eine Sure.";
+    return null;
+  }
+  const fromRaw = text(formData, "fromAyah").trim();
+  const toRaw = text(formData, "toAyah").trim();
+  const from = fromRaw ? Number(fromRaw) : 1;
+  const to = toRaw ? Number(toRaw) : fromRaw ? from : ayahs;
+  if (!Number.isInteger(from) || from < 1 || from > ayahs) {
+    errors.fromAyah = `Die Sure hat ${ayahs} Verse.`;
+    return null;
+  }
+  if (!Number.isInteger(to) || to < from || to > ayahs) {
+    errors.toAyah = to < from ? "Der letzte Vers liegt vor dem ersten." : `Die Sure hat ${ayahs} Verse.`;
+    return null;
+  }
+  const base = formatSurahPosition(surah, null);
+  if (from === 1 && to === ayahs) return `${base} (ganze Sure)`;
+  return from === to ? `${base}, Vers ${from}` : `${base}, Verse ${from}–${to}`;
 }

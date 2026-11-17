@@ -10,6 +10,7 @@ import type { ActionResult } from "@/lib/account-actions";
 import { sendCourseEmail } from "@/lib/email-actions";
 import { formatBytes } from "@/lib/media";
 import type { MediaItem } from "@/lib/media-items";
+import { SURAH_OPTIONS } from "@/lib/surahs";
 
 export type ComposerCourse = {
   id: string;
@@ -100,23 +101,35 @@ function MediaPicker({
 
 // E-Mail an Kursteilnehmer: Kurs waehlen (oder fest vorgegeben), an alle oder einzelne
 // Teilnehmer, Betreff und Text, Dateien aus der Mediathek als Anhang (Auswahl im Pop-up).
+// Mit allowSampleRequest laesst sich statt einer freien Nachricht eine Hoerprobe anfordern
+// (Sure und Versbereich).
 export function EmailComposer({
   courses,
   files,
   upload,
   initialCourseId,
+  initialSelectedIds,
+  allowSampleRequest = false,
 }: {
   courses: ComposerCourse[];
   files: MediaItem[];
   upload: ComposerUpload;
   initialCourseId?: string;
+  // Vorausgewaehlte Empfaenger, z. B. ueber "Nachricht schreiben" in der Teilnehmerliste.
+  initialSelectedIds?: string[];
+  allowSampleRequest?: boolean;
 }) {
   // Vorauswahl: gewuenschter Kurs, sonst der erste Kurs mit Teilnehmern.
   const [courseId, setCourseId] = useState(
     initialCourseId ?? courses.find((c) => c.participants.length > 0)?.id ?? courses[0]?.id ?? "",
   );
-  const [mode, setMode] = useState<"all" | "selected">("all");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [mode, setMode] = useState<"all" | "selected">(initialSelectedIds?.length ? "selected" : "all");
+  const [selected, setSelected] = useState<Set<string>>(new Set(initialSelectedIds ?? []));
+  const [sample, setSample] = useState(false);
+  const [surah, setSurah] = useState("");
+  const [fromAyah, setFromAyah] = useState("");
+  const [toAyah, setToAyah] = useState("");
+  const [sampleNote, setSampleNote] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [attached, setAttached] = useState<Set<string>>(new Set());
@@ -128,6 +141,7 @@ export function EmailComposer({
       setSubject("");
       setMessage("");
       setAttached(new Set());
+      setSampleNote("");
     }
     return result;
   }, INITIAL);
@@ -138,6 +152,7 @@ export function EmailComposer({
   const attachedFiles = files.filter((f) => attached.has(f.id));
   const attachedBytes = attachedFiles.filter((f) => !f.asLink).reduce((sum, f) => sum + f.sizeBytes, 0);
   const linkCount = attachedFiles.filter((f) => f.asLink).length;
+  const surahAyahs = SURAH_OPTIONS.find((o) => String(o.number) === surah)?.ayahs;
 
   function toggle(set: Set<string>, id: string) {
     const next = new Set(set);
@@ -252,80 +267,167 @@ export function EmailComposer({
         {state.errors?.participantIds && <p className="text-sm text-red-700">{state.errors.participantIds}</p>}
       </fieldset>
 
-      {/* Inhalt */}
-      <div className="space-y-3">
-        <label className="flex flex-col text-sm font-medium text-brand-700">
-          Betreff
+      {allowSampleRequest && (
+        <label className="flex items-center gap-2 text-sm font-medium text-brand-800">
           <input
-            name="subject"
-            required
-            value={subject}
-            onChange={(event) => setSubject(event.target.value)}
-            className={`mt-1 ${INPUT}`}
+            type="checkbox"
+            checked={sample}
+            onChange={(event) => setSample(event.target.checked)}
+            className="h-4 w-4 accent-brand-600"
           />
-          {state.errors?.subject && <span className="mt-1 text-red-700">{state.errors.subject}</span>}
+          Hörprobe anfordern
         </label>
-        <label className="flex flex-col text-sm font-medium text-brand-700">
-          Nachricht
-          <textarea
-            name="message"
-            required
-            rows={7}
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            className={`mt-1 ${INPUT}`}
-          />
-          {state.errors?.message && <span className="mt-1 text-red-700">{state.errors.message}</span>}
-        </label>
-      </div>
+      )}
 
-      {/* Anhaenge aus der Mediathek */}
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-brand-700">Anhänge aus der Mediathek</p>
-        {attachedFiles.length > 0 && (
-          <ul className="space-y-1.5">
-            {attachedFiles.map((f) => (
-              <li
-                key={f.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1 border border-brand-200 bg-brand-50 px-3 py-2 text-sm"
+      {sample ? (
+        <div className="space-y-3">
+          <input type="hidden" name="kind" value="sample" />
+          <div className="grid gap-3 sm:grid-cols-[1fr_8rem_8rem]">
+            <label className="flex flex-col text-sm font-medium text-brand-700">
+              Sure
+              <select
+                name="surah"
+                required
+                value={surah}
+                onChange={(event) => setSurah(event.target.value)}
+                className={`mt-1 ${INPUT}`}
               >
-                <input type="hidden" name="fileIds" value={f.id} />
-                <FileIcon className="h-4 w-4 shrink-0 text-brand-600" />
-                <span className="font-medium">{f.title}</span>
-                <span className="text-brand-600">
-                  {f.fileName} · {formatBytes(f.sizeBytes)}
-                  {f.asLink ? " · wird als Download-Link verschickt" : ""}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setAttached((current) => toggle(current, f.id))}
-                  aria-label={`${f.title} entfernen`}
-                  className="ml-auto inline-flex items-center gap-1 text-red-800 hover:text-red-700"
-                >
-                  <XIcon className="h-4 w-4" />
-                  Entfernen
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className="border border-azure-800 px-4 py-2 text-sm font-medium text-azure-800 transition hover:bg-azure-800 hover:text-white"
-          >
-            {attachedFiles.length > 0 ? "Auswahl ändern …" : "Aus der Mediathek wählen …"}
-          </button>
-          {attachedFiles.length > 0 && (
-            <span className="text-xs text-brand-600">
-              {attachedFiles.length - linkCount > 0 ? `Anhänge: ${formatBytes(attachedBytes)}. ` : ""}
-              {linkCount > 0 ? `${linkCount} Datei(en) als Download-Link.` : ""}
-            </span>
-          )}
+                <option value="" disabled>
+                  Sure wählen …
+                </option>
+                {SURAH_OPTIONS.map((o) => (
+                  <option key={o.number} value={o.number}>
+                    {o.number}. {o.name} ({o.ayahs} Verse)
+                  </option>
+                ))}
+              </select>
+              {state.errors?.surah && <span className="mt-1 text-red-700">{state.errors.surah}</span>}
+            </label>
+            <label className="flex flex-col text-sm font-medium text-brand-700">
+              Von Vers
+              <input
+                name="fromAyah"
+                type="number"
+                min={1}
+                max={surahAyahs}
+                placeholder="1"
+                value={fromAyah}
+                onChange={(event) => setFromAyah(event.target.value)}
+                className={`mt-1 ${INPUT}`}
+              />
+              {state.errors?.fromAyah && <span className="mt-1 text-red-700">{state.errors.fromAyah}</span>}
+            </label>
+            <label className="flex flex-col text-sm font-medium text-brand-700">
+              Bis Vers
+              <input
+                name="toAyah"
+                type="number"
+                min={1}
+                max={surahAyahs}
+                placeholder={surahAyahs ? String(surahAyahs) : ""}
+                value={toAyah}
+                onChange={(event) => setToAyah(event.target.value)}
+                className={`mt-1 ${INPUT}`}
+              />
+              {state.errors?.toAyah && <span className="mt-1 text-red-700">{state.errors.toAyah}</span>}
+            </label>
+          </div>
+          <p className="text-xs text-brand-600">
+            Ohne Versangabe gilt die ganze Sure. Die Empfänger bekommen eine E-Mail mit dem Abschnitt und
+            einem Knopf zur Aufnahme; die Hörproben findest du unter „Sitzungen“ → „Leseproben“.
+          </p>
+          <label className="flex flex-col text-sm font-medium text-brand-700">
+            Hinweis (optional)
+            <textarea
+              name="sampleNote"
+              rows={3}
+              value={sampleNote}
+              onChange={(event) => setSampleNote(event.target.value)}
+              placeholder="z. B. Achte besonders auf die Madd-Regeln."
+              className={`mt-1 ${INPUT}`}
+            />
+            {state.errors?.sampleNote && <span className="mt-1 text-red-700">{state.errors.sampleNote}</span>}
+          </label>
         </div>
-        {state.errors?.fileIds && <p className="text-sm text-red-700">{state.errors.fileIds}</p>}
-      </div>
+      ) : (
+        <>
+          {/* Inhalt */}
+          <div className="space-y-3">
+            <label className="flex flex-col text-sm font-medium text-brand-700">
+              Betreff
+              <input
+                name="subject"
+                required
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
+                className={`mt-1 ${INPUT}`}
+              />
+              {state.errors?.subject && <span className="mt-1 text-red-700">{state.errors.subject}</span>}
+            </label>
+            <label className="flex flex-col text-sm font-medium text-brand-700">
+              Nachricht
+              <textarea
+                name="message"
+                required
+                rows={7}
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                className={`mt-1 ${INPUT}`}
+              />
+              {state.errors?.message && <span className="mt-1 text-red-700">{state.errors.message}</span>}
+            </label>
+          </div>
+
+          {/* Anhaenge aus der Mediathek */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-brand-700">Anhänge aus der Mediathek</p>
+            {attachedFiles.length > 0 && (
+              <ul className="space-y-1.5">
+                {attachedFiles.map((f) => (
+                  <li
+                    key={f.id}
+                    className="flex flex-wrap items-center gap-x-3 gap-y-1 border border-brand-200 bg-brand-50 px-3 py-2 text-sm"
+                  >
+                    <input type="hidden" name="fileIds" value={f.id} />
+                    <FileIcon className="h-4 w-4 shrink-0 text-brand-600" />
+                    <span className="font-medium">{f.title}</span>
+                    <span className="text-brand-600">
+                      {f.fileName} · {formatBytes(f.sizeBytes)}
+                      {f.asLink ? " · wird als Download-Link verschickt" : ""}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAttached((current) => toggle(current, f.id))}
+                      aria-label={`${f.title} entfernen`}
+                      className="ml-auto inline-flex items-center gap-1 text-red-800 hover:text-red-700"
+                    >
+                      <XIcon className="h-4 w-4" />
+                      Entfernen
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                className="border border-azure-800 px-4 py-2 text-sm font-medium text-azure-800 transition hover:bg-azure-800 hover:text-white"
+              >
+                {attachedFiles.length > 0 ? "Auswahl ändern …" : "Aus der Mediathek wählen …"}
+              </button>
+              {attachedFiles.length > 0 && (
+                <span className="text-xs text-brand-600">
+                  {attachedFiles.length - linkCount > 0 ? `Anhänge: ${formatBytes(attachedBytes)}. ` : ""}
+                  {linkCount > 0 ? `${linkCount} Datei(en) als Download-Link.` : ""}
+                </span>
+              )}
+            </div>
+            {state.errors?.fileIds && <p className="text-sm text-red-700">{state.errors.fileIds}</p>}
+          </div>
+
+        </>
+      )}
 
       {state.message && (
         <p
@@ -341,7 +443,11 @@ export function EmailComposer({
         disabled={pending || recipientCount === 0}
         className="btn-primary px-5 py-2.5 disabled:opacity-60"
       >
-        {pending ? "Wird gesendet …" : `An ${recipientCount} Teilnehmer senden`}
+        {pending
+          ? "Wird gesendet …"
+          : sample
+            ? `Hörprobe von ${recipientCount} Teilnehmer${recipientCount === 1 ? "" : "n"} anfordern`
+            : `An ${recipientCount} Teilnehmer senden`}
       </button>
 
       {pickerOpen && (

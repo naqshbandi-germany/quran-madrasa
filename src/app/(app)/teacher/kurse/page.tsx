@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { auth } from "@/auth";
+import { ConfirmButton } from "@/components/confirm-button";
 import { CopyButton } from "@/components/copy-button";
 import {
   regenerateAccessCode,
@@ -8,6 +9,8 @@ import {
 } from "@/lib/admin-actions";
 import { getAppUrl } from "@/lib/app-url";
 import { AGE_GROUP_LABELS } from "@/lib/course-labels";
+import { formatCoursePeriod } from "@/lib/course-manage";
+import { deleteCourse } from "@/lib/course-manage-actions";
 import { prisma } from "@/lib/prisma";
 import { createCourse, togglePublish } from "@/lib/teacher-actions";
 
@@ -16,7 +19,12 @@ export const dynamic = "force-dynamic";
 
 // Kursliste: Lehrkraefte sehen ihre eigenen Kurse, Admins alle (mit Preis, Plaetzen und
 // Sichtbarkeit). Darunter das Formular fuer einen neuen Kurs.
-export default async function CoursesPage() {
+export default async function CoursesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ geloescht?: string; loeschen?: string }>;
+}) {
+  const { geloescht, loeschen } = await searchParams;
   const session = await auth();
   if (!session) return null;
   const isAdmin = session.user.role === "ADMIN";
@@ -35,11 +43,23 @@ export default async function CoursesPage() {
       <div>
         <h1 className="text-2xl font-bold text-azure-800">Kurse</h1>
         <p className="mt-1 text-sm text-brand-600">
-          {isAdmin ? "Alle Kurse aller Lehrkräfte." : "Deine Kurse."} Über
-          „Verwalten“ kommst du zu Sitzungen, Teilnehmern, Einladungen und
-          Warteliste eines Kurses.
+          {isAdmin ? "Alle Kurse aller Lehrkräfte." : "Deine Kurse."} Ein
+          Klick auf den Namen öffnet die Kursverwaltung mit Teilnehmern,
+          Sitzungen, Nachrichten und Einstellungen.
         </p>
       </div>
+
+      {geloescht && (
+        <p role="status" className="bg-green-50 px-4 py-3 text-sm text-green-900">
+          Der Kurs wurde gelöscht.
+        </p>
+      )}
+      {loeschen === "teilnehmer" && (
+        <p role="alert" className="bg-red-50 px-4 py-3 text-sm text-red-900">
+          Ein Kurs mit Teilnehmern lässt sich nicht löschen. Entferne zuerst
+          alle Teilnehmer oder setze den Kurs auf Entwurf.
+        </p>
+      )}
 
       {courses.length === 0 ? (
         <p className="border border-brand-200 bg-white p-4 text-sm text-brand-600">
@@ -59,25 +79,24 @@ export default async function CoursesPage() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-base font-medium text-brand-700">
+                    <Link
+                      href={`/teacher/courses/${course.id}`}
+                      className="font-display text-2xl font-bold leading-tight text-azure-800 hover:underline"
+                    >
                       {course.title}
-                    </p>
-                    <p className="text-brand-600">
+                    </Link>
+                    <p className="mt-0.5 text-brand-600">
                       {isAdmin && <>Lehrer: {course.teacher.name} · </>}
                       {course._count.enrollments} eingeschriebene Schüler ·{" "}
                       {course.isPublished ? "veröffentlicht" : "Entwurf"}
                       {course.isHidden && " · versteckt"}
                       {!course.stripePriceId &&
                         " · kein Stripe-Preis hinterlegt"}
+                      {formatCoursePeriod(course.startsOn, course.endsOn) &&
+                        ` · Laufzeit ${formatCoursePeriod(course.startsOn, course.endsOn)}`}
                     </p>
                   </div>
-                  <div className="flex gap-3">
-                    <Link
-                      href={`/teacher/courses/${course.id}`}
-                      className="font-medium text-brand-700 underline"
-                    >
-                      Verwalten
-                    </Link>
+                  <div className="flex gap-4">
                     <form action={togglePublish}>
                       <input type="hidden" name="courseId" value={course.id} />
                       <button className="font-medium text-brand-700 underline">
@@ -86,6 +105,24 @@ export default async function CoursesPage() {
                           : "Veröffentlichen"}
                       </button>
                     </form>
+                    {course._count.enrollments === 0 ? (
+                      <form action={deleteCourse}>
+                        <input type="hidden" name="courseId" value={course.id} />
+                        <ConfirmButton
+                          message={`Den Kurs „${course.title}“ wirklich endgültig löschen? Alle Sitzungen, Probestunden, Einladungen, die Warteliste und Leseproben werden mitgelöscht.`}
+                          className="font-medium text-red-800 underline hover:text-red-700"
+                        >
+                          Löschen
+                        </ConfirmButton>
+                      </form>
+                    ) : (
+                      <Link
+                        href={`/teacher/courses/${course.id}/einstellungen#loeschen`}
+                        className="font-medium text-red-800 underline hover:text-red-700"
+                      >
+                        Löschen
+                      </Link>
+                    )}
                   </div>
                 </div>
                 {isAdmin && (

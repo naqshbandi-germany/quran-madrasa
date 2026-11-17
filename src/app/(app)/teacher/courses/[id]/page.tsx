@@ -1,66 +1,13 @@
-import { Weekday } from "@prisma/client";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
-import { auth } from "@/auth";
-import { callName, fullName } from "@/lib/names";
-import { prisma } from "@/lib/prisma";
-import { ConfirmButton } from "@/components/confirm-button";
-import { EmailComposer } from "@/components/email-composer";
-import { CopyButton } from "@/components/copy-button";
-import { EditableRow } from "@/components/editable-row";
-import { TrashIcon } from "@/components/icons";
+import { RemoveForm } from "./remove-form";
 import { ParticipantsList, type ParticipantRow } from "@/components/participants-list";
 import { WaitlistContactButton } from "@/components/waitlist-contact-button";
-import {
-  createClassSession,
-  createRecurringSessions,
-  createScheduleSlot,
-  deleteClassSession,
-  deleteScheduleSlot,
-  updateClassSession,
-  updateScheduleSlot,
-} from "@/lib/teacher-actions";
-import { isZoomProvider } from "@/lib/classroom";
 import { capacityOf } from "@/lib/course-capacity";
-import { removeWaitlistEntry, setMaxParticipants } from "@/lib/waitlist-actions";
-import { blobAccess, isBlobConfigured } from "@/lib/blob";
-import { toMediaItem } from "@/lib/media-items";
-import { WEEKDAY_LABELS } from "@/lib/course-labels";
+import { nameWithMuslimName, requireManagedCourse } from "@/lib/course-manage";
+import { prisma } from "@/lib/prisma";
 import { formatAttendance, getProgressSummaries, type ProgressSummary } from "@/lib/progress";
-import { formatGermanDateTime, formatZonedDateTime, toZonedInputValue } from "@/lib/schedule-time";
-import { TimeZoneNotice } from "@/components/time-zone-notice";
-import { teacherTimeZone, timeZoneLabel } from "@/lib/time-zones";
-import { resolveViewTimeZone } from "@/lib/view-time-zone";
-
-const INPUT = "border border-brand-300 px-3 py-2";
-const SAVE_BUTTON = "btn-primary px-4 py-2";
-
-// Entfernen-Aktion mit Papierkorb-Symbol und Text, fragt vor dem Loeschen nach.
-function RemoveForm({
-  action,
-  fields,
-  message,
-}: {
-  action: (formData: FormData) => void | Promise<void>;
-  fields: Record<string, string>;
-  message: string;
-}) {
-  return (
-    <form action={action}>
-      {Object.entries(fields).map(([name, value]) => (
-        <input key={name} type="hidden" name={name} value={value} />
-      ))}
-      <ConfirmButton
-        message={message}
-        className="inline-flex items-center gap-1.5 font-medium text-red-800 hover:text-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
-      >
-        <TrashIcon />
-        Entfernen
-      </ConfirmButton>
-    </form>
-  );
-}
+import { removeWaitlistEntry } from "@/lib/waitlist-actions";
 
 function progressLine(s: ProgressSummary | undefined) {
   if (!s || (s.recorded === 0 && !s.position && s.tajweedRating == null)) return undefined;
@@ -73,290 +20,81 @@ function progressLine(s: ProgressSummary | undefined) {
     .join(" · ");
 }
 
-// In der angezeigten Zeitzone; ausserhalb deutscher Zeit zusaetzlich die deutsche Zeit.
-function formatDateTime(date: Date, timeZone: string) {
-  if (timeZone === "Europe/Berlin") return `${formatGermanDateTime(date)} Uhr`;
-  return `${formatZonedDateTime(date, timeZone)} Uhr (${formatGermanDateTime(date)} deutsche Zeit)`;
-}
-
-type SessionData = {
-  id: string;
-  title: string;
-  startsAt: Date;
-  durationMin: number;
-  joinUrl: string | null;
-  classroomType: string;
-  lessonContent: string | null;
-  _count: { evaluations: number };
-};
-
-// Aendert sich ein Wert, wird die Zeile neu aufgebaut und das Bearbeiten-Formular klappt zu.
-function sessionKey(s: SessionData) {
-  return `${s.id}-${s.startsAt.getTime()}-${s.title}-${s.durationMin}-${s.joinUrl ?? ""}`;
-}
-
-function SessionRow({
-  classSession,
-  courseId,
-  isUpcoming,
-  timeZone,
-}: {
-  classSession: SessionData;
-  courseId: string;
-  isUpcoming: boolean;
-  timeZone: string;
-}) {
-  const linkLabel = classSession.classroomType === "JITSI" ? "Jitsi-Link" : "Zoom-Link";
-  return (
-    <EditableRow
-      summary={
-        <div>
-          <p className="font-medium">{classSession.title}</p>
-          <p className="text-brand-600">
-            {formatDateTime(classSession.startsAt, timeZone)} · {classSession.durationMin} Min. ·{" "}
-            {classSession.joinUrl ? (
-              <a href={classSession.joinUrl} className="underline">
-                {linkLabel}
-              </a>
-            ) : (
-              "kein Link hinterlegt"
-            )}
-          </p>
-          <p className="mt-1">
-            <Link
-              href={`/teacher/courses/${courseId}/sitzungen/${classSession.id}`}
-              className="font-medium text-azure-800 underline"
-            >
-              {isUpcoming ? "Inhalt & Hausaufgabe" : "Stunde auswerten"}
-            </Link>
-            {(classSession._count.evaluations > 0 || classSession.lessonContent) && (
-              <span className="ml-2 text-xs text-brand-600">
-                ✓ ausgewertet
-                {classSession._count.evaluations > 0 ? ` (${classSession._count.evaluations} Teilnehmer)` : ""}
-              </span>
-            )}
-          </p>
-        </div>
-      }
-      removeAction={
-        <RemoveForm
-          action={deleteClassSession}
-          fields={{ sessionId: classSession.id }}
-          message="Diese Sitzung wirklich entfernen? Ein automatisch erzeugtes Zoom-Meeting und die Auswertung der Stunde (Anwesenheit, Lernstand) werden dabei ebenfalls gelöscht."
-        />
-      }
-    >
-      <form action={updateClassSession} className="grid gap-3 sm:grid-cols-2">
-        <input type="hidden" name="sessionId" value={classSession.id} />
-        <input type="hidden" name="courseId" value={courseId} />
-        <input
-          name="title"
-          required
-          defaultValue={classSession.title}
-          aria-label="Titel"
-          className={`col-span-full ${INPUT}`}
-        />
-        <label className="flex flex-col text-brand-700">
-          Beginn
-          <input
-            name="startsAt"
-            type="datetime-local"
-            required
-            defaultValue={toZonedInputValue(classSession.startsAt, timeZone)}
-            className={`mt-1 ${INPUT}`}
-          />
-        </label>
-        <label className="flex flex-col text-brand-700">
-          Dauer in Minuten
-          <input
-            name="durationMin"
-            type="number"
-            min={5}
-            max={480}
-            required
-            defaultValue={classSession.durationMin}
-            className={`mt-1 ${INPUT}`}
-          />
-        </label>
-        <label className="col-span-full flex flex-col text-brand-700">
-          Link (ändern ersetzt den automatisch erzeugten)
-          <input
-            name="joinUrl"
-            type="url"
-            defaultValue={classSession.joinUrl ?? ""}
-            className={`mt-1 ${INPUT}`}
-          />
-        </label>
-        <p className="col-span-full text-xs text-brand-600">
-          Wird der Beginn verschoben, passen wir ein automatisch erzeugtes Zoom-Meeting an und
-          verschicken die Erinnerungen neu.
-        </p>
-        <button className={`col-span-full ${SAVE_BUTTON}`}>Speichern</button>
-      </form>
-    </EditableRow>
-  );
-}
-
-export default async function ManageCoursePage({ params }: { params: Promise<{ id: string }> }) {
+// Reiter "Teilnehmer": eingeschriebene Teilnehmer, Einladen und Warteliste.
+export default async function CourseParticipantsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const course = await prisma.course.findUnique({
-    where: { id },
-    include: {
-      sessions: {
-        orderBy: { startsAt: "asc" },
-        include: { _count: { select: { evaluations: true } } },
-      },
-      scheduleSlots: { orderBy: [{ weekday: "asc" }, { startTime: "asc" }] },
-      enrollments: {
-        include: { participant: true, user: { select: { name: true, muslimName: true, email: true } } },
-        orderBy: { createdAt: "asc" },
-      },
-      waitlist: { orderBy: { createdAt: "asc" } },
-      teacher: { select: { timeZone: true } },
-    },
-  });
-  if (!course) notFound();
+  const { course } = await requireManagedCourse(id);
 
-  // Lehrer sehen nur ihre eigenen Kurse (Teilnehmerdaten), Admins alle.
-  const session = await auth();
-  if (session?.user.role !== "ADMIN" && session?.user.id !== course.teacherId) notFound();
-  const { timeZone: viewTimeZone, ownTimeZone, showingOwn } = await resolveViewTimeZone(session!.user.id);
-  // Stundenplan-Eintraege gelten immer in der Zeitzone der Lehrkraft des Kurses.
-  const courseTimeZone = teacherTimeZone(course.teacher);
+  const [enrollments, waitlist] = await Promise.all([
+    prisma.enrollment.findMany({
+      where: { courseId: id },
+      include: { participant: true, user: { select: { name: true, email: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.waitlistEntry.findMany({ where: { courseId: id }, orderBy: { createdAt: "asc" } }),
+  ]);
 
-  // WhatsApp-Nummern nur mit Einwilligung, je Nummer einmal (Geschwister teilen oft die Nummer).
-  const whatsappMembers: { id: string; name: string; whatsapp: string }[] = [];
-  for (const { participant } of course.enrollments) {
-    if (!participant.whatsapp || !participant.whatsappConsentAt) continue;
-    const existing = whatsappMembers.find((m) => m.whatsapp === participant.whatsapp);
-    if (existing) existing.name += `, ${fullName(participant)}`;
-    else whatsappMembers.push({ id: participant.id, name: fullName(participant), whatsapp: participant.whatsapp });
-  }
-
-  const capacity = capacityOf(course.maxParticipants, course.enrollments.length);
+  const capacity = capacityOf(course.maxParticipants, enrollments.length);
   const dateFormat = new Intl.DateTimeFormat("de-DE");
   const progress = await getProgressSummaries(
     course.id,
-    course.enrollments.map((e) => e.participantId),
+    enrollments.map((e) => e.participantId),
   );
-  const participantRows: ParticipantRow[] = course.enrollments.map(({ id, participant, user, createdAt }) => ({
-    progress: progressLine(progress.get(participant.id)),
-    enrollmentId: id,
-    name: fullName(participant),
+  const rows: ParticipantRow[] = enrollments.map(({ id: enrollmentId, participant, user, createdAt }) => ({
+    enrollmentId,
+    name: nameWithMuslimName(participant),
     detail:
       participant.relation === "CHILD"
         ? `(Kind${participant.birthYear ? `, Jahrgang ${participant.birthYear}` : ""})`
         : "",
-    contact: participant.email ? `E-Mail: ${participant.email}` : `Kontakt über ${user.name}: ${user.email}`,
+    contact: participant.email ?? `über ${user.name}: ${user.email}`,
     since: dateFormat.format(createdAt),
+    progress: progressLine(progress.get(participant.id)),
+    profileHref: `/teacher/schueler/${participant.id}`,
+    messageHref: `/teacher/courses/${course.id}/nachrichten?an=${participant.id}`,
   }));
-
-  const mediaFiles = await prisma.mediaFile.findMany({
-    where: session?.user.role === "ADMIN" ? {} : { ownerId: session?.user.id },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      fileName: true,
-      mimeType: true,
-      sizeBytes: true,
-      createdAt: true,
-      blobPathname: true,
-    },
-  });
-  const composerFiles = mediaFiles.map((file) => toMediaItem(file));
-
-  const unheardSamples = await prisma.readingSample.count({ where: { courseId: course.id, listenedAt: null } });
-
-  const now = new Date();
-  const upcomingSessions = course.sessions.filter((s) => s.startsAt >= now);
-  const pastSessions = course.sessions.filter((s) => s.startsAt < now).reverse();
-
-  const zoom = isZoomProvider();
-  const meetingKind = zoom ? "Zoom" : "Jitsi";
-  const meetingDescription = zoom
-    ? "ein Zoom-Meeting im Zoom-Konto des Lehrers"
-    : "ein kostenloser Jitsi-Meeting-Link";
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-azure-800">{course.title}</h1>
-      <TimeZoneNotice timeZone={viewTimeZone} ownTimeZone={ownTimeZone} showingOwn={showingOwn} />
-
-      <section aria-labelledby="begrenzung" className="space-y-3">
-        <h2 id="begrenzung" className="font-semibold text-azure-800">
-          Teilnehmerbegrenzung
-        </h2>
-        <form
-          action={setMaxParticipants}
-          className="flex flex-wrap items-end gap-3 border border-gold-400/40 bg-white p-4 text-sm"
-        >
-          <input type="hidden" name="courseId" value={course.id} />
-          <label className="flex flex-col text-brand-700">
-            Maximale Teilnehmerzahl
-            <input
-              name="maxParticipants"
-              type="number"
-              min={1}
-              max={500}
-              defaultValue={course.maxParticipants ?? ""}
-              placeholder="unbegrenzt"
-              className={`mt-1 w-48 ${INPUT}`}
-            />
-          </label>
-          <button className={SAVE_BUTTON}>Speichern</button>
-          <p className="basis-full text-xs text-brand-600">
-            Leer lassen = unbegrenzt. Ist die Grenze erreicht, erscheint der Kurs als
-            &bdquo;ausgebucht&ldquo; und Interessenten tragen sich in die Warteliste ein.
-          </p>
-        </form>
-      </section>
-
       <section aria-labelledby="teilnehmer" className="space-y-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 id="teilnehmer" className="font-semibold text-azure-800">
-            Teilnehmer ({course.enrollments.length})
+            Teilnehmer ({enrollments.length})
           </h2>
-          {capacity.max != null && (
-            <span
-              className={`px-3 py-0.5 text-xs font-semibold text-white ${capacity.isFull ? "bg-azure-800" : "bg-brass"}`}
-            >
-              {capacity.taken} von {capacity.max} Plätzen belegt
-              {capacity.taken > capacity.max ? " (überbucht)" : ""}
-            </span>
-          )}
+          <div className="flex flex-wrap items-center gap-3">
+            {capacity.max != null && (
+              <span
+                className={`px-3 py-0.5 text-xs font-semibold text-white ${capacity.isFull ? "bg-azure-800" : "bg-brass"}`}
+              >
+                {capacity.taken} von {capacity.max} Plätzen belegt
+                {capacity.taken > capacity.max ? " (überbucht)" : ""}
+              </span>
+            )}
+            {course.isPublished && (
+              <Link href={`/teacher/schueler/einladen?kurs=${course.id}`} className="text-sm font-medium text-azure-800 underline">
+                Schüler einladen
+              </Link>
+            )}
+          </div>
         </div>
-        <ParticipantsList rows={participantRows} />
-      </section>
-
-      <section aria-labelledby="einladen" className="space-y-2">
-        <h2 id="einladen" className="font-semibold text-azure-800">
-          Schüler einladen
-        </h2>
-        {course.isPublished ? (
-          <p className="text-sm text-brand-700">
-            Zur Anmeldung oder zu einer kostenlosen Probestunde, auch mehrere auf einmal:{" "}
-            <Link href={`/teacher/schueler/einladen?kurs=${course.id}`} className="font-medium underline">
-              Schüler einladen
-            </Link>
-          </p>
-        ) : (
+        {!course.isPublished && (
           <p className="text-sm text-brand-800">Einladen ist möglich, sobald der Kurs veröffentlicht ist.</p>
         )}
+        <ParticipantsList rows={rows} />
       </section>
 
       <section aria-labelledby="warteliste" className="space-y-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 id="warteliste" className="font-semibold text-azure-800">
-            Warteliste ({course.waitlist.length})
+            Warteliste ({waitlist.length})
           </h2>
           <span className="text-xs text-brand-600">sortiert nach Eintragsdatum, älteste zuerst</span>
         </div>
-        {course.waitlist.length === 0 ? (
+        {waitlist.length === 0 ? (
           <p className="text-sm text-brand-600">Niemand wartet auf einen Platz.</p>
         ) : (
           <ol className="divide-y divide-brand-100 border border-gold-400/40 bg-white text-sm">
-            {course.waitlist.map((entry, index) => (
+            {waitlist.map((entry, index) => (
               <li key={entry.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center border border-gold-400/60 bg-brand-100 font-display text-base font-bold text-azure-800">
                   {index + 1}
@@ -366,10 +104,8 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
                     {entry.name} <span className="font-normal text-brand-600">· {entry.email}</span>
                   </p>
                   <p className="text-xs text-brand-700">
-                    eingetragen am {new Intl.DateTimeFormat("de-DE").format(entry.createdAt)}
-                    {entry.contactedAt
-                      ? ` · angeschrieben am ${new Intl.DateTimeFormat("de-DE").format(entry.contactedAt)}`
-                      : ""}
+                    eingetragen am {dateFormat.format(entry.createdAt)}
+                    {entry.contactedAt ? ` · angeschrieben am ${dateFormat.format(entry.contactedAt)}` : ""}
                   </p>
                 </div>
                 <WaitlistContactButton entryId={entry.id} name={entry.name} />
@@ -381,320 +117,6 @@ export default async function ManageCoursePage({ params }: { params: Promise<{ i
               </li>
             ))}
           </ol>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="font-semibold text-azure-800">Wöchentlicher Stundenplan</h2>
-        <p className="text-sm text-brand-600">
-          Feste Wochentermine für das Kursangebot (z.B. &bdquo;Mittwoch 18:00–18:40&ldquo;) –
-          unabhängig von den einzelnen Sitzungen mit Meeting-Link unten. Uhrzeiten in der Zeitzone
-          der Lehrkraft ({timeZoneLabel(courseTimeZone)}); auf der Website werden sie automatisch in
-          deutsche Zeit umgerechnet.
-        </p>
-
-        <ul className="space-y-2">
-          {course.scheduleSlots.map((slot) => (
-            <EditableRow
-              key={`${slot.id}-${slot.weekday}-${slot.startTime}-${slot.endTime}-${slot.note ?? ""}`}
-              summary={
-                <span className="font-medium">
-                  {WEEKDAY_LABELS[slot.weekday] ?? slot.weekday}: {slot.startTime}–{slot.endTime}
-                  {slot.note ? <span className="font-normal text-brand-600"> ({slot.note})</span> : ""}
-                </span>
-              }
-              removeAction={
-                <RemoveForm
-                  action={deleteScheduleSlot}
-                  fields={{ slotId: slot.id, courseId: course.id }}
-                  message="Diesen Wochentermin wirklich entfernen?"
-                />
-              }
-            >
-              <form action={updateScheduleSlot} className="grid gap-3 sm:grid-cols-4">
-                <input type="hidden" name="slotId" value={slot.id} />
-                <input type="hidden" name="courseId" value={course.id} />
-                <select name="weekday" required defaultValue={slot.weekday} className={INPUT}>
-                  {Object.values(Weekday).map((day) => (
-                    <option key={day} value={day}>
-                      {WEEKDAY_LABELS[day] ?? day}
-                    </option>
-                  ))}
-                </select>
-                <input name="startTime" type="time" required defaultValue={slot.startTime} className={INPUT} />
-                <input name="endTime" type="time" required defaultValue={slot.endTime} className={INPUT} />
-                <input name="note" placeholder="Hinweis (optional)" defaultValue={slot.note ?? ""} className={INPUT} />
-                <button className={`col-span-full sm:col-span-1 ${SAVE_BUTTON}`}>Speichern</button>
-              </form>
-            </EditableRow>
-          ))}
-        </ul>
-
-        <form action={createScheduleSlot} className="grid gap-3 sm:grid-cols-4">
-          <input type="hidden" name="courseId" value={course.id} />
-          <select
-            name="weekday"
-            required
-            className="border border-brand-300 px-3 py-2"
-            defaultValue=""
-          >
-            <option value="" disabled>
-              Wochentag
-            </option>
-            {Object.values(Weekday).map((day) => (
-              <option key={day} value={day}>
-                {WEEKDAY_LABELS[day] ?? day}
-              </option>
-            ))}
-          </select>
-          <input
-            name="startTime"
-            type="time"
-            required
-            className="border border-brand-300 px-3 py-2"
-          />
-          <input
-            name="endTime"
-            type="time"
-            required
-            className="border border-brand-300 px-3 py-2"
-          />
-          <input
-            name="note"
-            placeholder="Hinweis (optional, z.B. Morgens)"
-            className="border border-brand-300 px-3 py-2"
-          />
-          <button className="btn-primary col-span-full px-4 py-2 sm:col-span-1">
-            Termin hinzufügen
-          </button>
-        </form>
-      </section>
-
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-semibold text-azure-800">Sitzungen (mit Meeting-Link)</h2>
-          <Link href={`/teacher/courses/${course.id}/leseproben`} className="text-sm font-medium text-azure-800 underline">
-            Leseproben{unheardSamples > 0 ? ` (${unheardSamples} neu)` : ""}
-          </Link>
-        </div>
-        {upcomingSessions.length === 0 && (
-          <p className="text-sm text-brand-600">Keine kommenden Sitzungen geplant.</p>
-        )}
-        <ul className="space-y-2">
-          {upcomingSessions.map((classSession) => (
-            <SessionRow key={sessionKey(classSession)} classSession={classSession} courseId={course.id} isUpcoming timeZone={viewTimeZone} />
-          ))}
-        </ul>
-        {pastSessions.length > 0 && (
-          <details className="text-sm">
-            <summary className="cursor-pointer font-medium text-brand-700">
-              Vergangene Sitzungen ({pastSessions.length})
-            </summary>
-            <ul className="mt-2 space-y-2">
-              {pastSessions.map((classSession) => (
-                <SessionRow
-                  key={sessionKey(classSession)}
-                  classSession={classSession}
-                  courseId={course.id}
-                  isUpcoming={false}
-                  timeZone={viewTimeZone}
-                />
-              ))}
-            </ul>
-          </details>
-        )}
-
-        <div className="border border-gold-400/40 bg-white p-5">
-          <h3 className="mb-4 font-semibold text-azure-800">Einzelne Sitzung anlegen</h3>
-          <p className="mb-3 text-sm text-brand-600">
-            Ohne eigenen Link wird automatisch {meetingDescription} erzeugt. Beginn in der oben
-            angezeigten Zeitzone.
-          </p>
-          <form action={createClassSession} className="grid gap-3 sm:grid-cols-2">
-            <input type="hidden" name="courseId" value={course.id} />
-            <input
-              name="title"
-              placeholder="Titel (z.B. Sure Al-Baqara, Vers 1-10)"
-              required
-              className="col-span-full border border-brand-300 px-3 py-2"
-            />
-            <label className="flex flex-col text-sm text-brand-700">
-              Beginn
-              <input
-                name="startsAt"
-                type="datetime-local"
-                required
-                className="mt-1 border border-brand-300 px-3 py-2"
-              />
-            </label>
-            <label className="flex flex-col text-sm text-brand-700">
-              Dauer in Minuten
-              <input
-                name="durationMin"
-                type="number"
-                min={5}
-                max={480}
-                defaultValue={60}
-                className="mt-1 border border-brand-300 px-3 py-2"
-              />
-            </label>
-            <input
-              name="joinUrl"
-              type="url"
-              placeholder="Eigener Link (optional, ersetzt die automatische Erzeugung)"
-              className="col-span-full border border-brand-300 px-3 py-2"
-            />
-            <button className="btn-primary col-span-full px-4 py-2">
-              Sitzung anlegen
-            </button>
-          </form>
-        </div>
-
-        <div className="border border-gold-400/40 bg-white p-5">
-          <h3 className="mb-1 font-semibold text-azure-800">Wiederkehrende Sitzungen anlegen</h3>
-          <p className="mb-3 text-sm text-brand-600">
-            Legt mehrere Termine auf einmal an, jeweils mit eigenem, automatisch erzeugtem
-            Meeting-Link ({meetingKind}). Datum und Uhrzeit in der oben angezeigten Zeitzone.
-          </p>
-          <form action={createRecurringSessions} className="grid gap-3 sm:grid-cols-3">
-            <input type="hidden" name="courseId" value={course.id} />
-            <input
-              name="title"
-              placeholder="Titel (für alle Termine)"
-              required
-              className="col-span-full border border-brand-300 px-3 py-2"
-            />
-            <select
-              name="weekday"
-              required
-              defaultValue=""
-              className="border border-brand-300 px-3 py-2"
-            >
-              <option value="" disabled>
-                Wochentag
-              </option>
-              {Object.values(Weekday).map((day) => (
-                <option key={day} value={day}>
-                  {WEEKDAY_LABELS[day] ?? day}
-                </option>
-              ))}
-            </select>
-            <input
-              name="startTime"
-              type="time"
-              required
-              className="border border-brand-300 px-3 py-2"
-            />
-            <input
-              name="endTime"
-              type="time"
-              required
-              className="border border-brand-300 px-3 py-2"
-            />
-            <label className="flex flex-col text-sm text-brand-700">
-              Erster Termin
-              <input
-                name="firstDate"
-                type="date"
-                required
-                className="mt-1 border border-brand-300 px-3 py-2"
-              />
-            </label>
-            <label className="flex flex-col text-sm text-brand-700">
-              Intervall
-              <select
-                name="interval"
-                defaultValue="WEEKLY"
-                className="mt-1 border border-brand-300 px-3 py-2"
-              >
-                <option value="WEEKLY">Wöchentlich</option>
-                <option value="BIWEEKLY">Alle 2 Wochen</option>
-                <option value="MONTHLY">Monatlich</option>
-              </select>
-            </label>
-            <label className="flex flex-col text-sm text-brand-700">
-              Anzahl Termine
-              <input
-                name="occurrences"
-                type="number"
-                min={1}
-                max={52}
-                defaultValue={12}
-                required
-                className="mt-1 border border-brand-300 px-3 py-2"
-              />
-            </label>
-            <button className="btn-primary col-span-full px-4 py-2">
-              Termine anlegen
-            </button>
-          </form>
-        </div>
-      </section>
-
-      <section aria-labelledby="mail" className="space-y-4">
-        <h2 id="mail" className="font-semibold text-azure-800">
-          E-Mail an Teilnehmer (Kursmaterial, Ankündigungen)
-        </h2>
-        <p className="text-sm text-brand-600">
-          Schreibe an alle Teilnehmer dieses Kurses oder an einzelne und hänge Dateien aus deiner{" "}
-          <Link href="/teacher/mediathek" className="font-medium text-azure-800 underline">
-            Mediathek
-          </Link>{" "}
-          an. Die Nachricht wird getrennt von den automatischen Sitzungs-Erinnerungen verschickt.
-        </p>
-        <EmailComposer
-          courses={[
-            {
-              id: course.id,
-              title: course.title,
-              participants: course.enrollments.map(({ participant, user }) => ({
-                id: participant.id,
-                name: fullName(participant),
-                detail: participant.email
-                  ? `(${participant.email})`
-                  : `(Mail an ${user.name}, ${user.email})`,
-              })),
-            },
-          ]}
-          files={composerFiles}
-          upload={{
-            blobEnabled: isBlobConfigured(),
-            blobAccess: blobAccess(),
-            userId: session?.user.id ?? "",
-          }}
-        />
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="font-semibold text-azure-800">WhatsApp-Gruppe des Kurses</h2>
-        {whatsappMembers.length === 0 ? (
-          <p className="text-sm text-brand-600">
-            Noch niemand hat eine WhatsApp-Nummer für die Kurs-Gruppe angegeben.
-          </p>
-        ) : (
-          <div className="border border-gold-400/40 bg-white p-5">
-            <p className="mb-3 text-sm text-brand-600">
-              Diese Teilnehmer haben der Aufnahme in die WhatsApp-Gruppe zugestimmt. Bei Kindern ist
-              es die Nummer der Eltern. Bitte verwende die Nummern nur dafür.
-            </p>
-            <ul className="divide-y divide-brand-100 text-sm">
-              {whatsappMembers.map((m) => (
-                <li key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-                  <span className="font-medium">{m.name}</span>
-                  <span className="text-brand-700">{m.whatsapp}</span>
-                  <CopyButton text={m.whatsapp} ariaLabel={`Nummer von ${m.name} kopieren`} />
-                </li>
-              ))}
-            </ul>
-            {whatsappMembers.length > 1 && (
-              <div className="mt-3 border-t border-brand-100 pt-3">
-                <CopyButton
-                  text={whatsappMembers.map((m) => m.whatsapp).join("\n")}
-                  label={`Alle ${whatsappMembers.length} Nummern kopieren`}
-                />
-              </div>
-            )}
-          </div>
         )}
       </section>
     </div>
