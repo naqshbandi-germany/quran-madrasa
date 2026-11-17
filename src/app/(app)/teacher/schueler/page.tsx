@@ -114,7 +114,9 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
                 {list.map(({ participant, owner, courses: taken }) => (
                   <tr key={participant.id} className="align-top">
                     <td className="px-4 py-3">
-                      <span className="font-medium text-brand-900">{fullName(participant)}</span>
+                      <Link href={`/teacher/schueler/${participant.id}`} className="font-medium text-brand-900 underline hover:text-azure-800">
+                        {fullName(participant)}
+                      </Link>
                       {participant.relation === "CHILD" && (
                         <span className="block text-xs text-brand-600">
                           Kind{participant.birthYear ? `, Jahrgang ${participant.birthYear}` : ""}

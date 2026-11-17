@@ -18,12 +18,14 @@ export default async function ReadingSamplePage({
   searchParams,
 }: {
   params: Promise<{ courseId: string }>;
-  searchParams: Promise<{ sitzung?: string }>;
+  // abschnitt: in der E-Mail "Hörprobe anfordern" erbetener Abschnitt, z. B. "Sure 67 Al-Mulk, Verse 1–10"
+  searchParams: Promise<{ sitzung?: string; abschnitt?: string }>;
 }) {
   const session = await auth();
   if (!session) redirect("/auth/signin");
   const { courseId } = await params;
-  const { sitzung } = await searchParams;
+  const { sitzung, abschnitt: rawSection } = await searchParams;
+  const requestedSection = rawSection?.trim().slice(0, 200) || undefined;
 
   const course = await prisma.course.findUnique({ where: { id: courseId }, select: { id: true, title: true } });
   if (!course) notFound();
@@ -76,6 +78,13 @@ export default async function ReadingSamplePage({
         </p>
       </div>
 
+      {requestedSection && (
+        <p className="border-l-2 border-gold-400 bg-brand-50 px-3 py-2 text-sm">
+          <span className="font-semibold text-azure-800">Deine Lehrkraft bittet um eine Hörprobe:</span>{" "}
+          {requestedSection}
+        </p>
+      )}
+
       {requested.length > 0 && (
         <ul className="space-y-2">
           {requested.map((s) => (
@@ -97,6 +106,7 @@ export default async function ReadingSamplePage({
           label: `${formatGermanDateTime(s.startsAt)} Uhr${s.readingRequest ? ` – ${s.readingRequest}` : ""}`,
         }))}
         defaultSessionId={defaultSessionId}
+        initialNote={requestedSection}
       />
 
       <section className="space-y-3">

@@ -40,12 +40,16 @@ function buildCrumbs(pathname: string, names: Record<string, string>): Crumb[] {
       crumbs.splice(0, crumbs.length, { label: "Kurse", href: "/teacher/kurse" });
       continue;
     }
-    if (part === "sitzungen") continue;
+    // Reiter der Kursverwaltung stehen als Reiter unter dem Kurstitel, nicht in der Pfadleiste.
+    if (prev && parts[i - 2] === "courses" && ["sitzungen", "nachrichten", "einstellungen"].includes(part)) {
+      continue;
+    }
     // Kurse, Schueler, Mediathek usw. stehen im Menue neben der Uebersicht, nicht darunter.
     if (path === "/teacher" && i < parts.length - 1) continue;
 
     let label = STATIC_LABELS[path] ?? names[path];
     if (!label && prev === "sitzungen") label = "Stunde auswerten";
+    if (!label && prev === "schueler") label = "Schülerprofil";
     if (!label && part === "leseproben") label = "Leseproben";
     if (!label && prev === "konten") label = "Konto löschen";
     if (!label && prev === "courses") label = "Kurs";

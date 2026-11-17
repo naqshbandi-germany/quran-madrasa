@@ -88,11 +88,11 @@ model User {
   // des Dashboards erzeugt.
   calendarToken    String? @unique
 
-  taughtCourses       Course[]             @relation("TeacherCourses")
+  taughtCourses       Course[]                 @relation("TeacherCourses")
   enrollments         Enrollment[]
   subscriptions       Subscription[]
   passwordResetTokens PasswordResetToken[]
-  sentInvitations     Invitation[]         @relation("InvitationsSent")
+  sentInvitations     Invitation[]             @relation("InvitationsSent")
   participants        Participant[]
   mediaFiles          MediaFile[]
   teacherPhoto        TeacherPhoto?
@@ -139,6 +139,9 @@ model Course {
   // Rechnung des Abos faellig. Betrag in Cent nur fuer die Anzeige.
   signupFeeCents   Int?
   signupFeePriceId String?
+  // Laufzeit des Kurses (optional), z. B. 01.02. bis 30.06.
+  startsOn         DateTime?  @db.Date
+  endsOn           DateTime?  @db.Date
 
   teacherId String
   teacher   User   @relation("TeacherCourses", fields: [teacherId], references: [id])
@@ -278,18 +281,20 @@ model WaitlistEntry {
 }
 
 model Enrollment {
-  id             String        @id @default(cuid())
+  id              String        @id @default(cuid())
   // Konto-Inhaber (zahlt das Abo); der Teilnehmer steht in participantId.
-  userId         String
-  user           User          @relation(fields: [userId], references: [id])
-  participantId  String
-  participant    Participant   @relation(fields: [participantId], references: [id])
-  courseId       String
-  course         Course        @relation(fields: [courseId], references: [id])
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  participantId   String
+  participant     Participant   @relation(fields: [participantId], references: [id])
+  courseId        String
+  course          Course        @relation(fields: [courseId], references: [id])
   // Abo, ueber das die Teilnahme bezahlt wird (ein Abo kann mehrere Teilnehmer abdecken).
-  subscriptionId String?
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  createdAt      DateTime      @default(now())
+  subscriptionId  String?
+  subscription    Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+  // Von der Lehrkraft markiert: in die WhatsApp-Gruppe des Kurses aufgenommen.
+  whatsappAddedAt DateTime?
 
   @@unique([participantId, courseId])
 }

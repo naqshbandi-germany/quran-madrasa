@@ -178,13 +178,15 @@ export async function updateCourseSettings(formData: FormData) {
       stripePriceId: parsed.stripePriceId,
       signupFeeCents: parsed.signupFee,
       signupFeePriceId: parsed.signupFee ? parsed.signupFeePriceId : null,
-      maxParticipants: parsed.maxParticipants,
+      // Das Formular in der Kursverwaltung (Reiter Einstellungen) hat kein Feld dafuer.
+      ...(formData.has("maxParticipants") ? { maxParticipants: parsed.maxParticipants } : {}),
       isHidden: parsed.isHidden,
       accessCode: parsed.isHidden ? (course.accessCode ?? generateAccessCode()) : course.accessCode,
     },
   });
 
   revalidateCoursePages(course.slug);
+  revalidatePath(`/teacher/courses/${course.id}`, "layout");
 }
 
 // Neuer geheimer Link fuer einen versteckten Kurs; der alte Link funktioniert danach nicht mehr.

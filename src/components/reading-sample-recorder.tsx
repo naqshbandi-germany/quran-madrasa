@@ -29,16 +29,19 @@ export function ReadingSampleRecorder({
   participants,
   sessions,
   defaultSessionId,
+  initialNote = "",
 }: {
   courseId: string;
   participants: Option[];
   sessions: Option[];
   defaultSessionId?: string;
+  // Vorbelegung des Hinweises, z. B. der per E-Mail erbetene Abschnitt.
+  initialNote?: string;
 }) {
   const router = useRouter();
   const [participantId, setParticipantId] = useState(participants[0]?.id ?? "");
   const [sessionId, setSessionId] = useState(defaultSessionId ?? sessions[0]?.id ?? "");
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(initialNote);
   const [isRecording, setIsRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [recording, setRecording] = useState<Recording | null>(null);
