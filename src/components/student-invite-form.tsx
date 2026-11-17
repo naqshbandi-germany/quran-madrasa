@@ -20,6 +20,8 @@ export function StudentInviteForm({
   initialCourseId = "",
   allowFree = false,
   timeZoneHint,
+  trials = [],
+  initialTrialId = "",
 }: {
   // Fester Kurs oder Auswahl aus mehreren Kursen (Seite "Schüler einladen").
   courseId?: string;
@@ -28,6 +30,10 @@ export function StudentInviteForm({
   allowFree?: boolean;
   // Hinweis, in welcher Zeitzone die Uhrzeit der Probestunde gilt, z. B. "deutsche Zeit".
   timeZoneHint?: string;
+  // Kommende Probestunden, zu denen weitere Personen eingeladen werden koennen.
+  trials?: { id: string; courseId: string; when: string; label: string }[];
+  // Vorauswahl, z. B. ueber "Weitere einladen" unter "Termine".
+  initialTrialId?: string;
 }) {
   const [state, formAction, pending] = useActionState<StudentInviteState, FormData>(inviteStudents, null);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -35,10 +41,15 @@ export function StudentInviteForm({
   const [editing, setEditing] = useState<{ index: number; entry: Entry } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedCourse, setSelectedCourse] = useState(initialCourseId);
-  const [trial, setTrial] = useState(false);
+  const [trial, setTrial] = useState(Boolean(initialTrialId));
+  // "neu" = neuen Termin anlegen, sonst die ID einer bestehenden Probestunde.
+  const [trialChoice, setTrialChoice] = useState(initialTrialId || "neu");
   const [trialStartsAt, setTrialStartsAt] = useState("");
   const [trialDuration, setTrialDuration] = useState("30");
   const draftNameRef = useRef<HTMLInputElement>(null);
+  const activeCourse = courseId ?? selectedCourse;
+  const courseTrials = trials.filter((t) => t.courseId === activeCourse);
+  const existingTrial = trial ? courseTrials.find((t) => t.id === trialChoice) : undefined;
 
   function validate(entry: Entry) {
     const e = { name: entry.name.trim(), email: entry.email.trim() };
@@ -103,7 +114,8 @@ export function StudentInviteForm({
       setDraft({ name: "", email: "" });
       // React setzt das Formular nach dem Absenden zurück; die Kursauswahl entsprechend leeren.
       setSelectedCourse(initialCourseId);
-      setTrial(false);
+      setTrial(Boolean(initialTrialId));
+      setTrialChoice(initialTrialId || "neu");
       setTrialStartsAt("");
     }
   }
@@ -118,7 +130,10 @@ export function StudentInviteForm({
             name="courseId"
             required
             value={selectedCourse}
-            onChange={(e) => setSelectedCourse(e.target.value)}
+            onChange={(e) => {
+              setSelectedCourse(e.target.value);
+              setTrialChoice("neu");
+            }}
             aria-label="Kurs" className={`${INPUT} w-full sm:w-auto`}>
             <option value="" disabled>
               Kurs wählen …
@@ -228,37 +243,64 @@ export function StudentInviteForm({
           </label>
           {trial && (
             <div className="space-y-2 pl-6">
-              <div className="flex flex-wrap gap-3">
-                <label className="text-sm text-brand-800">
-                  Datum und Uhrzeit
-                  <input
-                    type="datetime-local"
-                    name="trialStartsAt"
-                    required
-                    value={trialStartsAt}
-                    onChange={(e) => setTrialStartsAt(e.target.value)}
-                    className={`${INPUT} mt-1 block`}
-                  />
-                </label>
-                <label className="text-sm text-brand-800">
-                  Dauer
+              {courseTrials.length > 0 && (
+                <label className="block text-sm text-brand-800">
+                  Termin
                   <select
-                    name="trialDuration"
-                    value={trialDuration}
-                    onChange={(e) => setTrialDuration(e.target.value)}
+                    name="trialId"
+                    value={trialChoice}
+                    onChange={(e) => setTrialChoice(e.target.value)}
                     className={`${INPUT} mt-1 block`}
                   >
-                    <option value="30">30 Minuten</option>
-                    <option value="45">45 Minuten</option>
-                    <option value="60">60 Minuten</option>
+                    <option value="neu">Neuen Termin anlegen</option>
+                    {courseTrials.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        Bestehende Probestunde: {t.label}
+                      </option>
+                    ))}
                   </select>
                 </label>
-              </div>
-              <p className="text-xs text-brand-600">
-                Ein gemeinsamer Termin für alle Eingeladenen{timeZoneHint ? `, Uhrzeit in ${timeZoneHint}` : ""}. Die
-                Eingeladenen brauchen kein Konto: Sie bekommen den Link zum Unterrichtsraum mit Kalendereintrag und werden
-                einen Tag und eine Stunde vorher erinnert. Die Probestunde erscheint unter „Termine“.
-              </p>
+              )}
+              {existingTrial ? (
+                <p className="text-xs text-brand-600">
+                  Die Eingeladenen kommen zur bestehenden Probestunde am {existingTrial.when} dazu und bekommen
+                  denselben Link zum Unterrichtsraum.
+                </p>
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-3">
+                    <label className="text-sm text-brand-800">
+                      Datum und Uhrzeit
+                      <input
+                        type="datetime-local"
+                        name="trialStartsAt"
+                        required
+                        value={trialStartsAt}
+                        onChange={(e) => setTrialStartsAt(e.target.value)}
+                        className={`${INPUT} mt-1 block`}
+                      />
+                    </label>
+                    <label className="text-sm text-brand-800">
+                      Dauer
+                      <select
+                        name="trialDuration"
+                        value={trialDuration}
+                        onChange={(e) => setTrialDuration(e.target.value)}
+                        className={`${INPUT} mt-1 block`}
+                      >
+                        <option value="30">30 Minuten</option>
+                        <option value="45">45 Minuten</option>
+                        <option value="60">60 Minuten</option>
+                      </select>
+                    </label>
+                  </div>
+                  <p className="text-xs text-brand-600">
+                    Ein gemeinsamer Termin für alle Eingeladenen{timeZoneHint ? `, Uhrzeit in ${timeZoneHint}` : ""}. Die
+                    Eingeladenen brauchen kein Konto: Sie bekommen den Link zum Unterrichtsraum mit Kalendereintrag und werden
+                    einen Tag und eine Stunde vorher erinnert. Die Probestunde erscheint unter „Termine“.
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>

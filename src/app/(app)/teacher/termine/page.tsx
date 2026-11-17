@@ -182,6 +182,12 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
                     <td className={`${TD} whitespace-nowrap text-right`}>
                       {!t.canceledAt && !past && (
                         <div className="flex flex-wrap items-center justify-end gap-3">
+                          <Link
+                            href={`/teacher/schueler/einladen?probestunde=${t.id}`}
+                            className="font-medium text-brand-700 underline"
+                          >
+                            Weitere einladen
+                          </Link>
                           <a href={t.joinUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-brand-700 underline">
                             Raum öffnen
                           </a>

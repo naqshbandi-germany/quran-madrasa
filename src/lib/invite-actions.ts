@@ -11,7 +11,7 @@ import { createStudentInvitation, STUDENT_INVITE_TTL_DAYS } from "@/lib/invitati
 import { prisma } from "@/lib/prisma";
 import { formatZonedDateTime, parseZonedDateTime } from "@/lib/schedule-time";
 import { resolveViewTimeZone } from "@/lib/view-time-zone";
-import { createTrialLesson, TRIAL_DURATIONS } from "@/lib/trial-lessons";
+import { addTrialGuests, createTrialLesson, TRIAL_DURATIONS } from "@/lib/trial-lessons";
 import { createAccountInvite, INVITE_TTL_DAYS, type InviteDelivery } from "@/lib/teacher-invite";
 
 export type InviteState = {
@@ -238,6 +238,20 @@ async function inviteToTrial(
   }
   // Gleiche Zeitzone wie die Anzeige im Lehrer-Bereich (eigene Zeitzone oder per Schalter MEZ).
   const { timeZone } = await resolveViewTimeZone(userId);
+
+  // Bestehende Probestunde gewaehlt: weitere Gaeste zum selben Termin einladen.
+  const existingId = text(formData, "trialId");
+  if (existingId && existingId !== "neu") {
+    const existing = await prisma.trialLesson.findUnique({ where: { id: existingId }, select: { courseId: true } });
+    if (!existing || existing.courseId !== courseId) {
+      return { ok: false, message: "Diese Probestunde gehört nicht zum gewählten Kurs." };
+    }
+    const added = await addTrialGuests({ trialId: existingId, guests: students, delivery: mode });
+    if (!added) return { ok: false, message: "Diese Probestunde ist abgesagt oder schon vorbei." };
+    revalidatePath("/teacher/termine");
+    return trialResult(added.results, mode, `${formatZonedDateTime(added.trial.startsAt, timeZone, "full")} Uhr`, false);
+  }
+
   let startsAt: Date;
   try {
     startsAt = parseZonedDateTime(text(formData, "trialStartsAt"), timeZone);
@@ -260,30 +274,39 @@ async function inviteToTrial(
       delivery: mode,
     });
     revalidatePath("/teacher/termine");
-    const when = `${formatZonedDateTime(startsAt, timeZone, "full")} Uhr`;
-    const okCount = results.filter((r) => r.ok).length;
-    const anyMailed = results.some((r) => r.mailed);
-    const mailNote =
-      mode === "mail" && !anyMailed && okCount > 0
-        ? " Kein E-Mail-Dienst eingerichtet (lokal): Die Mails stehen in der Server-Konsole."
-        : "";
-    return {
-      ok: okCount > 0,
-      message:
-        mode === "mail"
-          ? `Probestunde am ${when} angelegt, ${okCount} von ${results.length} Einladungen verschickt.${mailNote} Du findest sie unter „Termine“.`
-          : `Probestunde am ${when} angelegt. Schicke die Nachrichten selbst weiter, z. B. per WhatsApp. Du findest sie unter „Termine“.`,
-      results: results.map((r) => ({
-        name: r.name,
-        email: r.email,
-        ok: r.ok,
-        message: r.ok ? "" : "Die Einladung konnte nicht verschickt werden.",
-        shareText: r.shareText,
-      })),
-    };
+    return trialResult(results, mode, `${formatZonedDateTime(startsAt, timeZone, "full")} Uhr`, true);
   } catch (err) {
     console.error("Probestunde konnte nicht angelegt werden:", err);
     const detail = err instanceof Error && err.message.includes("Zoom") ? ` ${err.message}` : "";
     return { ok: false, message: `Die Probestunde konnte nicht angelegt werden.${detail}` };
   }
+}
+
+function trialResult(
+  results: { name: string; email: string; ok: boolean; mailed: boolean; shareText: string }[],
+  mode: InviteDelivery,
+  when: string,
+  created: boolean,
+): StudentInviteState {
+  const okCount = results.filter((r) => r.ok).length;
+  const anyMailed = results.some((r) => r.mailed);
+  const mailNote =
+    mode === "mail" && !anyMailed && okCount > 0
+      ? " Kein E-Mail-Dienst eingerichtet (lokal): Die Mails stehen in der Server-Konsole."
+      : "";
+  const start = created ? `Probestunde am ${when} angelegt` : `Zur Probestunde am ${when} eingeladen`;
+  return {
+    ok: okCount > 0,
+    message:
+      mode === "mail"
+        ? `${start}, ${okCount} von ${results.length} Einladungen verschickt.${mailNote} Du findest sie unter „Termine“.`
+        : `${start}. Schicke die Nachrichten selbst weiter, z. B. per WhatsApp. Du findest sie unter „Termine“.`,
+    results: results.map((r) => ({
+      name: r.name,
+      email: r.email,
+      ok: r.ok,
+      message: r.ok ? "" : "Die Einladung konnte nicht verschickt werden.",
+      shareText: r.shareText,
+    })),
+  };
 }
