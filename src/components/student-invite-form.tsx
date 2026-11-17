@@ -31,7 +31,7 @@ export function StudentInviteForm({
   // Hinweis, in welcher Zeitzone die Uhrzeit der Probestunde gilt, z. B. "deutsche Zeit".
   timeZoneHint?: string;
   // Kommende Probestunden, zu denen weitere Personen eingeladen werden koennen.
-  trials?: { id: string; courseId: string; when: string; label: string }[];
+  trials?: { id: string; courseId: string; courseTitle: string; when: string; label: string }[];
   // Vorauswahl, z. B. ueber "Weitere einladen" unter "Termine".
   initialTrialId?: string;
 }) {
@@ -48,7 +48,9 @@ export function StudentInviteForm({
   const [trialDuration, setTrialDuration] = useState("30");
   const draftNameRef = useRef<HTMLInputElement>(null);
   const activeCourse = courseId ?? selectedCourse;
-  const courseTrials = trials.filter((t) => t.courseId === activeCourse);
+  // Ohne gewaehlten Kurs alle kommenden Probestunden anbieten (mit Kursname); die Auswahl
+  // stellt dann den passenden Kurs ein.
+  const courseTrials = activeCourse ? trials.filter((t) => t.courseId === activeCourse) : trials;
   const existingTrial = trial ? courseTrials.find((t) => t.id === trialChoice) : undefined;
 
   function validate(entry: Entry) {
@@ -249,13 +251,18 @@ export function StudentInviteForm({
                   <select
                     name="trialId"
                     value={trialChoice}
-                    onChange={(e) => setTrialChoice(e.target.value)}
+                    onChange={(e) => {
+                      setTrialChoice(e.target.value);
+                      const picked = trials.find((t) => t.id === e.target.value);
+                      if (picked && !courseId) setSelectedCourse(picked.courseId);
+                    }}
                     className={`${INPUT} mt-1 block`}
                   >
                     <option value="neu">Neuen Termin anlegen</option>
                     {courseTrials.map((t) => (
                       <option key={t.id} value={t.id}>
-                        Bestehende Probestunde: {t.label}
+                        Bestehende Probestunde: {activeCourse ? "" : `${t.courseTitle}, `}
+                        {t.label}
                       </option>
                     ))}
                   </select>
