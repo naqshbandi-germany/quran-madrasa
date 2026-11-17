@@ -9,7 +9,7 @@ import { createClassroomMeeting, createClassroomMeetings } from "@/lib/classroom
 import { sendSessionChangeNotice } from "@/lib/notification-email";
 import { prisma } from "@/lib/prisma";
 import { convertSlotZone, fromZonedLocal, parseZonedDateTime } from "@/lib/schedule-time";
-import { DEFAULT_TIME_ZONE, teacherTimeZone } from "@/lib/time-zones";
+import { teacherTimeZone } from "@/lib/time-zones";
 import { resolveViewTimeZone } from "@/lib/view-time-zone";
 import { deleteZoomMeeting, updateZoomMeeting } from "@/lib/zoom";
 
@@ -21,16 +21,19 @@ async function requireTeacher() {
   return session;
 }
 
-// Stundenplan-Eintraege werden in der Ortszeit der Lehrkraft gespeichert. Admins geben sie in
-// deutscher Zeit ein; dann wird hier in die Zeitzone der Lehrkraft umgerechnet.
+// Stundenplan-Eintraege werden in der Ortszeit der Lehrkraft gespeichert. Eingegeben werden sie
+// in der angezeigten Zeitzone (Admins: deutsche Zeit; Lehrkraefte: Ortszeit oder per Umschalter
+// MEZ); hier wird in die Zeitzone der Lehrkraft umgerechnet.
 async function slotInTeacherZone<T extends { weekday: Weekday; startTime: string; endTime: string }>(
-  session: { user: { role: string } },
+  session: { user: { id: string } },
   teacherId: string,
   slot: T,
 ): Promise<T> {
-  if (session.user.role !== "ADMIN") return slot;
-  const teacher = await prisma.user.findUnique({ where: { id: teacherId }, select: { timeZone: true } });
-  const converted = convertSlotZone(slot, DEFAULT_TIME_ZONE, teacherTimeZone(teacher));
+  const [{ timeZone: inputZone }, teacher] = await Promise.all([
+    resolveViewTimeZone(session.user.id),
+    prisma.user.findUnique({ where: { id: teacherId }, select: { timeZone: true } }),
+  ]);
+  const converted = convertSlotZone(slot, inputZone, teacherTimeZone(teacher));
   return { ...converted, weekday: converted.weekday as Weekday };
 }
 

@@ -164,7 +164,7 @@ function WeekdaySelect({ defaultValue }: { defaultValue?: string }) {
 // woechentliche Stundenplan fuer die Website und die Leseproben.
 export default async function CourseSessionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session, course, isAdmin } = await requireManagedCourse(id);
+  const { session, course } = await requireManagedCourse(id);
   const { timeZone: viewTimeZone, ownTimeZone, showingOwn } = await resolveViewTimeZone(session.user.id);
 
   const [sessions, scheduleSlots, teacher, unheardSamples] = await Promise.all([
@@ -179,9 +179,9 @@ export default async function CourseSessionsPage({ params }: { params: Promise<{
   ]);
   // Stundenplan-Eintraege gelten immer in der Zeitzone der Lehrkraft des Kurses.
   const courseTimeZone = teacherTimeZone(teacher ?? { timeZone: null });
-  // Admins sehen und bearbeiten den Stundenplan in deutscher Zeit (Umrechnung beim Speichern).
-  const slotZone = isAdmin ? "Europe/Berlin" : courseTimeZone;
-  const slots = scheduleSlots.map((slot) => convertSlotZone(slot, courseTimeZone, slotZone));
+  // Der Stundenplan ist in der Ortszeit der Lehrkraft gespeichert und wird wie die Sitzungen in
+  // der angezeigten Zeitzone gezeigt und bearbeitet (Umrechnung beim Speichern).
+  const slots = scheduleSlots.map((slot) => convertSlotZone(slot, courseTimeZone, viewTimeZone));
 
   const now = new Date();
   const upcomingSessions = sessions.filter((s) => s.startsAt >= now);
@@ -306,9 +306,7 @@ export default async function CourseSessionsPage({ params }: { params: Promise<{
         <p className="text-sm text-brand-600">
           Feste Wochentermine für das Kursangebot (z.B. &bdquo;Mittwoch 18:00–18:40&ldquo;) – unabhängig von den
           einzelnen Sitzungen mit Meeting-Link oben.
-          {slotZone === "Europe/Berlin"
-            ? ""
-            : ` Uhrzeiten immer in deiner Ortszeit (${timeZoneLabel(slotZone)}), auch wenn oben MEZ gewählt ist; auf der Website werden sie automatisch in deutsche Zeit umgerechnet.`}
+          {zoneHint && `${zoneHint.replace("Datum und Uhrzeit", "Uhrzeiten")} Auf der Website erscheinen sie in deutscher Zeit.`}
         </p>
 
         <ul className="space-y-2">
