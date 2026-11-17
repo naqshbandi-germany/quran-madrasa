@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { auth } from "@/auth";
 import { createStudentInvitation, STUDENT_INVITE_TTL_DAYS } from "@/lib/invitations";
+import { enrolledEmails, lookupInvitee, normalizeEmail, type KnownInvitee } from "@/lib/invitees";
 import { prisma } from "@/lib/prisma";
 import { formatZonedDateTime, parseZonedDateTime } from "@/lib/schedule-time";
 import { resolveViewTimeZone } from "@/lib/view-time-zone";
@@ -135,6 +136,22 @@ export type StudentInviteState = {
 
 const MAX_STUDENTS_PER_INVITE = 50;
 
+// Abfrage beim Eintippen einer E-Mail-Adresse im Einladungsformular: Ist die Person schon
+// bekannt (Konto, offene Einladung, Probestunde)?
+export async function lookupInviteEmail(email: string, courseId: string): Promise<KnownInvitee | null> {
+  const session = await auth();
+  if (!session || (session.user.role !== Role.ADMIN && session.user.role !== Role.TEACHER)) return null;
+  const parsed = z.string().trim().email().max(200).safeParse(email);
+  if (!parsed.success) return null;
+  const { timeZone } = await resolveViewTimeZone(session.user.id);
+  return lookupInvitee({
+    email: parsed.data,
+    courseId: courseId || null,
+    viewer: { id: session.user.id, isAdmin: session.user.role === Role.ADMIN },
+    timeZone,
+  });
+}
+
 // Laedt einen oder mehrere Schueler zu einem Kurs ein (Feld "students" als JSON-Liste mit
 // name und email). Lehrkraefte nur zu eigenen Kursen und immer zur normalen Anmeldung mit
 // Bezahlung; Admins koennen zusaetzlich "ohne Zahlung eintragen" waehlen. Ohne Eintrag wird
@@ -172,7 +189,16 @@ export async function inviteStudents(_prev: StudentInviteState, formData: FormDa
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Ungültige Eingaben." };
 
   const mode = delivery(formData);
-  const students = parsed.data.filter((s) => s.name || s.email);
+  // Dieselbe E-Mail-Adresse nur einmal (z. B. versehentlich doppelt in der Liste).
+  const seen = new Set<string>();
+  const students = parsed.data.filter((s) => {
+    if (!s.name && !s.email) return false;
+    if (!s.email) return true;
+    const key = normalizeEmail(s.email);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   if (students.length === 0) {
     if (mode === "mail") return { ok: false, message: "Bitte mindestens einen Schüler mit Name und E-Mail-Adresse eingeben." };
     students.push({ name: "", email: "" });
@@ -189,8 +215,13 @@ export async function inviteStudents(_prev: StudentInviteState, formData: FormDa
 
   if (isTrial) return inviteToTrial(session.user.id, course.id, students, mode, formData);
 
+  const enrolled = await enrolledEmails(course.id);
   const results: StudentInviteResult[] = [];
   for (const { name, email } of students) {
+    if (email && enrolled.has(normalizeEmail(email))) {
+      results.push({ name, email, ok: false, message: "Ist bereits in diesem Kurs angemeldet, keine Einladung nötig." });
+      continue;
+    }
     try {
       const { link, mailed } = await createStudentInvitation({
         courseId,

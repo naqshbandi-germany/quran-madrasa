@@ -75,9 +75,16 @@ export async function addTrialGuests(params: { trialId: string; guests: TrialGue
     include: { course: { include: { teacher: { select: { name: true, zoomEmail: true } } } } },
   });
   if (!trial || trial.canceledAt || trial.startsAt.getTime() < Date.now()) return null;
-  await prisma.trialGuest.createMany({
-    data: params.guests.map((g) => ({ trialLessonId: trial.id, name: g.name, email: g.email })),
-  });
+  // Wer mit derselben E-Mail-Adresse schon eingeladen ist, bekommt die Einladung nur erneut,
+  // ohne zweiten Eintrag (sonst steht dieselbe Person unter zwei Namen in der Liste).
+  const existing = await prisma.trialGuest.findMany({ where: { trialLessonId: trial.id }, select: { email: true } });
+  const known = new Set(existing.flatMap((g) => (g.email ? [g.email.trim().toLowerCase()] : [])));
+  const fresh = params.guests.filter((g) => !g.email || !known.has(g.email.trim().toLowerCase()));
+  if (fresh.length > 0) {
+    await prisma.trialGuest.createMany({
+      data: fresh.map((g) => ({ trialLessonId: trial.id, name: g.name, email: g.email })),
+    });
+  }
   const results = await sendTrialInvites(trial, trial.course, params.guests, params.delivery);
   return { trial, course: trial.course, results };
 }

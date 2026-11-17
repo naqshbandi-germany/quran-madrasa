@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useRef, useState, type KeyboardEvent } from "react";
+import { useActionState, useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { CopyButton } from "@/components/copy-button";
 import { PencilIcon, XIcon } from "@/components/icons";
-import { inviteStudents, type StudentInviteState } from "@/lib/invite-actions";
+import { inviteStudents, lookupInviteEmail, type StudentInviteState } from "@/lib/invite-actions";
+import type { KnownInvitee } from "@/lib/invitees";
 
 type Entry = { name: string; email: string };
 
@@ -53,11 +54,37 @@ export function StudentInviteForm({
   const courseTrials = activeCourse ? trials.filter((t) => t.courseId === activeCourse) : trials;
   const existingTrial = trial ? courseTrials.find((t) => t.id === trialChoice) : undefined;
 
-  function validate(entry: Entry) {
+  // Abgleich der eingetippten E-Mail-Adresse: bekannte Personen (Konto, Einladung, Probestunde)
+  // werden angezeigt, damit niemand doppelt unter verschiedenen Namen eingeladen wird.
+  const [known, setKnown] = useState<Record<string, KnownInvitee | null>>({});
+  const draftEmail = draft.email.trim().toLowerCase();
+  const lookupKey = `${activeCourse}|${draftEmail}`;
+  useEffect(() => {
+    if (!EMAIL_PATTERN.test(draftEmail) || lookupKey in known) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const result = await lookupInviteEmail(draftEmail, activeCourse).catch(() => null);
+      if (!cancelled) setKnown((k) => ({ ...k, [lookupKey]: result }));
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [draftEmail, activeCourse, lookupKey, known]);
+  const draftKnown = EMAIL_PATTERN.test(draftEmail) ? known[lookupKey] : undefined;
+
+  function validate(entry: Entry, exceptIndex = -1) {
     const e = { name: entry.name.trim(), email: entry.email.trim() };
     if (!e.name && !e.email) return null;
     if (e.email && !EMAIL_PATTERN.test(e.email)) {
       setError(`„${e.email}“ ist keine gültige E-Mail-Adresse.`);
+      return null;
+    }
+    const duplicate =
+      e.email &&
+      entries.some((x, i) => i !== exceptIndex && x.email.toLowerCase() === e.email.toLowerCase());
+    if (duplicate) {
+      setError(`„${e.email}“ steht schon in der Liste.`);
       return null;
     }
     setError(null);
@@ -74,7 +101,7 @@ export function StudentInviteForm({
 
   function saveEdit() {
     if (!editing) return;
-    const entry = validate(editing.entry);
+    const entry = validate(editing.entry, editing.index);
     if (!entry) {
       if (!editing.entry.name.trim() && !editing.entry.email.trim()) {
         setEntries((list) => list.filter((_, i) => i !== editing.index));
@@ -111,6 +138,8 @@ export function StudentInviteForm({
   const [handled, setHandled] = useState<StudentInviteState>(null);
   if (state !== handled) {
     setHandled(state);
+    // Nach dem Absenden ist die Person ggf. neu bekannt (Einladung, Probestunde): neu abfragen.
+    setKnown({});
     if (state?.ok) {
       setEntries([]);
       setDraft({ name: "", email: "" });
@@ -222,6 +251,34 @@ export function StudentInviteForm({
             className={INPUT}
           />
         </div>
+        {draftKnown && (
+          <div role="status" className="space-y-1 border border-orange-300 bg-orange-50 px-3 py-2 text-sm text-orange-950">
+            <p>
+              <span className="font-semibold">Bereits bekannt: {draftKnown.name || draftKnown.email}</span>
+              {draftKnown.hasAccount && " · hat ein Konto"}
+              {draftKnown.enrolledHere && " · ist in diesem Kurs angemeldet"}
+            </p>
+            {draftKnown.notes.length > 0 && (
+              <ul className="list-disc pl-5 text-xs">
+                {draftKnown.notes.map((n) => (
+                  <li key={n}>{n}</li>
+                ))}
+              </ul>
+            )}
+            {draftKnown.enrolledHere && !trial && (
+              <p className="text-xs">Eine Einladung zur Anmeldung ist nicht nötig.</p>
+            )}
+            {draftKnown.inviteName && draftKnown.inviteName !== draft.name.trim() && (
+              <button
+                type="button"
+                onClick={() => setDraft({ ...draft, name: draftKnown.inviteName })}
+                className="text-xs font-medium text-orange-900 underline"
+              >
+                Name „{draftKnown.inviteName}“ übernehmen
+              </button>
+            )}
+          </div>
+        )}
         <p className="text-xs text-brand-600">
           Mit Enter übernehmen, dann den nächsten Schüler eingeben. Für den Versand per E-Mail sind Name und
           E-Mail nötig; für Links reicht der Name (oder gar nichts).
