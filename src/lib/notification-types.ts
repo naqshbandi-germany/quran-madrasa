@@ -76,6 +76,8 @@ export type EventData = {
   ownerEmail?: string;
   periodEnd?: string;
   note?: string;
+  // Hoerprobe eines Probestunden-Gastes (ohne Konto)
+  trial?: boolean;
 };
 
 function names(data: EventData) {
@@ -121,8 +123,8 @@ export function describeEvent(type: NotificationTypeKey, data: EventData): { tit
       };
     case "READING_SAMPLE_UPLOADED":
       return {
-        title: `Neue Leseprobe: ${data.course ?? "Kurs"}`,
-        detail: `${names(data)} hat im Kurs ${course} eine Leseprobe hochgeladen.${
+        title: data.trial ? `Neue Hörprobe zur Probestunde: ${data.course ?? "Kurs"}` : `Neue Leseprobe: ${data.course ?? "Kurs"}`,
+        detail: `${names(data)} hat ${data.trial ? `für die Probestunde im Kurs ${course} eine Hörprobe` : `im Kurs ${course} eine Leseprobe`} hochgeladen.${
           data.note ? ` Hinweis: „${data.note}“` : ""
         }`,
       };
@@ -142,8 +144,9 @@ export function describeEvent(type: NotificationTypeKey, data: EventData): { tit
 }
 
 // Ziel eines Ereignisses im Lehrer- bzw. Admin-Bereich.
-export function eventHref(type: NotificationTypeKey, courseId: string | null): string | null {
+export function eventHref(type: NotificationTypeKey, courseId: string | null, data?: EventData): string | null {
   if (type === "PAYMENT_FAILED") return "/admin/konten";
+  if (data?.trial) return "/teacher/termine";
   if (!courseId) return null;
   if (type === "READING_SAMPLE_UPLOADED") return `/teacher/courses/${courseId}/leseproben`;
   return `/teacher/courses/${courseId}`;

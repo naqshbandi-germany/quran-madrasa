@@ -33,6 +33,7 @@ export function ReadingSampleRecorder({
   sessions,
   defaultSessionId,
   initialNote = "",
+  guestToken,
 }: {
   courseId: string;
   participants: Option[];
@@ -40,6 +41,9 @@ export function ReadingSampleRecorder({
   defaultSessionId?: string;
   // Vorbelegung des Hinweises, z. B. der per E-Mail erbetene Abschnitt.
   initialNote?: string;
+  // Gast einer Probestunde ohne Konto: Hochladen ueber den persoenlichen Link (Token) statt
+  // ueber Teilnehmer und Kurs; vor dem Senden muss die Einwilligung bestaetigt werden.
+  guestToken?: string;
 }) {
   const router = useRouter();
   const [participantId, setParticipantId] = useState(participants[0]?.id ?? "");
@@ -50,6 +54,7 @@ export function ReadingSampleRecorder({
   const [recording, setRecording] = useState<Recording | null>(null);
   const [status, setStatus] = useState<{ ok: boolean; message: string } | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [consent, setConsent] = useState(false);
   // Mikrofon-Stream waehrend der Aufnahme, fuer die Live-Wellenform
   const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
   const heightsRef = useRef<number[]>([]);
@@ -152,7 +157,11 @@ export function ReadingSampleRecorder({
   }
 
   async function send() {
-    if (!recording || !participantId) return;
+    if (!recording || (!guestToken && !participantId)) return;
+    if (guestToken && !consent) {
+      setStatus({ ok: false, message: "Bitte bestätige zuerst den Hinweis zum Datenschutz." });
+      return;
+    }
     if (recording.seconds && recording.seconds > MAX_SECONDS + 5) {
       setStatus({ ok: false, message: "Die Aufnahme ist länger als 5 Minuten. Bitte kürze sie." });
       return;
@@ -161,13 +170,18 @@ export function ReadingSampleRecorder({
     setStatus(null);
     const body = new FormData();
     body.set("file", recording.blob, recording.fileName);
-    body.set("participantId", participantId);
-    body.set("courseId", courseId);
-    if (sessionId) body.set("sessionId", sessionId);
+    if (guestToken) {
+      body.set("token", guestToken);
+      body.set("consent", "on");
+    } else {
+      body.set("participantId", participantId);
+      body.set("courseId", courseId);
+      if (sessionId) body.set("sessionId", sessionId);
+    }
     if (note.trim()) body.set("note", note.trim());
     if (recording.seconds) body.set("durationSec", String(Math.round(recording.seconds)));
     try {
-      const res = await fetch("/api/leseproben", { method: "POST", body });
+      const res = await fetch(guestToken ? "/api/probestunde/hoerprobe" : "/api/leseproben", { method: "POST", body });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
         setStatus({ ok: false, message: data.error ?? "Das Hochladen hat nicht geklappt." });
@@ -175,7 +189,7 @@ export function ReadingSampleRecorder({
       }
       setRecording(null);
       setNote("");
-      setStatus({ ok: true, message: "Danke! Die Leseprobe ist bei der Lehrkraft angekommen." });
+      setStatus({ ok: true, message: `Danke! Die ${guestToken ? "Hörprobe" : "Leseprobe"} ist bei der Lehrkraft angekommen.` });
       router.refresh();
     } catch {
       setStatus({ ok: false, message: "Keine Verbindung. Bitte versuche es noch einmal." });
@@ -188,6 +202,7 @@ export function ReadingSampleRecorder({
 
   return (
     <div className="space-y-4 border border-gold-400/40 bg-white p-5 text-sm">
+      {!guestToken && (
       <div className="grid gap-3 sm:grid-cols-2">
         {participants.length > 1 ? (
           <label className="flex flex-col text-brand-700">
@@ -217,6 +232,7 @@ export function ReadingSampleRecorder({
           </select>
         </label>
       </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         {isRecording ? (
@@ -270,7 +286,30 @@ export function ReadingSampleRecorder({
               className={selectClass}
             />
           </label>
-          <button type="button" onClick={send} disabled={isSending} className="btn-primary px-4 py-2 disabled:opacity-60">
+          {guestToken && (
+            <label className="flex items-start gap-2 text-brand-800">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0"
+              />
+              <span>
+                Ich bin mindestens 18 Jahre alt (oder nehme als Erziehungsberechtigte/r für mein Kind auf) und habe
+                den{" "}
+                <a href="/datenschutz" target="_blank" className="underline">
+                  Datenschutzhinweis
+                </a>{" "}
+                gelesen. Die Aufnahme wird nur für die Vorbereitung der Probestunde gespeichert.
+              </span>
+            </label>
+          )}
+          <button
+            type="button"
+            onClick={send}
+            disabled={isSending || (Boolean(guestToken) && !consent)}
+            className="btn-primary px-4 py-2 disabled:opacity-60"
+          >
             {isSending ? "Wird hochgeladen …" : "An die Lehrkraft senden"}
           </button>
         </div>
@@ -283,8 +322,9 @@ export function ReadingSampleRecorder({
       )}
 
       <p className="text-xs text-brand-600">
-        Höchstens 5 Minuten. Die Aufnahme hört nur die Lehrkraft (andere Teilnehmer nicht) und wird
-        nach 6 Monaten automatisch gelöscht. Du kannst sie vorher jederzeit selbst löschen.
+        {guestToken
+          ? "Höchstens 5 Minuten. Die Aufnahme hört nur die Lehrkraft und wird nach 6 Monaten automatisch gelöscht."
+          : "Höchstens 5 Minuten. Die Aufnahme hört nur die Lehrkraft (andere Teilnehmer nicht) und wird nach 6 Monaten automatisch gelöscht. Du kannst sie vorher jederzeit selbst löschen."}
       </p>
     </div>
   );

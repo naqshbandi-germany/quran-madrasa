@@ -148,3 +148,37 @@ export const ATTENDANCE_LABELS = {
   EXCUSED: "entschuldigt",
   ABSENT: "fehlt",
 } as const;
+
+// Sure und Versbereich der Hoerprobe, z. B. "Sure 67 Al-Mulk, Verse 1–10". Fehler landen in errors.
+export function sampleRangeFromForm(formData: FormData, errors: Record<string, string>) {
+  const text = (key: string) => {
+    const value = formData.get(key);
+    return typeof value === "string" ? value : "";
+  };
+  const surah = Number(text("surah"));
+  const ayahs = surahAyahCount(surah);
+  if (!Number.isInteger(surah) || !ayahs) {
+    errors.surah = "Bitte wähle eine Sure.";
+    return null;
+  }
+  if (formData.get("wholeSurah") === "on") return `${formatSurahPosition(surah, null)} (ganze Sure)`;
+  const fromRaw = text("fromAyah").trim();
+  if (!fromRaw) {
+    errors.fromAyah = "Bitte gib den ersten Vers an oder wähle „Ganze Sure“.";
+    return null;
+  }
+  const toRaw = text("toAyah").trim();
+  const from = fromRaw ? Number(fromRaw) : 1;
+  const to = toRaw ? Number(toRaw) : fromRaw ? from : ayahs;
+  if (!Number.isInteger(from) || from < 1 || from > ayahs) {
+    errors.fromAyah = `Die Sure hat ${ayahs} Verse.`;
+    return null;
+  }
+  if (!Number.isInteger(to) || to < from || to > ayahs) {
+    errors.toAyah = to < from ? "Der letzte Vers liegt vor dem ersten." : `Die Sure hat ${ayahs} Verse.`;
+    return null;
+  }
+  const base = formatSurahPosition(surah, null);
+  if (from === 1 && to === ayahs) return `${base} (ganze Sure)`;
+  return from === to ? `${base}, Vers ${from}` : `${base}, Verse ${from}–${to}`;
+}

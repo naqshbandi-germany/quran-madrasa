@@ -4,6 +4,7 @@ import Stripe from "stripe";
 
 import { findValidInvitation } from "@/lib/invitations";
 import { sendEnrollmentConfirmation } from "@/lib/notification-email";
+import { adoptTrialSamplesSafely } from "@/lib/trial-samples";
 
 import { auth } from "@/auth";
 import { getAppUrl } from "@/lib/app-url";
@@ -196,6 +197,7 @@ export async function POST(request: Request) {
     );
     revalidatePath("/courses/[slug]", "page");
     revalidatePath("/");
+    await adoptTrialSamplesSafely(course.id, participantIds);
     try {
       await sendEnrollmentConfirmation(course.id, enrollments.map((e) => e.id));
     } catch (err) {

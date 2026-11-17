@@ -85,8 +85,9 @@ export async function NotificationsFeed({
         <ul className="divide-y divide-brand-200 border border-brand-200 bg-white">
           {notifications.map((n) => {
             const eventType = n.event.type;
-            const { title, detail } = describeEvent(eventType, (n.event.data ?? {}) as EventData);
-            const href = eventHref(eventType, n.event.courseId);
+            const data = (n.event.data ?? {}) as EventData;
+            const { title, detail } = describeEvent(eventType, data);
+            const href = eventHref(eventType, n.event.courseId, data);
             const unread = !n.readAt;
             return (
               <li key={n.id} className={`flex gap-3 p-4 ${unread ? "bg-azure-50/60" : ""}`}>

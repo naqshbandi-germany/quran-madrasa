@@ -5,6 +5,7 @@ import type Stripe from "stripe";
 import { sendEnrollmentConfirmation } from "@/lib/notification-email";
 import { recordEvent } from "@/lib/notifications";
 import { callName, fullName } from "@/lib/names";
+import { adoptTrialSamplesSafely } from "@/lib/trial-samples";
 import { prisma } from "@/lib/prisma";
 
 function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionStatus {
@@ -147,6 +148,8 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
   refreshCourses();
 
   const newParticipantIds = participants.map((p) => p.id).filter((id) => !alreadyEnrolled.has(id));
+  // Hoerproben aus einer Probestunde (gleiche E-Mail-Adresse) dem Teilnehmer zuordnen.
+  await adoptTrialSamplesSafely(courseId, newParticipantIds);
   if (newEnrollmentIds.length > 0) {
     const eventData = await subscriptionEventData(saved.id, userId, courseId, newEnrollmentIds);
     await recordEvent({

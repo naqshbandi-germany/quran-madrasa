@@ -1,10 +1,13 @@
 import { getAppUrl } from "@/lib/app-url";
 import { createClassroomMeeting } from "@/lib/classroom";
-import { buildEmail, emailRenderer } from "@/lib/email-templates";
+import type { EmailValues } from "@/lib/email-defaults";
+import { renderEmail } from "@/lib/email-render";
+import { buildEmail, loadEmailContent } from "@/lib/email-templates";
 import { buildCalendar } from "@/lib/ics";
 import { prisma } from "@/lib/prisma";
 import { formatReminderDate } from "@/lib/reminder-email";
 import { deliverEmail, EMAIL_FROM } from "@/lib/resend";
+import { trialSampleHtml, trialSampleShareText, trialSampleToken } from "@/lib/trial-samples";
 import { deleteZoomMeeting } from "@/lib/zoom";
 
 // Probestunden: ein Termin zu einem Kurs, zu dem eine oder mehrere Personen ohne Konto
@@ -12,7 +15,22 @@ import { deleteZoomMeeting } from "@/lib/zoom";
 
 export const TRIAL_DURATIONS = [30, 45, 60] as const;
 
-export type TrialGuestInput = { name: string; email: string };
+// sampleRequest: erbetene Hoerprobe, z. B. "Sure 67 Al-Mulk, Verse 1–10" (optional).
+export type TrialGuestInput = { name: string; email: string; sampleRequest?: string | null };
+// sampleToken: persoenlicher Link zur Hoerprobe (nur wenn eine erbeten ist)
+type PreparedGuest = TrialGuestInput & { sampleToken?: string };
+
+function withToken(guest: TrialGuestInput, guestId: string): PreparedGuest {
+  return guest.sampleRequest ? { ...guest, sampleToken: trialSampleToken(guestId) } : guest;
+}
+
+// Vorlage laden; fehlt in einem im Admin-Bereich angepassten Text der Platzhalter {{hoerprobe}},
+// wird er angehaengt, damit die Bitte um die Hoerprobe nicht verloren geht.
+async function trialRenderer<K extends "trial_invite" | "trial_reminder">(key: K) {
+  const content = await loadEmailContent(key);
+  if (!/\{\{\s*hoerprobe\s*\}\}/.test(content.body)) content.body += "\n\n{{hoerprobe}}";
+  return (values: EmailValues<K>) => renderEmail(key, content, values);
+}
 
 function calendarFor(trial: { id: string; startsAt: Date; durationMin: number; joinUrl: string }, courseTitle: string) {
   const host = new URL(getAppUrl()).host;
@@ -59,11 +77,18 @@ export async function createTrialLesson(params: {
       classroomType: meeting.classroomType,
       joinUrl: meeting.joinUrl,
       zoomMeetingId: meeting.zoomMeetingId,
-      guests: { create: params.guests.map((g) => ({ name: g.name, email: g.email })) },
     },
   });
+  const guests: PreparedGuest[] = [];
+  for (const g of params.guests) {
+    const created = await prisma.trialGuest.create({
+      data: { trialLessonId: trial.id, name: g.name, email: g.email, sampleRequest: g.sampleRequest || null },
+      select: { id: true },
+    });
+    guests.push(withToken(g, created.id));
+  }
 
-  const results = await sendTrialInvites(trial, course, params.guests, params.delivery);
+  const results = await sendTrialInvites(trial, course, guests, params.delivery);
   return { trial, course, results };
 }
 
@@ -77,15 +102,30 @@ export async function addTrialGuests(params: { trialId: string; guests: TrialGue
   if (!trial || trial.canceledAt || trial.startsAt.getTime() < Date.now()) return null;
   // Wer mit derselben E-Mail-Adresse schon eingeladen ist, bekommt die Einladung nur erneut,
   // ohne zweiten Eintrag (sonst steht dieselbe Person unter zwei Namen in der Liste).
-  const existing = await prisma.trialGuest.findMany({ where: { trialLessonId: trial.id }, select: { email: true } });
-  const known = new Set(existing.flatMap((g) => (g.email ? [g.email.trim().toLowerCase()] : [])));
-  const fresh = params.guests.filter((g) => !g.email || !known.has(g.email.trim().toLowerCase()));
-  if (fresh.length > 0) {
-    await prisma.trialGuest.createMany({
-      data: fresh.map((g) => ({ trialLessonId: trial.id, name: g.name, email: g.email })),
+  // Wird dabei (neu) eine Hoerprobe erbeten, wird sie beim bestehenden Eintrag ergaenzt.
+  const existing = await prisma.trialGuest.findMany({
+    where: { trialLessonId: trial.id },
+    select: { id: true, email: true, sampleRequest: true },
+  });
+  const byEmail = new Map(existing.flatMap((g) => (g.email ? [[g.email.trim().toLowerCase(), g] as const] : [])));
+  const guests: PreparedGuest[] = [];
+  for (const g of params.guests) {
+    const found = g.email ? byEmail.get(g.email.trim().toLowerCase()) : undefined;
+    if (found) {
+      if (g.sampleRequest && g.sampleRequest !== found.sampleRequest) {
+        await prisma.trialGuest.update({ where: { id: found.id }, data: { sampleRequest: g.sampleRequest } });
+      }
+      // Bereits erbetene Hoerprobe beim erneuten Einladen wieder mitschicken.
+      guests.push(withToken({ ...g, sampleRequest: g.sampleRequest || found.sampleRequest }, found.id));
+      continue;
+    }
+    const created = await prisma.trialGuest.create({
+      data: { trialLessonId: trial.id, name: g.name, email: g.email, sampleRequest: g.sampleRequest || null },
+      select: { id: true },
     });
+    guests.push(withToken(g, created.id));
   }
-  const results = await sendTrialInvites(trial, trial.course, params.guests, params.delivery);
+  const results = await sendTrialInvites(trial, trial.course, guests, params.delivery);
   return { trial, course: trial.course, results };
 }
 
@@ -93,18 +133,19 @@ export async function addTrialGuests(params: { trialId: string; guests: TrialGue
 async function sendTrialInvites(
   trial: { id: string; startsAt: Date; durationMin: number; joinUrl: string },
   course: { title: string; teacher: { name: string } },
-  guests: TrialGuestInput[],
+  guests: PreparedGuest[],
   delivery: "mail" | "link",
 ) {
   const datum = formatReminderDate(trial.startsAt);
   const results: { name: string; email: string; ok: boolean; mailed: boolean; shareText: string }[] = [];
-  const render = delivery === "mail" ? await emailRenderer("trial_invite") : null;
+  const render = delivery === "mail" ? await trialRenderer("trial_invite") : null;
   const ics = calendarFor(trial, course.title);
 
   for (const guest of guests) {
-    const shareText = `Salam alaykum ${guest.name}, du bist herzlich zu einer kostenlosen Probestunde im Kurs „${course.title}“ bei ${course.teacher.name} eingeladen: ${datum}, ${trial.durationMin} Minuten. Hier ist der Link, ein Konto brauchst du nicht: ${trial.joinUrl}`;
+    const shareText = `Salam alaykum ${guest.name}, du bist herzlich zu einer kostenlosen Probestunde im Kurs „${course.title}“ bei ${course.teacher.name} eingeladen: ${datum}, ${trial.durationMin} Minuten. Hier ist der Link, ein Konto brauchst du nicht: ${trial.joinUrl}${trialSampleShareText(guest.sampleRequest, guest.sampleToken)}`;
+    const base = { name: guest.name, email: guest.email };
     if (!render || !guest.email) {
-      results.push({ ...guest, ok: true, mailed: false, shareText });
+      results.push({ ...base, ok: true, mailed: false, shareText });
       continue;
     }
     try {
@@ -118,13 +159,14 @@ async function sendTrialInvites(
           datum,
           dauer: String(trial.durationMin),
           link: trial.joinUrl,
+          hoerprobe: trialSampleHtml(guest.sampleRequest, guest.sampleToken),
         }),
         attachments: [{ filename: "probestunde.ics", content: Buffer.from(ics, "utf-8") }],
       });
-      results.push({ ...guest, ok: true, mailed: Boolean(process.env.RESEND_API_KEY), shareText });
+      results.push({ ...base, ok: true, mailed: Boolean(process.env.RESEND_API_KEY), shareText });
     } catch (err) {
       console.error(`Einladung zur Probestunde an ${guest.email} fehlgeschlagen:`, err);
-      results.push({ ...guest, ok: false, mailed: false, shareText });
+      results.push({ ...base, ok: false, mailed: false, shareText });
     }
   }
 
@@ -174,9 +216,9 @@ export async function sendTrialReminders(minutesBefore: number, windowMinutes: n
       [field]: null,
       startsAt: { gte: new Date(target - windowMinutes * 60_000), lte: new Date(target + windowMinutes * 60_000) },
     },
-    include: { guests: true, course: { select: { title: true } } },
+    include: { guests: { include: { _count: { select: { samples: true } } } }, course: { select: { title: true } } },
   });
-  const render = await emailRenderer("trial_reminder");
+  const render = await trialRenderer("trial_reminder");
   let sent = 0;
   for (const trial of trials) {
     // Gaeste ohne E-Mail-Adresse (per WhatsApp eingeladen) bekommen keine Erinnerung.
@@ -191,6 +233,11 @@ export async function sendTrialReminders(minutesBefore: number, windowMinutes: n
             wann: field === "reminder24hSentAt" ? "morgen" : "in einer Stunde",
             datum: formatReminderDate(trial.startsAt),
             link: trial.joinUrl,
+            // Nur 24 Stunden vorher und nur, solange die Hoerprobe noch fehlt.
+            hoerprobe:
+              field === "reminder24hSentAt" && guest._count.samples === 0
+                ? trialSampleHtml(guest.sampleRequest, trialSampleToken(guest.id))
+                : "",
           }),
         });
         sent++;

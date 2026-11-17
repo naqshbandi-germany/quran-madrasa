@@ -33,6 +33,7 @@ const OPEN_PREFIXES = [
   "/bald",
   "/zugang/",
   "/einladung/",
+  "/probestunde/",
   "/auth/",
   "/api/",
   "/dashboard",

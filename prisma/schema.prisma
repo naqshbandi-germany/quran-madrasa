@@ -519,7 +519,34 @@ model TrialGuest {
   trialLesson   TrialLesson @relation(fields: [trialLessonId], references: [id], onDelete: Cascade)
   name          String
   email         String
+  // Erbetene Hoerprobe, z. B. "Sure 67 Al-Mulk, Verse 1–10"; leer = keine erbeten.
+  sampleRequest String?
+  // Der persoenliche Link zum Aufnehmen (ohne Konto) wird aus der ID abgeleitet, siehe
+  // src/lib/trial-samples.ts.
   createdAt     DateTime    @default(now())
 
+  samples TrialSample[]
+
   @@index([trialLessonId])
+}
+
+// Hoerprobe eines Probestunden-Gastes (ohne Konto, ueber den persoenlichen Link). Meldet sich
+// der Gast spaeter mit derselben E-Mail-Adresse zum Kurs an, wird sie als ReadingSample
+// seinem Teilnehmer zugeordnet und hier geloescht.
+model TrialSample {
+  id           String     @id @default(cuid())
+  trialGuestId String
+  trialGuest   TrialGuest @relation(fields: [trialGuestId], references: [id], onDelete: Cascade)
+  mimeType     String
+  sizeBytes    Int
+  durationSec  Int?
+  data         Bytes?
+  blobPathname String?
+  note         String?
+  // Bestaetigung Datenschutzhinweis und Volljaehrigkeit (bzw. Erziehungsberechtigung) beim Hochladen
+  consentAt    DateTime
+  listenedAt   DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@index([trialGuestId])
 }
