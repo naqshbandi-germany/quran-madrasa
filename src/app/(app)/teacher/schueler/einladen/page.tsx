@@ -41,6 +41,7 @@ export default async function InviteStudentsPage({
   const trialOptions = trials.map((t) => ({
     id: t.id,
     courseId: t.courseId,
+    courseTitle: courses.find((c) => c.id === t.courseId)?.title ?? "",
     when: `${formatZonedDateTime(t.startsAt, timeZone)} Uhr`,
     label: `${formatZonedDateTime(t.startsAt, timeZone)} Uhr (${t._count.guests} eingeladen)`,
   }));
