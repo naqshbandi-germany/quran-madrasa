@@ -7,15 +7,15 @@
 
 export const DEFAULT_IMPRESSUM = [
   "## Angaben gemäß § 5 DDG",
-  "[Name der Organisation bzw. vollständiger Name, ggf. Rechtsform, z. B. e. V.]\n[Straße und Hausnummer]\n[PLZ und Ort]",
+  "Sufipfad der Liebe e. V.\nRasenmühle 1\n34466 Wolfhagen",
   "## Kontakt",
-  "E-Mail: admin@islamunterfreunden.de\n[Telefonnummer, falls vorhanden]",
+  "E-Mail: admin@islamunterfreunden.de\nTelefon: 0178 1667861",
   "## Vertretungsberechtigt",
-  "[Name der vertretungsberechtigten Person(en), bei Vereinen: Vorstand]",
+  "Ahmadullah Khalid (Vorstand)",
   "## Registereintrag",
-  "[Falls vorhanden: Registergericht und Registernummer, z. B. Vereinsregister]",
+  "Eingetragen im Vereinsregister.\nRegistergericht: Amtsgericht Kassel\nRegisternummer: VR 5255",
   "## Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV",
-  "[Name und Anschrift der verantwortlichen Person]",
+  "Ahmadullah Khalid\nRasenmühle 1\n34466 Wolfhagen",
 ].join("\n\n");
 
 const VIDEO_JITSI = [
@@ -32,7 +32,7 @@ const VIDEO_ZOOM = [
 export function defaultPrivacyPolicy(zoom: boolean, google = false) {
   return [
   "## 1. Verantwortlicher",
-  "Verantwortlich für die Datenverarbeitung auf dieser Website ist der im Impressum genannte Anbieter. Kontakt für Datenschutzfragen: admin@islamunterfreunden.de.",
+  "Verantwortlich für die Datenverarbeitung auf dieser Website ist der Sufipfad der Liebe e. V., Rasenmühle 1, 34466 Wolfhagen, vertreten durch Ahmadullah Khalid (siehe Impressum). Kontakt für Datenschutzfragen: admin@islamunterfreunden.de.",
 
   "## 2. Überblick",
   "Wir verarbeiten personenbezogene Daten nur, soweit das für den Betrieb der Website und unser Unterrichtsangebot erforderlich ist. Wir setzen keine Analyse- und Werbe-Tracker ein.",
@@ -84,7 +84,7 @@ export function defaultPrivacyPolicy(zoom: boolean, google = false) {
   "Unsere Kurse richten sich teilweise an Kinder und Jugendliche. Konten können nur Erwachsene (ab 18 Jahren) anlegen. Kinder und Jugendliche unter 18 Jahren werden von ihren Sorgeberechtigten als Teilnehmer angemeldet; dabei bestätigen die Sorgeberechtigten ihre Berechtigung.",
 
   "## 13. Deine Rechte",
-  "Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21). Erteilte Einwilligungen kannst du jederzeit widerrufen. Wende dich dazu an admin@islamunterfreunden.de. Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren. Zuständig ist: [zuständige Landesdatenschutzbehörde ergänzen].",
+  "Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21). Erteilte Einwilligungen kannst du jederzeit widerrufen. Wende dich dazu an admin@islamunterfreunden.de. Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren. Zuständig ist der Hessische Beauftragte für Datenschutz und Informationsfreiheit, Gustav-Stresemann-Ring 1, 65189 Wiesbaden (datenschutz.hessen.de).",
 
   "## 14. Stand",
   "Oktober 2026. Wir passen diese Erklärung an, wenn sich unser Angebot oder die Rechtslage ändert.",
