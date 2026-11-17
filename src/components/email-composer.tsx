@@ -129,6 +129,7 @@ export function EmailComposer({
   const [surah, setSurah] = useState("");
   const [fromAyah, setFromAyah] = useState("");
   const [toAyah, setToAyah] = useState("");
+  const [wholeSurah, setWholeSurah] = useState(true);
   const [sampleNote, setSampleNote] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -282,7 +283,7 @@ export function EmailComposer({
       {sample ? (
         <div className="space-y-3">
           <input type="hidden" name="kind" value="sample" />
-          <div className="grid gap-3 sm:grid-cols-[1fr_8rem_8rem]">
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
             <label className="flex flex-col text-sm font-medium text-brand-700">
               Sure
               <select
@@ -303,38 +304,54 @@ export function EmailComposer({
               </select>
               {state.errors?.surah && <span className="mt-1 text-red-700">{state.errors.surah}</span>}
             </label>
-            <label className="flex flex-col text-sm font-medium text-brand-700">
-              Von Vers
+            <label className="flex items-center gap-2 pb-2.5 text-sm font-medium text-brand-800">
               <input
-                name="fromAyah"
-                type="number"
-                min={1}
-                max={surahAyahs}
-                placeholder="1"
-                value={fromAyah}
-                onChange={(event) => setFromAyah(event.target.value)}
-                className={`mt-1 ${INPUT}`}
+                type="checkbox"
+                name="wholeSurah"
+                checked={wholeSurah}
+                onChange={(event) => setWholeSurah(event.target.checked)}
+                className="h-4 w-4 accent-brand-600"
               />
-              {state.errors?.fromAyah && <span className="mt-1 text-red-700">{state.errors.fromAyah}</span>}
-            </label>
-            <label className="flex flex-col text-sm font-medium text-brand-700">
-              Bis Vers
-              <input
-                name="toAyah"
-                type="number"
-                min={1}
-                max={surahAyahs}
-                placeholder={surahAyahs ? String(surahAyahs) : ""}
-                value={toAyah}
-                onChange={(event) => setToAyah(event.target.value)}
-                className={`mt-1 ${INPUT}`}
-              />
-              {state.errors?.toAyah && <span className="mt-1 text-red-700">{state.errors.toAyah}</span>}
+              Ganze Sure
             </label>
           </div>
+          {!wholeSurah && (
+            <div className="grid gap-3 sm:grid-cols-[8rem_8rem]">
+              <label className="flex flex-col text-sm font-medium text-brand-700">
+                Von Vers
+                <input
+                  name="fromAyah"
+                  type="number"
+                  min={1}
+                  max={surahAyahs}
+                  required
+                  placeholder="1"
+                  value={fromAyah}
+                  onChange={(event) => setFromAyah(event.target.value)}
+                  className={`mt-1 ${INPUT}`}
+                />
+                {state.errors?.fromAyah && <span className="mt-1 text-red-700">{state.errors.fromAyah}</span>}
+              </label>
+              <label className="flex flex-col text-sm font-medium text-brand-700">
+                Bis Vers
+                <input
+                  name="toAyah"
+                  type="number"
+                  min={1}
+                  max={surahAyahs}
+                  placeholder={fromAyah}
+                  value={toAyah}
+                  onChange={(event) => setToAyah(event.target.value)}
+                  className={`mt-1 ${INPUT}`}
+                />
+                {state.errors?.toAyah && <span className="mt-1 text-red-700">{state.errors.toAyah}</span>}
+              </label>
+            </div>
+          )}
           <p className="text-xs text-brand-600">
-            Ohne Versangabe gilt die ganze Sure. Die Empfänger bekommen eine E-Mail mit dem Abschnitt und
-            einem Knopf zur Aufnahme; die Hörproben findest du unter „Sitzungen“ → „Leseproben“.
+            {wholeSurah ? "Erbeten wird die ganze Sure." : "Ohne „Bis Vers“ gilt nur der erste Vers."} Die Empfänger
+            bekommen eine E-Mail mit dem Abschnitt und einem Knopf zur Aufnahme; die Hörproben findest du unter
+            „Sitzungen“ → „Leseproben“.
           </p>
           <label className="flex flex-col text-sm font-medium text-brand-700">
             Hinweis (optional)

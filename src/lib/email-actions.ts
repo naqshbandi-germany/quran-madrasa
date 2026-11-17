@@ -179,7 +179,12 @@ function sampleRange(formData: FormData, errors: Record<string, string>) {
     errors.surah = "Bitte wähle eine Sure.";
     return null;
   }
+  if (formData.get("wholeSurah") === "on") return `${formatSurahPosition(surah, null)} (ganze Sure)`;
   const fromRaw = text(formData, "fromAyah").trim();
+  if (!fromRaw) {
+    errors.fromAyah = "Bitte gib den ersten Vers an oder wähle „Ganze Sure“.";
+    return null;
+  }
   const toRaw = text(formData, "toAyah").trim();
   const from = fromRaw ? Number(fromRaw) : 1;
   const to = toRaw ? Number(toRaw) : fromRaw ? from : ayahs;
