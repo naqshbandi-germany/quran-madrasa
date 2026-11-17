@@ -63,12 +63,38 @@ export async function createTrialLesson(params: {
     },
   });
 
+  const results = await sendTrialInvites(trial, course, params.guests, params.delivery);
+  return { trial, course, results };
+}
+
+// Weitere Gaeste zu einer bestehenden (nicht abgesagten, kommenden) Probestunde einladen.
+// Gibt null zurueck, wenn die Probestunde nicht (mehr) passt.
+export async function addTrialGuests(params: { trialId: string; guests: TrialGuestInput[]; delivery: "mail" | "link" }) {
+  const trial = await prisma.trialLesson.findUnique({
+    where: { id: params.trialId },
+    include: { course: { include: { teacher: { select: { name: true, zoomEmail: true } } } } },
+  });
+  if (!trial || trial.canceledAt || trial.startsAt.getTime() < Date.now()) return null;
+  await prisma.trialGuest.createMany({
+    data: params.guests.map((g) => ({ trialLessonId: trial.id, name: g.name, email: g.email })),
+  });
+  const results = await sendTrialInvites(trial, trial.course, params.guests, params.delivery);
+  return { trial, course: trial.course, results };
+}
+
+// Einladung (E-Mail mit Kalendereintrag) bzw. Text zum Weiterschicken fuer jeden Gast.
+async function sendTrialInvites(
+  trial: { id: string; startsAt: Date; durationMin: number; joinUrl: string },
+  course: { title: string; teacher: { name: string } },
+  guests: TrialGuestInput[],
+  delivery: "mail" | "link",
+) {
   const datum = formatReminderDate(trial.startsAt);
   const results: { name: string; email: string; ok: boolean; mailed: boolean; shareText: string }[] = [];
-  const render = params.delivery === "mail" ? await emailRenderer("trial_invite") : null;
+  const render = delivery === "mail" ? await emailRenderer("trial_invite") : null;
   const ics = calendarFor(trial, course.title);
 
-  for (const guest of params.guests) {
+  for (const guest of guests) {
     const shareText = `Salam alaykum ${guest.name}, du bist herzlich zu einer kostenlosen Probestunde im Kurs „${course.title}“ bei ${course.teacher.name} eingeladen: ${datum}, ${trial.durationMin} Minuten. Hier ist der Link, ein Konto brauchst du nicht: ${trial.joinUrl}`;
     if (!render || !guest.email) {
       results.push({ ...guest, ok: true, mailed: false, shareText });
@@ -95,7 +121,7 @@ export async function createTrialLesson(params: {
     }
   }
 
-  return { trial, course, results };
+  return results;
 }
 
 // Probestunde absagen: Zoom-Meeting loeschen (falls vorhanden) und alle Gaeste informieren.
