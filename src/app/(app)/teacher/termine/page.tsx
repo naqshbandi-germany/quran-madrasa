@@ -5,7 +5,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { CopyButton } from "@/components/copy-button";
 import { TimeZoneNotice } from "@/components/time-zone-notice";
 import { prisma } from "@/lib/prisma";
-import { cancelTrial, toggleTrialSampleListened } from "@/lib/trial-actions";
+import { cancelTrial, removeTrialGuest, toggleTrialSampleListened } from "@/lib/trial-actions";
 import { resolveViewTimeZone } from "@/lib/view-time-zone";
 import { formatZonedDateTime } from "@/lib/schedule-time";
 
@@ -180,7 +180,17 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
                                 {g.email}
                               </a>
                             </>
-                          )}
+                          )}{" "}
+                          <form action={removeTrialGuest} className="inline">
+                            <input type="hidden" name="guestId" value={g.id} />
+                            <ConfirmButton
+                              message={`${g.name}${g.email ? ` (${g.email})` : ""} aus der Probestunde am ${when(t.startsAt)} entfernen? Eine Hörprobe wird mitgelöscht. Der Gast bekommt keine Nachricht.`}
+                              aria-label={`${g.name} entfernen`}
+                              className="text-xs text-red-700 underline hover:text-red-800"
+                            >
+                              Entfernen
+                            </ConfirmButton>
+                          </form>
                           {g.sampleRequest && (
                             <div className="mt-1 space-y-1 border-l-2 border-gold-400 pl-2 text-xs text-brand-700">
                               <p>
