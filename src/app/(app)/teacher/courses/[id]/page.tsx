@@ -4,9 +4,11 @@ import { RemoveForm } from "./remove-form";
 import { ParticipantsList, type ParticipantRow } from "@/components/participants-list";
 import { WaitlistContactButton } from "@/components/waitlist-contact-button";
 import { capacityOf } from "@/lib/course-capacity";
+import { pendingInvitees } from "@/lib/invitees";
 import { nameWithMuslimName, requireManagedCourse } from "@/lib/course-manage";
 import { prisma } from "@/lib/prisma";
 import { formatAttendance, getProgressSummaries, type ProgressSummary } from "@/lib/progress";
+import { resolveViewTimeZone } from "@/lib/view-time-zone";
 import { removeWaitlistEntry } from "@/lib/waitlist-actions";
 
 function progressLine(s: ProgressSummary | undefined) {
@@ -23,15 +25,17 @@ function progressLine(s: ProgressSummary | undefined) {
 // Reiter "Teilnehmer": eingeschriebene Teilnehmer, Einladen und Warteliste.
 export default async function CourseParticipantsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { course } = await requireManagedCourse(id);
+  const { course, session } = await requireManagedCourse(id);
+  const { timeZone } = await resolveViewTimeZone(session.user.id);
 
-  const [enrollments, waitlist] = await Promise.all([
+  const [enrollments, waitlist, pending] = await Promise.all([
     prisma.enrollment.findMany({
       where: { courseId: id },
       include: { participant: true, user: { select: { name: true, email: true } } },
       orderBy: { createdAt: "asc" },
     }),
     prisma.waitlistEntry.findMany({ where: { courseId: id }, orderBy: { createdAt: "asc" } }),
+    pendingInvitees(id, timeZone),
   ]);
 
   const capacity = capacityOf(course.maxParticipants, enrollments.length);
@@ -81,6 +85,34 @@ export default async function CourseParticipantsPage({ params }: { params: Promi
           <p className="text-sm text-brand-800">Einladen ist möglich, sobald der Kurs veröffentlicht ist.</p>
         )}
         <ParticipantsList rows={rows} />
+        {pending.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-brand-900">Eingeladen, noch nicht angemeldet ({pending.length})</h3>
+            <ul className="divide-y divide-orange-200 border border-orange-300 bg-orange-50 text-sm">
+              {pending.map((p) => (
+                <li key={p.key} className="flex flex-wrap items-start justify-between gap-x-6 gap-y-1 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-brand-900">
+                      {p.name}
+                      {p.email && <span className="font-normal text-brand-700"> · {p.email}</span>}
+                    </p>
+                    <ul className="text-xs text-brand-800">
+                      {p.status.map((s) => (
+                        <li key={s}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <span className="shrink-0 bg-orange-200 px-2 py-0.5 text-xs font-semibold text-orange-950">
+                    {p.hasAccount ? "hat ein Konto, noch nicht angemeldet" : "noch nicht angemeldet"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-brand-600">
+              Sobald sich jemand mit derselben E-Mail-Adresse anmeldet, erscheint er oben in der Teilnehmerliste.
+            </p>
+          </div>
+        )}
       </section>
 
       <section aria-labelledby="warteliste" className="space-y-4">
