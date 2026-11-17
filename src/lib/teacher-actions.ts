@@ -8,7 +8,8 @@ import { auth } from "@/auth";
 import { createClassroomMeeting, createClassroomMeetings } from "@/lib/classroom";
 import { sendSessionChangeNotice } from "@/lib/notification-email";
 import { prisma } from "@/lib/prisma";
-import { fromZonedLocal, parseZonedDateTime } from "@/lib/schedule-time";
+import { convertSlotZone, fromZonedLocal, parseZonedDateTime } from "@/lib/schedule-time";
+import { DEFAULT_TIME_ZONE, teacherTimeZone } from "@/lib/time-zones";
 import { resolveViewTimeZone } from "@/lib/view-time-zone";
 import { deleteZoomMeeting, updateZoomMeeting } from "@/lib/zoom";
 
@@ -18,6 +19,19 @@ async function requireTeacher() {
     throw new Error("Nicht berechtigt.");
   }
   return session;
+}
+
+// Stundenplan-Eintraege werden in der Ortszeit der Lehrkraft gespeichert. Admins geben sie in
+// deutscher Zeit ein; dann wird hier in die Zeitzone der Lehrkraft umgerechnet.
+async function slotInTeacherZone<T extends { weekday: Weekday; startTime: string; endTime: string }>(
+  session: { user: { role: string } },
+  teacherId: string,
+  slot: T,
+): Promise<T> {
+  if (session.user.role !== "ADMIN") return slot;
+  const teacher = await prisma.user.findUnique({ where: { id: teacherId }, select: { timeZone: true } });
+  const converted = convertSlotZone(slot, DEFAULT_TIME_ZONE, teacherTimeZone(teacher));
+  return { ...converted, weekday: converted.weekday as Weekday };
 }
 
 // Lehrer duerfen nur ihre eigenen Kurse bearbeiten; Admins duerfen alle.
@@ -98,7 +112,7 @@ export async function createScheduleSlot(formData: FormData) {
   const course = await prisma.course.findUniqueOrThrow({ where: { id: parsed.courseId } });
   assertOwnsCourse(session, course.teacherId);
 
-  await prisma.scheduleSlot.create({ data: parsed });
+  await prisma.scheduleSlot.create({ data: await slotInTeacherZone(session, course.teacherId, parsed) });
 
   revalidatePath(`/teacher/courses/${parsed.courseId}`);
   revalidatePath("/");
@@ -313,12 +327,13 @@ export async function updateScheduleSlot(formData: FormData) {
   });
   assertOwnsCourse(session, slot.course.teacherId);
 
+  const local = await slotInTeacherZone(session, slot.course.teacherId, parsed);
   await prisma.scheduleSlot.update({
     where: { id: slot.id },
     data: {
-      weekday: parsed.weekday,
-      startTime: parsed.startTime,
-      endTime: parsed.endTime,
+      weekday: local.weekday,
+      startTime: local.startTime,
+      endTime: local.endTime,
       note: parsed.note,
     },
   });

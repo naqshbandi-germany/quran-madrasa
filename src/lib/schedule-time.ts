@@ -35,9 +35,9 @@ function nextLocalDate(weekday: string, timeZone: string, now: Date) {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 }
 
-function toDisplayZone(instant: Date) {
+function toDisplayZone(instant: Date, timeZone: string = DISPLAY_TIME_ZONE) {
   const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: DISPLAY_TIME_ZONE,
+    timeZone,
     weekday: "long",
     hour: "2-digit",
     minute: "2-digit",
@@ -53,10 +53,17 @@ function toDisplayZone(instant: Date) {
 // Rechnet einen Stundenplan-Eintrag aus der Ortszeit der Lehrkraft in deutsche Zeit um (die
 // Verschiebung kann sich mit der Zeitumstellung aendern, daher mit Bezug auf "now").
 export function toGermanTime<T extends SlotLike>(slot: T, now: Date = new Date(), fromTimeZone: string = DEFAULT_TIME_ZONE): T {
-  if (fromTimeZone === DISPLAY_TIME_ZONE) return slot;
+  return convertSlotZone(slot, fromTimeZone, DISPLAY_TIME_ZONE, now);
+}
+
+// Rechnet einen Stundenplan-Eintrag (Wochentag und Uhrzeiten) von einer Zeitzone in eine andere
+// um, bezogen auf das naechste Auftreten des Wochentags. Z. B. fuer Admins, die den Stundenplan
+// einer Lehrkraft in Nordzypern in deutscher Zeit sehen und bearbeiten.
+export function convertSlotZone<T extends SlotLike>(slot: T, fromTimeZone: string, toTimeZone: string, now: Date = new Date()): T {
+  if (fromTimeZone === toTimeZone) return slot;
   const date = nextLocalDate(slot.weekday, fromTimeZone, now);
-  const start = toDisplayZone(parseZonedDateTime(`${date}T${slot.startTime}`, fromTimeZone));
-  const end = toDisplayZone(parseZonedDateTime(`${date}T${slot.endTime}`, fromTimeZone));
+  const start = toDisplayZone(parseZonedDateTime(`${date}T${slot.startTime}`, fromTimeZone), toTimeZone);
+  const end = toDisplayZone(parseZonedDateTime(`${date}T${slot.endTime}`, fromTimeZone), toTimeZone);
   return { ...slot, weekday: start.weekday, startTime: start.time, endTime: end.time };
 }
 
