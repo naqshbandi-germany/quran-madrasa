@@ -63,6 +63,14 @@ const reminder24hPlaceholders = [
     html: true,
   },
 ] as const;
+// Hoerprobe zur Probestunde (persoenlicher Link ohne Konto); leer, wenn keine erbeten ist.
+const TRIAL_SAMPLE = {
+  key: "hoerprobe",
+  label: "Bitte um eine Hörprobe mit persönlichem Link zur Aufnahme (leer, wenn keine erbeten ist)",
+  example:
+    '<div style="margin: 24px 0; padding: 12px 16px; background: #f4f1e8; border-left: 3px solid #b8963e;"><p style="margin: 0 0 8px;"><strong>Hörprobe erbeten:</strong> Sure 67 Al-Mulk, Verse 1–10</p><p style="margin: 0 0 12px; font-size: 14px;">Bitte lies den Abschnitt vor der Probestunde laut vor und nimm ihn auf. Die Lehrkraft hört ihn sich an und kann sich so gezielt vorbereiten. Ein Konto brauchst du dafür nicht.</p><a href="#" style="color: #1d6347; font-weight: bold;">Hörprobe aufnehmen</a></div>',
+  html: true,
+} as const;
 const reminderFooter = "Diese Erinnerung wurde automatisch verschickt, weil du bei diesem Kurs eingeschrieben bist.";
 
 export const EMAIL_TEMPLATES = {
@@ -408,6 +416,7 @@ export const EMAIL_TEMPLATES = {
       { key: "datum", label: "Datum und Uhrzeit der Probestunde", example: "Freitag, 14. November 2026 um 18:00 Uhr (deutsche Zeit)" },
       { key: "dauer", label: "Dauer in Minuten", example: "30" },
       { key: "link", label: "Link zum Unterrichtsraum (Ziel des Buttons)", example: "https://meet.jit.si/islamunterfreunden-probestunde-abc123" },
+      TRIAL_SAMPLE,
       BUTTON,
     ],
     hasButton: true,
@@ -419,6 +428,7 @@ export const EMAIL_TEMPLATES = {
         "**Wann:** {{datum}}\n**Dauer:** {{dauer}} Minuten",
         "Zur Probestunde kommst du über diesen Link, ein Konto brauchst du nicht. Den Termin findest du auch im Anhang für deinen Kalender. Wir erinnern dich einen Tag und eine Stunde vorher.",
         "{{button}}",
+        "{{hoerprobe}}",
       ].join("\n\n"),
       buttonLabel: "Zur Probestunde",
       footer: CONTACT_FOOTER,
@@ -434,12 +444,13 @@ export const EMAIL_TEMPLATES = {
       { key: "wann", label: "„morgen“ oder „in einer Stunde“", example: "morgen" },
       { key: "datum", label: "Datum und Uhrzeit der Probestunde", example: "Freitag, 14. November 2026 um 18:00 Uhr (deutsche Zeit)" },
       { key: "link", label: "Link zum Unterrichtsraum (Ziel des Buttons)", example: "https://meet.jit.si/islamunterfreunden-probestunde-abc123" },
+      { ...TRIAL_SAMPLE, label: "Erinnerung an die erbetene Hörprobe, falls sie noch fehlt (nur 24 Stunden vorher, sonst leer)" },
       BUTTON,
     ],
     hasButton: true,
     defaults: {
       subject: "Erinnerung: Probestunde „{{kurs}}“ {{wann}}",
-      body: [GREETING, "deine Probestunde im Kurs **{{kurs}}** ist {{wann}}.", "**Wann:** {{datum}}", "{{button}}"].join("\n\n"),
+      body: [GREETING, "deine Probestunde im Kurs **{{kurs}}** ist {{wann}}.", "**Wann:** {{datum}}", "{{button}}", "{{hoerprobe}}"].join("\n\n"),
       buttonLabel: "Zur Probestunde",
       footer: CONTACT_FOOTER,
     },

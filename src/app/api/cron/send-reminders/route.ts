@@ -13,6 +13,7 @@ import {
 } from "@/lib/reminder-email";
 import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
 import { sendTrialReminders } from "@/lib/trial-lessons";
+import { deleteExpiredTrialSamples } from "@/lib/trial-samples";
 
 export const maxDuration = 60;
 
@@ -137,9 +138,14 @@ export async function POST(request: Request) {
     console.error("Abgelaufene Leseproben konnten nicht geloescht werden:", err);
     return 0;
   });
+  const deletedTrialSamples = await deleteExpiredTrialSamples().catch((err) => {
+    console.error("Abgelaufene Hoerproben von Probestunden konnten nicht geloescht werden:", err);
+    return 0;
+  });
 
   return NextResponse.json({
     deletedSamples,
+    deletedTrialSamples,
     sessions24h: sessions24h.length,
     sessions1h: sessions1h.length,
     sessionsStart: sessionsStart.length,

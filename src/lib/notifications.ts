@@ -76,7 +76,7 @@ export async function recordEvent(input: RecordEventInput) {
 
     const { title, detail } = describeEvent(input.type, input.data);
     const appUrl = getAppUrl();
-    const href = eventHref(input.type, input.courseId ?? null);
+    const href = eventHref(input.type, input.courseId ?? null, input.data);
 
     for (const recipient of recipients) {
       if (!(await emailWanted(recipient.id, input.type))) continue;

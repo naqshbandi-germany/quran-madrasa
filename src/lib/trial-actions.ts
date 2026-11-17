@@ -19,3 +19,22 @@ export async function cancelTrial(formData: FormData) {
   await cancelTrialLesson(id);
   revalidatePath("/teacher/termine");
 }
+
+// Hoerprobe eines Probestunden-Gastes als gehoert markieren bzw. die Markierung entfernen.
+export async function toggleTrialSampleListened(formData: FormData) {
+  const session = await auth();
+  if (!session || (session.user.role !== "TEACHER" && session.user.role !== "ADMIN")) {
+    throw new Error("Nicht berechtigt.");
+  }
+  const id = String(formData.get("sampleId") ?? "");
+  const sample = await prisma.trialSample.findUnique({
+    where: { id },
+    select: { listenedAt: true, trialGuest: { select: { trialLesson: { select: { course: { select: { teacherId: true } } } } } } },
+  });
+  if (!sample) return;
+  if (session.user.role !== "ADMIN" && sample.trialGuest.trialLesson.course.teacherId !== session.user.id) {
+    throw new Error("Nicht berechtigt.");
+  }
+  await prisma.trialSample.update({ where: { id }, data: { listenedAt: sample.listenedAt ? null : new Date() } });
+  revalidatePath("/teacher/termine");
+}

@@ -5,7 +5,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { CopyButton } from "@/components/copy-button";
 import { TimeZoneNotice } from "@/components/time-zone-notice";
 import { prisma } from "@/lib/prisma";
-import { cancelTrial } from "@/lib/trial-actions";
+import { cancelTrial, toggleTrialSampleListened } from "@/lib/trial-actions";
 import { resolveViewTimeZone } from "@/lib/view-time-zone";
 import { formatZonedDateTime } from "@/lib/schedule-time";
 
@@ -44,7 +44,12 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
       orderBy: { startsAt: past ? "desc" : "asc" },
       take: 200,
       include: {
-        guests: { orderBy: { createdAt: "asc" } },
+        guests: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            samples: { orderBy: { createdAt: "desc" }, select: { id: true, createdAt: true, durationSec: true, note: true, listenedAt: true } },
+          },
+        },
         course: { select: { id: true, title: true, teacher: { select: { name: true } } } },
       },
     }),
@@ -166,7 +171,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
                     {isAdmin && <td className={TD}>{t.course.teacher.name}</td>}
                     <td className={TD}>
                       {t.guests.map((g) => (
-                        <span key={g.id} className="block">
+                        <div key={g.id} className="py-0.5">
                           {g.name}
                           {g.email && (
                             <>
@@ -176,7 +181,38 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
                               </a>
                             </>
                           )}
-                        </span>
+                          {g.sampleRequest && (
+                            <div className="mt-1 space-y-1 border-l-2 border-gold-400 pl-2 text-xs text-brand-700">
+                              <p>
+                                Hörprobe erbeten: {g.sampleRequest}
+                                {g.samples.length === 0 && <span className="text-brand-500"> · noch keine Aufnahme</span>}
+                              </p>
+                              {g.samples.map((s) => (
+                                <div key={s.id} className="space-y-1">
+                                  <audio
+                                    controls
+                                    preload="none"
+                                    src={`/api/probestunde/hoerprobe/${s.id}`}
+                                    className="h-8 w-full max-w-xs"
+                                  />
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span>
+                                      {when(s.createdAt)}
+                                      {s.durationSec ? ` · ${Math.floor(s.durationSec / 60)}:${String(s.durationSec % 60).padStart(2, "0")} Min.` : ""}
+                                    </span>
+                                    <form action={toggleTrialSampleListened}>
+                                      <input type="hidden" name="sampleId" value={s.id} />
+                                      <button type="submit" className={s.listenedAt ? "text-green-800" : "font-medium text-azure-800 underline"}>
+                                        {s.listenedAt ? "✓ gehört" : "Als gehört markieren"}
+                                      </button>
+                                    </form>
+                                  </div>
+                                  {s.note && <p>Hinweis: {s.note}</p>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </td>
                     <td className={`${TD} whitespace-nowrap text-right`}>

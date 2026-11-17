@@ -11,6 +11,7 @@ import { createStudentInvitation, STUDENT_INVITE_TTL_DAYS } from "@/lib/invitati
 import { enrolledEmails, lookupInvitee, normalizeEmail, type KnownInvitee } from "@/lib/invitees";
 import { prisma } from "@/lib/prisma";
 import { formatZonedDateTime, parseZonedDateTime } from "@/lib/schedule-time";
+import { sampleRangeFromForm } from "@/lib/surahs";
 import { resolveViewTimeZone } from "@/lib/view-time-zone";
 import { addTrialGuests, createTrialLesson, TRIAL_DURATIONS } from "@/lib/trial-lessons";
 import { createAccountInvite, INVITE_TTL_DAYS, type InviteDelivery } from "@/lib/teacher-invite";
@@ -267,6 +268,16 @@ async function inviteToTrial(
   if (students.some((s) => s.name.length < 2)) {
     return { ok: false, message: "Für die Probestunde braucht jeder Eingeladene einen Namen." };
   }
+  // Optional: Hoerprobe vorab erbitten (persoenlicher Link ohne Konto fuer jeden Gast).
+  let sampleRequest: string | null = null;
+  if (formData.get("sampleRequest") === "on") {
+    const errors: Record<string, string> = {};
+    sampleRequest = sampleRangeFromForm(formData, errors);
+    if (!sampleRequest) {
+      return { ok: false, message: Object.values(errors)[0] ?? "Bitte Sure und Verse für die Hörprobe angeben." };
+    }
+  }
+  const guests = students.map((s) => ({ ...s, sampleRequest }));
   // Gleiche Zeitzone wie die Anzeige im Lehrer-Bereich (eigene Zeitzone oder per Schalter MEZ).
   const { timeZone } = await resolveViewTimeZone(userId);
 
@@ -277,7 +288,7 @@ async function inviteToTrial(
     if (!existing || existing.courseId !== courseId) {
       return { ok: false, message: "Diese Probestunde gehört nicht zum gewählten Kurs." };
     }
-    const added = await addTrialGuests({ trialId: existingId, guests: students, delivery: mode });
+    const added = await addTrialGuests({ trialId: existingId, guests, delivery: mode });
     if (!added) return { ok: false, message: "Diese Probestunde ist abgesagt oder schon vorbei." };
     revalidatePath("/teacher/termine");
     return trialResult(added.results, mode, `${formatZonedDateTime(added.trial.startsAt, timeZone, "full")} Uhr`, false);
@@ -301,7 +312,7 @@ async function inviteToTrial(
       createdById: userId,
       startsAt,
       durationMin,
-      guests: students,
+      guests,
       delivery: mode,
     });
     revalidatePath("/teacher/termine");

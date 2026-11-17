@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState, type KeyboardEvent } from 
 
 import { CopyButton } from "@/components/copy-button";
 import { PencilIcon, XIcon } from "@/components/icons";
+import { SampleRangeFields } from "@/components/sample-range-fields";
 import { inviteStudents, lookupInviteEmail, type StudentInviteState } from "@/lib/invite-actions";
 import type { KnownInvitee } from "@/lib/invitees";
 
@@ -47,6 +48,7 @@ export function StudentInviteForm({
   const [trialChoice, setTrialChoice] = useState(initialTrialId || "neu");
   const [trialStartsAt, setTrialStartsAt] = useState("");
   const [trialDuration, setTrialDuration] = useState("30");
+  const [sampleRequest, setSampleRequest] = useState(false);
   const draftNameRef = useRef<HTMLInputElement>(null);
   const activeCourse = courseId ?? selectedCourse;
   // Ohne gewaehlten Kurs alle kommenden Probestunden anbieten (mit Kursname); die Auswahl
@@ -148,6 +150,7 @@ export function StudentInviteForm({
       setTrial(Boolean(initialTrialId));
       setTrialChoice(initialTrialId || "neu");
       setTrialStartsAt("");
+      setSampleRequest(false);
     }
   }
 
@@ -364,6 +367,26 @@ export function StudentInviteForm({
                     einen Tag und eine Stunde vorher erinnert. Die Probestunde erscheint unter „Termine“.
                   </p>
                 </>
+              )}
+              <label className="flex items-center gap-2 pt-1 text-sm font-medium text-brand-900">
+                <input
+                  type="checkbox"
+                  name="sampleRequest"
+                  checked={sampleRequest}
+                  onChange={(e) => setSampleRequest(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                Hörprobe anfragen
+              </label>
+              {sampleRequest && (
+                <div className="space-y-2 pl-6">
+                  <SampleRangeFields />
+                  <p className="text-xs text-brand-600">
+                    Jeder Eingeladene bekommt einen persönlichen Link, über den er den Abschnitt vorab aufnimmt oder
+                    hochlädt, ohne Konto. Die Hörproben hörst du unter „Termine“ bei der Probestunde. Meldet sich der Gast
+                    später mit derselben E-Mail-Adresse an, erscheint die Hörprobe auch in seinem Schülerprofil.
+                  </p>
+                </div>
               )}
             </div>
           )}

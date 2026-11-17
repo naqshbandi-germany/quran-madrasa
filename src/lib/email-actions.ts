@@ -12,7 +12,7 @@ import { signedMediaPath } from "@/lib/media-links";
 import { materialEmailHtml } from "@/lib/material-email";
 import { prisma } from "@/lib/prisma";
 import { MATERIAL_EMAIL_FROM, deliverEmail } from "@/lib/resend";
-import { formatSurahPosition, surahAyahCount } from "@/lib/surahs";
+import { sampleRangeFromForm } from "@/lib/surahs";
 
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -38,7 +38,7 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
   let message = text(formData, "message").trim();
   let button: { label: string; url: string } | undefined;
   if (isSampleRequest) {
-    const range = sampleRange(formData, errors);
+    const range = sampleRangeFromForm(formData, errors);
     const note = text(formData, "sampleNote").trim();
     if (note.length > 1000) errors.sampleNote = "Der Hinweis ist zu lang (höchstens 1000 Zeichen).";
     if (range) {
@@ -169,34 +169,4 @@ ${note}` : ""}`;
     ok: failed.length === 0,
     message: failed.length ? `${base} Nicht zugestellt an: ${failed.join(", ")}.` : base,
   };
-}
-
-// Sure und Versbereich der Hoerprobe, z. B. "Sure 67 Al-Mulk, Verse 1–10". Fehler landen in errors.
-function sampleRange(formData: FormData, errors: Record<string, string>) {
-  const surah = Number(text(formData, "surah"));
-  const ayahs = surahAyahCount(surah);
-  if (!Number.isInteger(surah) || !ayahs) {
-    errors.surah = "Bitte wähle eine Sure.";
-    return null;
-  }
-  if (formData.get("wholeSurah") === "on") return `${formatSurahPosition(surah, null)} (ganze Sure)`;
-  const fromRaw = text(formData, "fromAyah").trim();
-  if (!fromRaw) {
-    errors.fromAyah = "Bitte gib den ersten Vers an oder wähle „Ganze Sure“.";
-    return null;
-  }
-  const toRaw = text(formData, "toAyah").trim();
-  const from = fromRaw ? Number(fromRaw) : 1;
-  const to = toRaw ? Number(toRaw) : fromRaw ? from : ayahs;
-  if (!Number.isInteger(from) || from < 1 || from > ayahs) {
-    errors.fromAyah = `Die Sure hat ${ayahs} Verse.`;
-    return null;
-  }
-  if (!Number.isInteger(to) || to < from || to > ayahs) {
-    errors.toAyah = to < from ? "Der letzte Vers liegt vor dem ersten." : `Die Sure hat ${ayahs} Verse.`;
-    return null;
-  }
-  const base = formatSurahPosition(surah, null);
-  if (from === 1 && to === ayahs) return `${base} (ganze Sure)`;
-  return from === to ? `${base}, Vers ${from}` : `${base}, Verse ${from}–${to}`;
 }
