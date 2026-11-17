@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { LiveWaveform, WaveformBars } from "@/components/live-waveform";
+
 type Option = { id: string; label: string };
 
 const MAX_SECONDS = 5 * 60;
@@ -21,7 +23,8 @@ function formatSeconds(total: number) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-type Recording = { blob: Blob; url: string; seconds: number | null; fileName: string };
+// heights: Wellenform der Aufnahme (nur bei Aufnahmen im Browser, nicht bei hochgeladenen Dateien)
+type Recording = { blob: Blob; url: string; seconds: number | null; fileName: string; heights?: number[] };
 
 // Leseprobe aufnehmen (Mikrofon im Browser) oder vorhandene Audiodatei hochladen.
 export function ReadingSampleRecorder({
@@ -47,6 +50,9 @@ export function ReadingSampleRecorder({
   const [recording, setRecording] = useState<Recording | null>(null);
   const [status, setStatus] = useState<{ ok: boolean; message: string } | null>(null);
   const [isSending, setIsSending] = useState(false);
+  // Mikrofon-Stream waehrend der Aufnahme, fuer die Live-Wellenform
+  const [liveStream, setLiveStream] = useState<MediaStream | null>(null);
+  const heightsRef = useRef<number[]>([]);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -58,6 +64,7 @@ export function ReadingSampleRecorder({
     timerRef.current = null;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    setLiveStream(null);
   }
 
   // Beim Verlassen der Seite Mikrofon freigeben und Vorschau-URL aufraeumen.
@@ -90,9 +97,17 @@ export function ReadingSampleRecorder({
         setIsRecording(false);
         const blob = new Blob(chunks, { type: recorder.mimeType || type || "audio/webm" });
         const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("ogg") ? "ogg" : "webm";
-        setRecording({ blob, url: URL.createObjectURL(blob), seconds, fileName: `aufnahme.${ext}` });
+        setRecording({
+          blob,
+          url: URL.createObjectURL(blob),
+          seconds,
+          fileName: `aufnahme.${ext}`,
+          heights: [...heightsRef.current],
+        });
       };
       recorderRef.current = recorder;
+      heightsRef.current = [];
+      setLiveStream(stream);
       startedAtRef.current = Date.now();
       setElapsed(0);
       setRecording(null);
@@ -234,11 +249,16 @@ export function ReadingSampleRecorder({
         )}
       </div>
 
+      {isRecording && liveStream && (
+        <LiveWaveform stream={liveStream} onHeights={(heights) => (heightsRef.current = heights)} />
+      )}
+
       {recording && !isRecording && (
         <div className="space-y-3 border-t border-brand-100 pt-3">
           <p className="text-brand-700">
             Vorschau{recording.seconds ? ` (${formatSeconds(recording.seconds)})` : ""}:
           </p>
+          {recording.heights && recording.heights.length > 0 && <WaveformBars heights={recording.heights} />}
           <audio controls src={recording.url} className="w-full" />
           <label className="flex flex-col text-brand-700">
             Hinweis an die Lehrkraft (optional)
