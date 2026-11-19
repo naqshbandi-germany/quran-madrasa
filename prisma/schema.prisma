@@ -99,6 +99,7 @@ model User {
   notifications       Notification[]
   notificationPrefs   NotificationPreference[]
   trialLessons        TrialLesson[]
+  emailTemplates      TeacherEmailTemplate[]
 }
 
 // Hochgeladenes Foto fürs Lehrer-Profil, beim Hochladen auf 512 x 512 Pixel verkleinert (ca.
@@ -401,6 +402,21 @@ model ReadingSample {
 
 // Im Admin-Bereich angepasste Texte der automatischen E-Mails (Schluessel siehe
 // src/lib/email-defaults.ts). Fehlt der Eintrag, gilt der Standardtext aus dem Code.
+// Eigene Fassung einer Mail, die eine Lehrkraft (oder ein Admin) fuer die eigenen Einladungen,
+// Absagen usw. verwendet. Gilt vor dem Text aus EmailTemplate bzw. dem Standardtext.
+model TeacherEmailTemplate {
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key         String
+  subject     String
+  body        String
+  buttonLabel String   @default("")
+  footer      String   @default("")
+  updatedAt   DateTime @updatedAt
+
+  @@id([userId, key])
+}
+
 model EmailTemplate {
   key         String   @id
   subject     String
@@ -427,7 +443,12 @@ model Invitation {
   expiresAt      DateTime
   // Ohne Zahlung: einmal nutzbar, danach gesetzt.
   usedAt         DateTime?
+  // Erbetene Hoerprobe, z. B. "Sure 67 Al-Mulk, Verse 1–10"; leer = keine erbeten. Aufgenommen
+  // wird ueber einen persoenlichen Link ohne Konto (src/lib/trial-samples.ts).
+  sampleRequest  String?
   createdAt      DateTime  @default(now())
+
+  samples TrialSample[]
 
   @@index([courseId])
 }
@@ -533,10 +554,14 @@ model TrialGuest {
 // Hoerprobe eines Probestunden-Gastes (ohne Konto, ueber den persoenlichen Link). Meldet sich
 // der Gast spaeter mit derselben E-Mail-Adresse zum Kurs an, wird sie als ReadingSample
 // seinem Teilnehmer zugeordnet und hier geloescht.
+// Hoerprobe ohne Konto: entweder von einem Probestunden-Gast oder von jemandem, der zu einem
+// Kurs eingeladen wurde (genau eins von beiden ist gesetzt).
 model TrialSample {
-  id           String     @id @default(cuid())
-  trialGuestId String
-  trialGuest   TrialGuest @relation(fields: [trialGuestId], references: [id], onDelete: Cascade)
+  id           String      @id @default(cuid())
+  trialGuestId String?
+  trialGuest   TrialGuest? @relation(fields: [trialGuestId], references: [id], onDelete: Cascade)
+  invitationId String?
+  invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
   mimeType     String
   sizeBytes    Int
   durationSec  Int?
@@ -546,7 +571,8 @@ model TrialSample {
   // Bestaetigung Datenschutzhinweis und Volljaehrigkeit (bzw. Erziehungsberechtigung) beim Hochladen
   consentAt    DateTime
   listenedAt   DateTime?
-  createdAt    DateTime   @default(now())
+  createdAt    DateTime    @default(now())
 
   @@index([trialGuestId])
+  @@index([invitationId])
 }

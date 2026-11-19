@@ -68,7 +68,9 @@ export function renderEmail(
       }
       // Ein HTML-Block (z. B. Terminliste) allein im Absatz kommt ohne <p> aus.
       if (only && raw.has(only)) return values[only] ?? "";
-      return `<p>${renderInline(paragraph, values, raw)}</p>`;
+      // Leere Absaetze (z. B. ein optionaler Hinweis ohne Inhalt) fallen weg.
+      const inner = renderInline(paragraph, values, raw);
+      return inner.replace(/<br \/>/g, "").trim() ? `<p>${inner}</p>` : "";
     });
   if (!buttonPlaced && button) paragraphs.push(button);
 

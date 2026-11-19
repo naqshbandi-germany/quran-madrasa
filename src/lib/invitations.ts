@@ -2,11 +2,13 @@ import { randomBytes } from "node:crypto";
 
 import { getAppUrl } from "@/lib/app-url";
 import { accessQuery } from "@/lib/course-access";
-import { buildEmail } from "@/lib/email-templates";
+import { STUDENT_INVITE_HINTS } from "@/lib/email-defaults";
+import { buildEmail, type EmailContentOptions } from "@/lib/email-templates";
 import { hashResetToken } from "@/lib/password-reset";
 import { prisma } from "@/lib/prisma";
 import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
 import type { InviteDelivery } from "@/lib/teacher-invite";
+import { invitationSampleHtml, invitationSampleShareText, invitationSampleToken } from "@/lib/trial-samples";
 
 // Einladungen von Schuelern zu einem Kurs (per E-Mail oder als Link zum Weitergeben).
 export const STUDENT_INVITE_TTL_DAYS = 14;
@@ -22,12 +24,16 @@ export async function createStudentInvitation(params: {
   email: string | null;
   freeEnrollment: boolean;
   delivery: InviteDelivery;
-}): Promise<{ link: string; mailed: boolean }> {
+  // Erbetene Hoerprobe, z. B. "Sure 67 Al-Mulk, Verse 1–10" (persoenlicher Link ohne Konto)
+  sampleRequest?: string | null;
+  // Text der Mail (eigene Vorlage bzw. fuer diesen Versand angepasst)
+  emailOptions?: EmailContentOptions;
+}): Promise<{ link: string; mailed: boolean; sampleShareText: string }> {
   const course = await prisma.course.findUniqueOrThrow({ where: { id: params.courseId } });
   const inviter = await prisma.user.findUniqueOrThrow({ where: { id: params.invitedById } });
 
   const token = randomBytes(24).toString("base64url");
-  await prisma.invitation.create({
+  const invitation = await prisma.invitation.create({
     data: {
       tokenHash: hashResetToken(token),
       courseId: course.id,
@@ -35,27 +41,34 @@ export async function createStudentInvitation(params: {
       email: params.email,
       freeEnrollment: params.freeEnrollment,
       invitedById: inviter.id,
+      sampleRequest: params.sampleRequest || null,
       expiresAt: new Date(Date.now() + STUDENT_INVITE_TTL_DAYS * 24 * 3600 * 1000),
     },
+    select: { id: true },
   });
 
   const link = `${getAppUrl()}${invitationPath(token)}`;
-  if (params.delivery === "link" || !params.email) return { link, mailed: false };
+  const sampleToken = params.sampleRequest ? invitationSampleToken(invitation.id) : null;
+  const sampleShareText = invitationSampleShareText(params.sampleRequest, sampleToken);
+  if (params.delivery === "link" || !params.email) return { link, mailed: false, sampleShareText };
 
-  const email = await buildEmail("student_invite", {
-    name: params.name ?? "",
-    kurs: course.title,
-    von: inviter.name,
-    hinweis: params.freeEnrollment
-      ? "Die Teilnahme ist für dich kostenlos."
-      : "Die Anmeldung und Bezahlung erledigst du direkt über den Link.",
-    link,
-    tage: String(STUDENT_INVITE_TTL_DAYS),
-  });
+  const email = await buildEmail(
+    "student_invite",
+    {
+      name: params.name ?? "",
+      kurs: course.title,
+      von: inviter.name,
+      hinweis: params.freeEnrollment ? STUDENT_INVITE_HINTS.free : STUDENT_INVITE_HINTS.paid,
+      link,
+      tage: String(STUDENT_INVITE_TTL_DAYS),
+      hoerprobe: invitationSampleHtml(params.sampleRequest, sampleToken),
+    },
+    params.emailOptions,
+  );
   await deliverEmail({ from: EMAIL_FROM, to: params.email, ...email });
   const mailed = Boolean(process.env.RESEND_API_KEY) || process.env.NODE_ENV === "production";
   if (!mailed) console.log(`[Kurs-Einladung] ${params.email}: ${link}`);
-  return { link, mailed };
+  return { link, mailed, sampleShareText };
 }
 
 // Liefert die Einladung zu einem Token, falls sie noch gilt. Einladungen ohne Zahlung sind nur

@@ -22,7 +22,10 @@ export function EmailTemplateEditor({
   defaults,
   initial,
   isCustom,
+  scope = "admin",
 }: {
+  // "teacher": eigene Vorlage der Lehrkraft; defaults ist dann der allgemein geltende Text.
+  scope?: "admin" | "teacher";
   templateKey: EmailTemplateKey;
   hasButton: boolean;
   placeholders: PlaceholderInfo[];
@@ -85,9 +88,16 @@ export function EmailTemplateEditor({
     <div className="space-y-6">
       <form action={formAction} className="grid gap-6 border border-gold-400/40 bg-white p-5 lg:grid-cols-[1fr_16rem]">
         <input type="hidden" name="key" value={templateKey} />
+        <input type="hidden" name="scope" value={scope} />
         <div className="min-w-0 space-y-4">
           <p className="text-sm text-brand-700">
-            {isCustom ? "Es gilt der hier gespeicherte, angepasste Text." : "Es gilt der Standardtext."}{" "}
+            {scope === "teacher"
+              ? isCustom
+                ? "Es gilt deine eigene Vorlage."
+                : "Es gilt der allgemeine Text. Mit „Speichern“ legst du deine eigene Vorlage an."
+              : isCustom
+                ? "Es gilt der hier gespeicherte, angepasste Text."
+                : "Es gilt der Standardtext."}{" "}
             Absätze durch eine Leerzeile trennen, **fett** für Hervorhebungen.
           </p>
           <label className="block text-sm text-brand-700">
@@ -156,13 +166,19 @@ export function EmailTemplateEditor({
               value="reset"
               disabled={pending || (!isCustom && isDefault)}
               onClick={(event) => {
-                if (!window.confirm("Den Standardtext wiederherstellen? Der angepasste Text wird gelöscht.")) {
+                if (
+                  !window.confirm(
+                    scope === "teacher"
+                      ? "Deine eigene Vorlage löschen? Dann gilt wieder der allgemeine Text."
+                      : "Den Standardtext wiederherstellen? Der angepasste Text wird gelöscht.",
+                  )
+                ) {
                   event.preventDefault();
                 }
               }}
               className="text-sm text-brand-700 underline disabled:no-underline disabled:opacity-50"
             >
-              Auf Standard zurücksetzen
+              {scope === "teacher" ? "Eigene Vorlage löschen" : "Auf Standard zurücksetzen"}
             </button>
           </div>
         </div>

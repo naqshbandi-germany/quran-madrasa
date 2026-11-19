@@ -1,8 +1,6 @@
 import { getAppUrl } from "@/lib/app-url";
 import { createClassroomMeeting } from "@/lib/classroom";
-import type { EmailValues } from "@/lib/email-defaults";
-import { renderEmail } from "@/lib/email-render";
-import { buildEmail, loadEmailContent } from "@/lib/email-templates";
+import { emailRenderer, type EmailContentOptions } from "@/lib/email-templates";
 import { buildCalendar } from "@/lib/ics";
 import { prisma } from "@/lib/prisma";
 import { formatReminderDate } from "@/lib/reminder-email";
@@ -22,14 +20,6 @@ type PreparedGuest = TrialGuestInput & { sampleToken?: string };
 
 function withToken(guest: TrialGuestInput, guestId: string): PreparedGuest {
   return guest.sampleRequest ? { ...guest, sampleToken: trialSampleToken(guestId) } : guest;
-}
-
-// Vorlage laden; fehlt in einem im Admin-Bereich angepassten Text der Platzhalter {{hoerprobe}},
-// wird er angehaengt, damit die Bitte um die Hoerprobe nicht verloren geht.
-async function trialRenderer<K extends "trial_invite" | "trial_reminder">(key: K) {
-  const content = await loadEmailContent(key);
-  if (!/\{\{\s*hoerprobe\s*\}\}/.test(content.body)) content.body += "\n\n{{hoerprobe}}";
-  return (values: EmailValues<K>) => renderEmail(key, content, values);
 }
 
 function calendarFor(trial: { id: string; startsAt: Date; durationMin: number; joinUrl: string }, courseTitle: string) {
@@ -55,6 +45,8 @@ export async function createTrialLesson(params: {
   durationMin: number;
   guests: TrialGuestInput[];
   delivery: "mail" | "link";
+  // Text der Einladung (eigene Vorlage bzw. fuer diesen Versand angepasst)
+  email?: EmailContentOptions;
 }) {
   const course = await prisma.course.findUniqueOrThrow({
     where: { id: params.courseId },
@@ -88,13 +80,18 @@ export async function createTrialLesson(params: {
     guests.push(withToken(g, created.id));
   }
 
-  const results = await sendTrialInvites(trial, course, guests, params.delivery);
+  const results = await sendTrialInvites(trial, course, guests, params.delivery, params.email);
   return { trial, course, results };
 }
 
 // Weitere Gaeste zu einer bestehenden (nicht abgesagten, kommenden) Probestunde einladen.
 // Gibt null zurueck, wenn die Probestunde nicht (mehr) passt.
-export async function addTrialGuests(params: { trialId: string; guests: TrialGuestInput[]; delivery: "mail" | "link" }) {
+export async function addTrialGuests(params: {
+  trialId: string;
+  guests: TrialGuestInput[];
+  delivery: "mail" | "link";
+  email?: EmailContentOptions;
+}) {
   const trial = await prisma.trialLesson.findUnique({
     where: { id: params.trialId },
     include: { course: { include: { teacher: { select: { name: true, zoomEmail: true } } } } },
@@ -125,7 +122,7 @@ export async function addTrialGuests(params: { trialId: string; guests: TrialGue
     });
     guests.push(withToken(g, created.id));
   }
-  const results = await sendTrialInvites(trial, trial.course, guests, params.delivery);
+  const results = await sendTrialInvites(trial, trial.course, guests, params.delivery, params.email);
   return { trial, course: trial.course, results };
 }
 
@@ -135,10 +132,11 @@ async function sendTrialInvites(
   course: { title: string; teacher: { name: string } },
   guests: PreparedGuest[],
   delivery: "mail" | "link",
+  email?: EmailContentOptions,
 ) {
   const datum = formatReminderDate(trial.startsAt);
   const results: { name: string; email: string; ok: boolean; mailed: boolean; shareText: string }[] = [];
-  const render = delivery === "mail" ? await trialRenderer("trial_invite") : null;
+  const render = delivery === "mail" ? await emailRenderer("trial_invite", email) : null;
   const ics = calendarFor(trial, course.title);
 
   for (const guest of guests) {
@@ -174,7 +172,7 @@ async function sendTrialInvites(
 }
 
 // Probestunde absagen: Zoom-Meeting loeschen (falls vorhanden) und alle Gaeste informieren.
-export async function cancelTrialLesson(trialId: string) {
+export async function cancelTrialLesson(trialId: string, email?: EmailContentOptions) {
   const trial = await prisma.trialLesson.findUnique({
     where: { id: trialId },
     include: { guests: true, course: { select: { title: true } } },
@@ -187,17 +185,18 @@ export async function cancelTrialLesson(trialId: string) {
     );
   }
   if (trial.startsAt.getTime() < Date.now()) return;
+  const render = await emailRenderer("trial_cancelled", email);
   for (const guest of trial.guests) {
     if (!guest.email) continue;
     try {
       await deliverEmail({
         from: EMAIL_FROM,
         to: guest.email,
-        ...(await buildEmail("trial_cancelled", {
+        ...render({
           name: guest.name,
           kurs: trial.course.title,
           datum: formatReminderDate(trial.startsAt),
-        })),
+        }),
       });
     } catch (err) {
       console.error(`Absage der Probestunde an ${guest.email} fehlgeschlagen:`, err);
@@ -218,7 +217,7 @@ export async function sendTrialReminders(minutesBefore: number, windowMinutes: n
     },
     include: { guests: { include: { _count: { select: { samples: true } } } }, course: { select: { title: true } } },
   });
-  const render = await trialRenderer("trial_reminder");
+  const render = await emailRenderer("trial_reminder");
   let sent = 0;
   for (const trial of trials) {
     // Gaeste ohne E-Mail-Adresse (per WhatsApp eingeladen) bekommen keine Erinnerung.

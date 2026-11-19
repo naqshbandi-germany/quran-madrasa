@@ -78,6 +78,8 @@ export type EventData = {
   note?: string;
   // Hoerprobe eines Probestunden-Gastes (ohne Konto)
   trial?: boolean;
+  // Hoerprobe zu einer Kurseinladung (ohne Konto, noch nicht angemeldet)
+  invitation?: boolean;
 };
 
 function names(data: EventData) {
@@ -123,8 +125,18 @@ export function describeEvent(type: NotificationTypeKey, data: EventData): { tit
       };
     case "READING_SAMPLE_UPLOADED":
       return {
-        title: data.trial ? `Neue Hörprobe zur Probestunde: ${data.course ?? "Kurs"}` : `Neue Leseprobe: ${data.course ?? "Kurs"}`,
-        detail: `${names(data)} hat ${data.trial ? `für die Probestunde im Kurs ${course} eine Hörprobe` : `im Kurs ${course} eine Leseprobe`} hochgeladen.${
+        title: data.trial
+          ? `Neue Hörprobe zur Probestunde: ${data.course ?? "Kurs"}`
+          : data.invitation
+            ? `Neue Hörprobe zur Einladung: ${data.course ?? "Kurs"}`
+            : `Neue Leseprobe: ${data.course ?? "Kurs"}`,
+        detail: `${names(data)} hat ${
+          data.trial
+            ? `für die Probestunde im Kurs ${course} eine Hörprobe`
+            : data.invitation
+              ? `zur Einladung in den Kurs ${course} eine Hörprobe`
+              : `im Kurs ${course} eine Leseprobe`
+        } hochgeladen.${
           data.note ? ` Hinweis: „${data.note}“` : ""
         }`,
       };

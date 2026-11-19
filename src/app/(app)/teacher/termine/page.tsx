@@ -4,8 +4,11 @@ import { auth } from "@/auth";
 import { ConfirmButton } from "@/components/confirm-button";
 import { CopyButton } from "@/components/copy-button";
 import { TimeZoneNotice } from "@/components/time-zone-notice";
+import { TrialCancelButton } from "@/components/trial-cancel-button";
+import { editableEmail } from "@/lib/email-templates";
 import { prisma } from "@/lib/prisma";
-import { cancelTrial, removeTrialGuest, toggleTrialSampleListened } from "@/lib/trial-actions";
+import { formatReminderDate } from "@/lib/reminder-email";
+import { removeTrialGuest, toggleTrialSampleListened } from "@/lib/trial-actions";
 import { resolveViewTimeZone } from "@/lib/view-time-zone";
 import { formatZonedDateTime } from "@/lib/schedule-time";
 
@@ -30,7 +33,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
   const range = past ? { gte: new Date(now.getTime() - 60 * 24 * 3600_000), lt: now } : { gte: new Date(now.getTime() - 2 * 3600_000) };
   const courseWhere = isAdmin ? {} : { course: { teacherId: session.user.id } };
 
-  const [sessions, trials] = await Promise.all([
+  const [sessions, trials, cancelEmail] = await Promise.all([
     prisma.classSession.findMany({
       where: { startsAt: range, ...courseWhere },
       orderBy: { startsAt: past ? "desc" : "asc" },
@@ -53,6 +56,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
         course: { select: { id: true, title: true, teacher: { select: { name: true } } } },
       },
     }),
+    editableEmail("trial_cancelled", session.user.id),
   ]);
 
   const when = (date: Date) => `${formatZonedDateTime(date, timeZone)} Uhr`;
@@ -226,29 +230,41 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
                       ))}
                     </td>
                     <td className={`${TD} whitespace-nowrap text-right`}>
-                      {!t.canceledAt && !past && (
-                        <div className="flex flex-wrap items-center justify-end gap-3">
+                      <div className="flex flex-wrap items-center justify-end gap-3">
+                        {!t.canceledAt && t.guests.length > 0 && (
                           <Link
-                            href={`/teacher/schueler/einladen?probestunde=${t.id}`}
+                            href={`/teacher/schueler/einladen?gaeste=${t.id}`}
                             className="font-medium text-brand-700 underline"
+                            title="Die Gäste dieser Probestunde zur Anmeldung im Kurs einladen"
                           >
-                            Weitere einladen
+                            Gäste zum Kurs einladen
                           </Link>
-                          <a href={t.joinUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-brand-700 underline">
-                            Raum öffnen
-                          </a>
-                          <CopyButton text={t.joinUrl} label="Link kopieren" />
-                          <form action={cancelTrial}>
-                            <input type="hidden" name="trialId" value={t.id} />
-                            <ConfirmButton
-                              message="Probestunde wirklich absagen? Alle Eingeladenen mit E-Mail-Adresse bekommen eine Absage."
-                              className="font-medium text-red-700 underline"
+                        )}
+                        {!t.canceledAt && !past && (
+                          <>
+                            <Link
+                              href={`/teacher/schueler/einladen?probestunde=${t.id}`}
+                              className="font-medium text-brand-700 underline"
                             >
-                              Absagen
-                            </ConfirmButton>
-                          </form>
-                        </div>
-                      )}
+                              Weitere einladen
+                            </Link>
+                            <a href={t.joinUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-brand-700 underline">
+                              Raum öffnen
+                            </a>
+                            <CopyButton text={t.joinUrl} label="Link kopieren" />
+                            <TrialCancelButton
+                              trialId={t.id}
+                              editable={cancelEmail}
+                              guestCount={t.guests.filter((g) => g.email).length}
+                              values={{
+                                ...(t.guests[0] ? { name: t.guests[0].name } : {}),
+                                kurs: t.course.title,
+                                datum: formatReminderDate(t.startsAt),
+                              }}
+                            />
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

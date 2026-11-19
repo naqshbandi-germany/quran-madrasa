@@ -5,12 +5,13 @@ import { GuestSampleDeleteButton } from "./delete-button";
 import { ReadingSampleRecorder } from "@/components/reading-sample-recorder";
 import { formatReminderDate } from "@/lib/reminder-email";
 import { formatGermanDateTime } from "@/lib/schedule-time";
-import { findGuestBySampleToken } from "@/lib/trial-samples";
+import { findSampleSource } from "@/lib/trial-samples";
 
-// Persoenlicher Link eines Probestunden-Gastes zum Aufnehmen der Hoerprobe (ohne Konto).
+// Persoenlicher Link eines Probestunden-Gastes bzw. einer zum Kurs eingeladenen Person zum
+// Aufnehmen der Hoerprobe (ohne Konto). Auch unter /einladung/hoerprobe/<token> erreichbar.
 // Nicht zwischenspeichern und nicht indexieren.
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Hörprobe zur Probestunde", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Hörprobe", robots: { index: false, follow: false } };
 
 function formatDuration(seconds: number | null) {
   if (!seconds) return "";
@@ -19,14 +20,15 @@ function formatDuration(seconds: number | null) {
 
 export default async function TrialSamplePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const guest = await findGuestBySampleToken(token);
+  const guest = await findSampleSource(token);
 
   if (!guest) {
     return (
       <div className="mx-auto max-w-md space-y-3">
         <h1 className="text-3xl font-semibold text-azure-800">Link nicht mehr gültig</h1>
         <p className="text-brand-900/80">
-          Dieser Link zur Hörprobe ist abgelaufen, die Probestunde wurde abgesagt oder der Link ist unvollständig.
+          Dieser Link zur Hörprobe ist abgelaufen, die Probestunde wurde abgesagt, die Hörprobe ist schon deinem
+          Konto zugeordnet oder der Link ist unvollständig.
           Bitte wende dich an die Lehrkraft, die dich eingeladen hat.
         </p>
         <Link href="/" className="font-medium text-azure-800 underline">
@@ -36,17 +38,30 @@ export default async function TrialSamplePage({ params }: { params: Promise<{ to
     );
   }
 
-  const { trialLesson } = guest;
+  const { course } = guest;
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.18em] text-azure-700">Probestunde</p>
-        <h1 className="mt-1 text-3xl font-semibold text-azure-800">Salam alaykum {guest.name}!</h1>
-        <p className="mt-2 text-brand-900/80">
-          {trialLesson.course.teacher.name} bittet dich vor deiner Probestunde im Kurs{" "}
-          <span className="font-medium">{trialLesson.course.title}</span> am {formatReminderDate(trialLesson.startsAt)} um
-          eine kurze Hörprobe. So kann sich die Lehrkraft gezielt auf dich vorbereiten. Ein Konto brauchst du dafür nicht.
+        <p className="text-xs uppercase tracking-[0.18em] text-azure-700">
+          {guest.kind === "trial" ? "Probestunde" : "Einladung zum Kurs"}
         </p>
+        <h1 className="mt-1 text-3xl font-semibold text-azure-800">
+          Salam alaykum{guest.name ? ` ${guest.name}` : ""}!
+        </h1>
+        {guest.kind === "trial" && guest.startsAt ? (
+          <p className="mt-2 text-brand-900/80">
+            {course.teacher.name} bittet dich vor deiner Probestunde im Kurs{" "}
+            <span className="font-medium">{course.title}</span> am {formatReminderDate(guest.startsAt)} um eine kurze
+            Hörprobe. So kann sich die Lehrkraft gezielt auf dich vorbereiten. Ein Konto brauchst du dafür nicht.
+          </p>
+        ) : (
+          <p className="mt-2 text-brand-900/80">
+            {course.teacher.name} hat dich zum Kurs <span className="font-medium">{course.title}</span> eingeladen und
+            bittet dich um eine kurze Hörprobe. So kann sich die Lehrkraft gezielt auf dich vorbereiten. Ein Konto
+            brauchst du dafür nicht; du kannst die Hörprobe auch schon vor der Anmeldung schicken. Meldest du dich
+            später mit derselben E-Mail-Adresse an, wird sie deinem Konto zugeordnet.
+          </p>
+        )}
       </div>
 
       <p className="border-l-2 border-gold-400 bg-brand-50 px-3 py-2 text-sm">
@@ -54,7 +69,7 @@ export default async function TrialSamplePage({ params }: { params: Promise<{ to
       </p>
 
       <ReadingSampleRecorder
-        courseId={trialLesson.course.id}
+        courseId={course.id}
         participants={[]}
         sessions={[]}
         guestToken={token}

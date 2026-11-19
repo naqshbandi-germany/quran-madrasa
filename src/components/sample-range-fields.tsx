@@ -1,19 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { SURAH_OPTIONS } from "@/lib/surahs";
+import { SURAH_OPTIONS, sampleRangeFromForm } from "@/lib/surahs";
 
 const INPUT = "min-w-0 border border-brand-300 bg-white px-3 py-2 text-sm";
 
 // Auswahl von Sure und Versbereich fuer eine Hoerprobe (Felder surah, wholeSurah, fromAyah,
-// toAyah; ausgewertet mit sampleRangeFromForm).
-export function SampleRangeFields() {
+// toAyah; ausgewertet mit sampleRangeFromForm). onRangeChange meldet den Abschnitt als Text,
+// z. B. fuer die Vorschau der Mail (null, solange die Angaben unvollstaendig sind).
+export function SampleRangeFields({ onRangeChange }: { onRangeChange?: (range: string | null) => void }) {
   const [surah, setSurah] = useState("");
   const [wholeSurah, setWholeSurah] = useState(false);
   const [fromAyah, setFromAyah] = useState("");
   const [toAyah, setToAyah] = useState("");
   const ayahs = SURAH_OPTIONS.find((o) => String(o.number) === surah)?.ayahs;
+
+  useEffect(() => {
+    if (!onRangeChange) return;
+    const data = new FormData();
+    data.set("surah", surah);
+    if (wholeSurah) data.set("wholeSurah", "on");
+    data.set("fromAyah", fromAyah);
+    data.set("toAyah", toAyah);
+    onRangeChange(sampleRangeFromForm(data, {}));
+  }, [surah, wholeSurah, fromAyah, toAyah, onRangeChange]);
 
   return (
     <div className="space-y-2">

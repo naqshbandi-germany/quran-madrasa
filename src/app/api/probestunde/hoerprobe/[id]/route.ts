@@ -4,26 +4,31 @@ import { auth } from "@/auth";
 import { streamMediaFile } from "@/lib/media-stream";
 import { prisma } from "@/lib/prisma";
 import { deleteSampleAudio } from "@/lib/reading-samples";
-import { findGuestBySampleToken } from "@/lib/trial-samples";
+import { findSampleSource } from "@/lib/trial-samples";
 
 async function loadSample(id: string) {
   return prisma.trialSample.findUnique({
     where: { id },
-    include: { trialGuest: { select: { id: true, trialLesson: { select: { course: { select: { teacherId: true } } } } } } },
+    include: {
+      trialGuest: { select: { id: true, trialLesson: { select: { course: { select: { teacherId: true } } } } } },
+      invitation: { select: { id: true, course: { select: { teacherId: true } } } },
+    },
   });
 }
 
-// Wer darf die Hoerprobe abrufen bzw. loeschen? Der Gast ueber seinen Link (?t=...), die
-// Lehrkraft des Kurses und Admins.
+// Wer darf die Hoerprobe abrufen bzw. loeschen? Der Gast bzw. Eingeladene ueber seinen Link
+// (?t=...), die Lehrkraft des Kurses und Admins.
 async function allowed(request: Request, sample: NonNullable<Awaited<ReturnType<typeof loadSample>>>) {
   const token = new URL(request.url).searchParams.get("t");
   if (token) {
-    const guest = await findGuestBySampleToken(token);
-    if (guest?.id === sample.trialGuest.id) return true;
+    const source = await findSampleSource(token);
+    const ownerId = source?.kind === "invitation" ? sample.invitation?.id : sample.trialGuest?.id;
+    if (source && ownerId === source.id) return true;
   }
   const session = await auth();
   if (!session) return false;
-  return session.user.role === "ADMIN" || session.user.id === sample.trialGuest.trialLesson.course.teacherId;
+  const teacherId = sample.trialGuest?.trialLesson.course.teacherId ?? sample.invitation?.course.teacherId;
+  return session.user.role === "ADMIN" || session.user.id === teacherId;
 }
 
 // Spielt eine Hoerprobe zur Probestunde ab.

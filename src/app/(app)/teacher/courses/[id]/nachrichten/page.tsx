@@ -4,6 +4,7 @@ import { EmailComposer } from "@/components/email-composer";
 import { WhatsappGroupList, type WhatsappMember } from "@/components/whatsapp-group-list";
 import { blobAccess, isBlobConfigured } from "@/lib/blob";
 import { nameWithMuslimName, requireManagedCourse } from "@/lib/course-manage";
+import { editableEmail } from "@/lib/email-templates";
 import { toMediaItem } from "@/lib/media-items";
 import { prisma } from "@/lib/prisma";
 
@@ -19,7 +20,7 @@ export default async function CourseMessagesPage({
   const { an } = await searchParams;
   const { session, course, isAdmin } = await requireManagedCourse(id);
 
-  const [enrollments, mediaFiles] = await Promise.all([
+  const [enrollments, mediaFiles, sampleEmail, teacher] = await Promise.all([
     prisma.enrollment.findMany({
       where: { courseId: id },
       include: { participant: true, user: { select: { name: true, email: true } } },
@@ -30,6 +31,8 @@ export default async function CourseMessagesPage({
       orderBy: { createdAt: "desc" },
       select: { id: true, title: true, fileName: true, mimeType: true, sizeBytes: true, createdAt: true, blobPathname: true },
     }),
+    editableEmail("sample_request", session.user.id),
+    prisma.user.findUnique({ where: { id: course.teacherId }, select: { name: true } }),
   ]);
 
   // WhatsApp-Nummern nur mit Einwilligung, je Nummer eine Zeile (Geschwister teilen oft die Nummer).
@@ -78,6 +81,7 @@ export default async function CourseMessagesPage({
           ]}
           initialSelectedIds={preselected}
           allowSampleRequest
+          sampleEmail={{ editable: sampleEmail, teacherName: teacher?.name ?? "" }}
           files={mediaFiles.map((file) => toMediaItem(file))}
           upload={{ blobEnabled: isBlobConfigured(), blobAccess: blobAccess(), userId: session.user.id }}
         />
