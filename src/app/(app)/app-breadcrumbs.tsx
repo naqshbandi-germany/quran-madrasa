@@ -22,6 +22,7 @@ const STATIC_LABELS: Record<string, string> = {
   "/teacher/profil": "Mein Profil",
   "/teacher/mediathek": "Mediathek",
   "/teacher/emails": "E-Mails",
+  "/teacher/mailvorlagen": "Mailvorlagen",
 };
 
 // Baut die Pfadleiste aus der URL. Namen aus der Datenbank (Kurstitel, Konten, E-Mail-Texte)

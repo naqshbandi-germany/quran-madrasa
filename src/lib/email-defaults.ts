@@ -368,6 +368,10 @@ export const EMAIL_TEMPLATES = {
       { key: "hinweis", label: "Hinweis zur Bezahlung (ohne Zahlung bzw. normale Anmeldung)", example: "Die Teilnahme ist für dich kostenlos." },
       { key: "link", label: "Einladungslink (Ziel des Buttons)", example: "https://www.islamunterfreunden.de/einladung/…" },
       { key: "tage", label: "Gültigkeit des Links in Tagen", example: "14" },
+      {
+        ...TRIAL_SAMPLE,
+        example: TRIAL_SAMPLE.example.replace("vor der Probestunde", "möglichst bald, gern schon vor der Anmeldung,"),
+      },
       BUTTON,
     ],
     hasButton: true,
@@ -378,6 +382,7 @@ export const EMAIL_TEMPLATES = {
         "{{von}} lädt dich zum Kurs **{{kurs}}** bei Islam unter Freunden ein. {{hinweis}}",
         "Über diesen Link meldest du dich an. Hast du noch kein Konto, legst du dabei eines an. Der Link ist {{tage}} Tage gültig:",
         "{{button}}",
+        "{{hoerprobe}}",
       ].join("\n\n"),
       buttonLabel: "Einladung annehmen",
       footer: CONTACT_FOOTER,
@@ -475,6 +480,34 @@ export const EMAIL_TEMPLATES = {
       footer: CONTACT_FOOTER,
     },
   },
+  sample_request: {
+    label: "Bitte um eine Hörprobe",
+    group: "Kurs und Termine",
+    description:
+      "Wenn eine Lehrkraft unter „Nachrichten“ bei Teilnehmern ihres Kurses eine Hörprobe anfordert. Der Button führt zur Aufnahme-Seite.",
+    placeholders: [
+      NAME,
+      KURS,
+      LEHRER,
+      { key: "abschnitt", label: "Erbetener Abschnitt (Sure und Verse)", example: "Sure 67 Al-Mulk, Verse 1–10" },
+      { key: "hinweis", label: "Persönlicher Hinweis der Lehrkraft (leer, wenn keiner angegeben ist)", example: "Achte besonders auf die Madd-Regeln." },
+      { key: "link", label: "Link zur Aufnahme-Seite (Ziel des Buttons)", example: "https://www.islamunterfreunden.de/dashboard/kurse/abc/leseprobe" },
+      BUTTON,
+    ],
+    hasButton: true,
+    defaults: {
+      subject: "Bitte um eine Hörprobe: {{abschnitt}}",
+      body: [
+        GREETING,
+        "bitte lies **{{abschnitt}}** laut vor und nimm es als Hörprobe auf. So kann ich mich gezielt auf die nächste Stunde im Kurs **{{kurs}}** vorbereiten.",
+        "{{hinweis}}",
+        "{{button}}",
+        "Viele Grüße\n{{lehrer}}",
+      ].join("\n\n"),
+      buttonLabel: "Hörprobe aufnehmen",
+      footer: ENROLLED_FOOTER,
+    },
+  },
 } as const satisfies Record<string, TemplateDefinition>;
 
 export type EmailTemplateKey = keyof typeof EMAIL_TEMPLATES;
@@ -486,6 +519,44 @@ export type EmailValues<K extends EmailTemplateKey> = Record<
 >;
 
 export const EMAIL_GROUPS = ["Kurs und Termine", "Zahlung und Abo", "Warteliste", "Konto", "Probestunde", "Benachrichtigungen"] as const;
+
+// Wert fuer {{hinweis}} in der Kurseinladung (auch fuer die Vorschau im Browser).
+export const STUDENT_INVITE_HINTS = {
+  free: "Die Teilnahme ist für dich kostenlos.",
+  paid: "Die Anmeldung und Bezahlung erledigst du direkt über den Link.",
+} as const;
+
+// Mails, die eine Lehrkraft selbst ausloest. Fuer diese kann sie eigene Vorlagen speichern
+// (Lehrer-Bereich "Mailvorlagen") und sieht vor dem Versand eine Vorschau.
+export const TEACHER_EMAIL_KEYS = [
+  "student_invite",
+  "trial_invite",
+  "sample_request",
+  "trial_cancelled",
+  "session_moved",
+  "session_cancelled",
+  "participant_removed",
+  "waitlist_offer",
+] as const satisfies readonly EmailTemplateKey[];
+export type TeacherEmailKey = (typeof TEACHER_EMAIL_KEYS)[number];
+
+export function isTeacherEmailKey(key: string): key is TeacherEmailKey {
+  return (TEACHER_EMAIL_KEYS as readonly string[]).includes(key);
+}
+
+// HTML-Bausteine, die in einem angepassten Text nicht fehlen duerfen (z. B. die Bitte um die
+// Hoerprobe mit dem persoenlichen Link). Fehlt der Platzhalter, wird er angehaengt.
+const REQUIRED_BLOCKS: Partial<Record<EmailTemplateKey, string>> = {
+  student_invite: "hoerprobe",
+  trial_invite: "hoerprobe",
+  trial_reminder: "hoerprobe",
+};
+
+export function withRequiredBlocks(key: EmailTemplateKey, content: EmailContent): EmailContent {
+  const block = REQUIRED_BLOCKS[key];
+  if (!block || new RegExp(`\\{\\{\\s*${block}\\s*\\}\\}`).test(content.body)) return content;
+  return { ...content, body: `${content.body}\n\n{{${block}}}` };
+}
 
 export function isEmailTemplateKey(key: string): key is EmailTemplateKey {
   return Object.prototype.hasOwnProperty.call(EMAIL_TEMPLATES, key);

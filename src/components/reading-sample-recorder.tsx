@@ -300,7 +300,7 @@ export function ReadingSampleRecorder({
                 <a href="/datenschutz" target="_blank" className="underline">
                   Datenschutzhinweis
                 </a>{" "}
-                gelesen. Die Aufnahme wird nur für die Vorbereitung der Probestunde gespeichert.
+                gelesen. Die Aufnahme wird nur für die Vorbereitung des Unterrichts gespeichert.
               </span>
             </label>
           )}

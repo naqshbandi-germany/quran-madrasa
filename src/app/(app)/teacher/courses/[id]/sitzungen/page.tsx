@@ -167,7 +167,7 @@ export default async function CourseSessionsPage({ params }: { params: Promise<{
   const { session, course } = await requireManagedCourse(id);
   const { timeZone: viewTimeZone, ownTimeZone, showingOwn } = await resolveViewTimeZone(session.user.id);
 
-  const [sessions, scheduleSlots, teacher, unheardSamples] = await Promise.all([
+  const [sessions, scheduleSlots, teacher, unheardReading, unheardInvited] = await Promise.all([
     prisma.classSession.findMany({
       where: { courseId: id },
       orderBy: { startsAt: "asc" },
@@ -176,7 +176,10 @@ export default async function CourseSessionsPage({ params }: { params: Promise<{
     prisma.scheduleSlot.findMany({ where: { courseId: id }, orderBy: [{ weekday: "asc" }, { startTime: "asc" }] }),
     prisma.user.findUnique({ where: { id: course.teacherId }, select: { timeZone: true } }),
     prisma.readingSample.count({ where: { courseId: id, listenedAt: null } }),
+    // Hoerproben zu Einladungen (noch nicht angemeldet)
+    prisma.trialSample.count({ where: { invitation: { courseId: id }, listenedAt: null } }),
   ]);
+  const unheardSamples = unheardReading + unheardInvited;
   // Stundenplan-Eintraege gelten immer in der Zeitzone der Lehrkraft des Kurses.
   const courseTimeZone = teacherTimeZone(teacher ?? { timeZone: null });
   // Der Stundenplan ist in der Ortszeit der Lehrkraft gespeichert und wird wie die Sitzungen in

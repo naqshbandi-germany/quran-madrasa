@@ -85,8 +85,10 @@ export async function sendSessionChangeNotice(
   if (!course || course.enrollments.length === 0) return;
 
   const appUrl = getAppUrl();
-  const renderMoved = await emailRenderer("session_moved");
-  const renderCancelled = await emailRenderer("session_cancelled");
+  // Eigene Vorlage der Lehrkraft des Kurses (Lehrer-Bereich "Mailvorlagen")
+  const sender = { senderId: course.teacherId };
+  const renderMoved = await emailRenderer("session_moved", sender);
+  const renderCancelled = await emailRenderer("session_cancelled", sender);
 
   for (const recipient of groupRecipients(course.enrollments)) {
     const values = {

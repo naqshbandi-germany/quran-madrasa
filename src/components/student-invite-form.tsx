@@ -1,14 +1,49 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 
 import { CopyButton } from "@/components/copy-button";
+import { EmailPreview } from "@/components/email-preview";
 import { PencilIcon, XIcon } from "@/components/icons";
 import { SampleRangeFields } from "@/components/sample-range-fields";
+import { STUDENT_INVITE_HINTS } from "@/lib/email-defaults";
+import type { EditableEmail } from "@/lib/email-templates";
 import { inviteStudents, lookupInviteEmail, type StudentInviteState } from "@/lib/invite-actions";
 import type { KnownInvitee } from "@/lib/invitees";
+import { SAMPLE_WHEN, sampleBlockHtml } from "@/lib/sample-block";
 
 type Entry = { name: string; email: string };
+
+// Probestunde, deren Gaeste sich in die Liste uebernehmen lassen (z. B. um sie danach zum Kurs
+// einzuladen).
+export type GuestSource = { id: string; courseId: string; label: string; guests: Entry[] };
+
+// Fertigen Text zum Weiterschicken vor dem Kopieren noch anpassen.
+function ShareText({ initial }: { initial: string }) {
+  const [value, setValue] = useState(initial);
+  return (
+    <div className="space-y-1">
+      <textarea
+        aria-label="Nachricht zum Weiterschicken"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        rows={4}
+        className="w-full border border-brand-300 bg-white px-2 py-1 text-xs text-brand-900"
+      />
+      <div className="flex flex-wrap items-center gap-3">
+        <CopyButton text={value} label="Nachricht kopieren" />
+        <a
+          href={`https://wa.me/?text=${encodeURIComponent(value)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-medium text-azure-800 underline"
+        >
+          Per WhatsApp teilen
+        </a>
+      </div>
+    </div>
+  );
+}
 
 const INPUT = "min-w-0 border border-brand-300 bg-white px-3 py-2 text-sm";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,10 +59,14 @@ export function StudentInviteForm({
   timeZoneHint,
   trials = [],
   initialTrialId = "",
+  emails,
+  senderName,
+  guestSources = [],
+  initialEntries = [],
 }: {
   // Fester Kurs oder Auswahl aus mehreren Kursen (Seite "Schüler einladen").
   courseId?: string;
-  courses?: { id: string; title: string }[];
+  courses?: { id: string; title: string; teacherName: string }[];
   initialCourseId?: string;
   allowFree?: boolean;
   // Hinweis, in welcher Zeitzone die Uhrzeit der Probestunde gilt, z. B. "deutsche Zeit".
@@ -36,9 +75,20 @@ export function StudentInviteForm({
   trials?: { id: string; courseId: string; courseTitle: string; when: string; label: string }[];
   // Vorauswahl, z. B. ueber "Weitere einladen" unter "Termine".
   initialTrialId?: string;
+  // Texte der Mails fuer die Vorschau (eigene Vorlage bzw. allgemeiner Text)
+  emails: { student_invite: EditableEmail; trial_invite: EditableEmail };
+  // Name der einladenden Person ({{von}} in der Kurseinladung)
+  senderName: string;
+  // Probestunden, deren Gaeste sich uebernehmen lassen
+  guestSources?: GuestSource[];
+  // Vorbelegte Liste, z. B. ueber "Gäste zum Kurs einladen" unter "Termine"
+  initialEntries?: Entry[];
 }) {
   const [state, formAction, pending] = useActionState<StudentInviteState, FormData>(inviteStudents, null);
-  const [entries, setEntries] = useState<Entry[]>([]);
+  const [entries, setEntries] = useState<Entry[]>(initialEntries);
+  const [free, setFree] = useState(false);
+  const [sampleRange, setSampleRange] = useState<string | null>(null);
+  const [guestNote, setGuestNote] = useState<string | null>(null);
   const [draft, setDraft] = useState<Entry>({ name: "", email: "" });
   const [editing, setEditing] = useState<{ index: number; entry: Entry } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -128,12 +178,33 @@ export function StudentInviteForm({
     }
   }
 
+  // Gaeste einer Probestunde in die Liste uebernehmen (ohne doppelte E-Mail-Adressen).
+  function takeGuests(sourceId: string) {
+    const source = guestSources.find((s) => s.id === sourceId);
+    if (!source) return;
+    const known = new Set(entries.map((e) => e.email.toLowerCase()).filter(Boolean));
+    const fresh = source.guests.filter((g) => !g.email || !known.has(g.email.toLowerCase()));
+    setEntries((list) => [...list, ...fresh]);
+    if (!courseId) setSelectedCourse(source.courseId);
+    setGuestNote(
+      fresh.length === 0
+        ? "Alle Gäste dieser Probestunde stehen schon in der Liste."
+        : `${fresh.length} ${fresh.length === 1 ? "Gast" : "Gäste"} übernommen. Prüfe die Liste und wähle unten, wozu du einlädst.`,
+    );
+  }
+
   // Beim Abschicken zaehlt auch ein noch nicht mit Enter bestaetigter Eintrag.
   const pendingDraft = draft.name.trim() || draft.email.trim() ? [{ name: draft.name.trim(), email: draft.email.trim() }] : [];
   const allEntries = [...entries, ...pendingDraft];
 
-  function onSubmit() {
+  // Selbst abschicken statt <form action>: Sonst setzt React das Formular nach jedem Absenden
+  // zurueck, auch bei einer Fehlermeldung (Kurs, Sure usw. waeren dann weg).
+  const [resetKey, setResetKey] = useState(0);
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setEditing(null);
+    const data = new FormData(event.currentTarget, (event.nativeEvent as SubmitEvent).submitter);
+    startTransition(() => formAction(data));
   }
 
   // Nach erfolgreichem Versand die Liste leeren (einmal pro neuem Ergebnis).
@@ -145,18 +216,50 @@ export function StudentInviteForm({
     if (state?.ok) {
       setEntries([]);
       setDraft({ name: "", email: "" });
-      // React setzt das Formular nach dem Absenden zurück; die Kursauswahl entsprechend leeren.
+      setResetKey((k) => k + 1);
       setSelectedCourse(initialCourseId);
       setTrial(Boolean(initialTrialId));
       setTrialChoice(initialTrialId || "neu");
       setTrialStartsAt("");
       setSampleRequest(false);
+      setSampleRange(null);
+      setFree(false);
+      setGuestNote(null);
     }
   }
 
+  // Vorschau der Mail mit den Angaben aus dem Formular (erster Empfaenger, Kurs, Termin).
+  const previewCourse = (courses ?? []).find((c) => c.id === activeCourse);
+  const firstName = allEntries[0]?.name ?? "";
+  const recipientLabel = firstName
+    ? allEntries.length > 1
+      ? `bei ${firstName} (und ${allEntries.length - 1} weiteren)`
+      : `bei ${firstName}`
+    : undefined;
+  const sampleHtml =
+    sampleRequest && sampleRange
+      ? sampleBlockHtml(sampleRange, "#", trial ? SAMPLE_WHEN.trial : SAMPLE_WHEN.invitation)
+      : "";
+  const trialWhen = existingTrial
+    ? existingTrial.when
+    : trialStartsAt
+      ? `${new Date(trialStartsAt).toLocaleString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })} Uhr`
+      : "";
+  const previewValues: Record<string, string> = {
+    ...(firstName ? { name: firstName } : {}),
+    ...(previewCourse ? { kurs: previewCourse.title.replace(/ \(versteckt\)$/, ""), lehrer: previewCourse.teacherName } : {}),
+    von: senderName,
+    hinweis: free ? STUDENT_INVITE_HINTS.free : STUDENT_INVITE_HINTS.paid,
+    tage: "14",
+    ...(trialWhen ? { datum: trialWhen } : {}),
+    dauer: existingTrial ? "" : trialDuration,
+    hoerprobe: sampleHtml,
+  };
+  if (existingTrial) delete previewValues.dauer;
+
   return (
     <div className="space-y-3">
-      <form action={formAction} onSubmit={onSubmit} className="space-y-3">
+      <form onSubmit={onSubmit} className="space-y-3">
         {courseId ? (
           <input type="hidden" name="courseId" value={courseId} />
         ) : (
@@ -180,6 +283,30 @@ export function StudentInviteForm({
           </select>
         )}
         <input type="hidden" name="students" value={JSON.stringify(allEntries)} />
+
+        {guestSources.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-sm text-brand-800">
+            <label htmlFor="guest-source">Gäste einer Probestunde übernehmen:</label>
+            <select
+              id="guest-source"
+              value=""
+              onChange={(e) => takeGuests(e.target.value)}
+              className={`${INPUT} w-full sm:w-auto`}
+            >
+              <option value="">Probestunde wählen …</option>
+              {guestSources.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {guestNote && (
+          <p role="status" className="text-sm text-green-900">
+            {guestNote}
+          </p>
+        )}
 
         {entries.length > 0 && (
           <ul className="space-y-1" aria-label="Schüler, die eingeladen werden">
@@ -368,36 +495,60 @@ export function StudentInviteForm({
                   </p>
                 </>
               )}
-              <label className="flex items-center gap-2 pt-1 text-sm font-medium text-brand-900">
-                <input
-                  type="checkbox"
-                  name="sampleRequest"
-                  checked={sampleRequest}
-                  onChange={(e) => setSampleRequest(e.target.checked)}
-                  className="h-4 w-4"
-                />
-                Hörprobe anfragen
-              </label>
-              {sampleRequest && (
-                <div className="space-y-2 pl-6">
-                  <SampleRangeFields />
-                  <p className="text-xs text-brand-600">
-                    Jeder Eingeladene bekommt einen persönlichen Link, über den er den Abschnitt vorab aufnimmt oder
-                    hochlädt, ohne Konto. Die Hörproben hörst du unter „Termine“ bei der Probestunde. Meldet sich der Gast
-                    später mit derselben E-Mail-Adresse an, erscheint die Hörprobe auch in seinem Schülerprofil.
-                  </p>
-                </div>
-              )}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2 border border-brand-200 bg-brand-50 p-3">
+          <label className="flex items-center gap-2 text-sm font-medium text-brand-900">
+            <input
+              type="checkbox"
+              name="sampleRequest"
+              checked={sampleRequest}
+              onChange={(e) => setSampleRequest(e.target.checked)}
+              className="h-4 w-4"
+            />
+            Hörprobe anfordern
+          </label>
+          {sampleRequest && (
+            <div className="space-y-2 pl-6">
+              <SampleRangeFields key={resetKey} onRangeChange={setSampleRange} />
+              <p className="text-xs text-brand-600">
+                Jeder Eingeladene bekommt einen persönlichen Link, über den er den Abschnitt aufnimmt oder hochlädt, ohne
+                Konto{trial ? "" : " und gern schon vor der Anmeldung"}. Die Hörproben hörst du{" "}
+                {trial ? "unter „Termine“ bei der Probestunde" : "im Kurs unter „Hörproben“"}. Meldet sich die Person
+                später mit derselben E-Mail-Adresse an, erscheint die Hörprobe auch in ihrem Schülerprofil.
+              </p>
             </div>
           )}
         </div>
 
         {allowFree && !trial && (
           <label className="flex items-center gap-2 text-sm text-brand-800">
-            <input type="checkbox" name="free" className="h-4 w-4" />
+            <input
+              type="checkbox"
+              name="free"
+              checked={free}
+              onChange={(e) => setFree(e.target.checked)}
+              className="h-4 w-4"
+            />
             Ohne Zahlung eintragen (nur Admins, jeder Link einmal nutzbar)
           </label>
         )}
+
+        <EmailPreview
+          // Wechsel zwischen Kurseinladung und Probestunde: eigene Vorschau mit eigenem Text
+          key={`${trial ? "trial_invite" : "student_invite"}-${resetKey}`}
+          templateKey={trial ? "trial_invite" : "student_invite"}
+          editable={trial ? emails.trial_invite : emails.student_invite}
+          values={previewValues}
+          recipientLabel={recipientLabel}
+        />
+        <p className="-mt-1 text-xs text-brand-600">
+          Die Vorschau gilt für den Versand per E-Mail. Bei „
+          {trial ? "Nachricht für WhatsApp erstellen" : "Link erstellen"}“ bekommst du einen Text, den du vor dem Kopieren
+          noch anpassen kannst.
+        </p>
 
         <div className="flex flex-wrap gap-2">
           <button
@@ -442,19 +593,7 @@ export function StudentInviteForm({
                       {!r.ok && `: ${r.message}`}
                     </p>
                   )}
-                  {!r.link && r.shareText && (
-                    <div className="flex flex-wrap items-center gap-3">
-                      <CopyButton text={r.shareText} label="Nachricht kopieren" />
-                      <a
-                        href={`https://wa.me/?text=${encodeURIComponent(r.shareText)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-medium text-azure-800 underline"
-                      >
-                        Per WhatsApp teilen
-                      </a>
-                    </div>
-                  )}
+                  {!r.link && r.shareText && <ShareText initial={r.shareText} />}
                   {r.link && (
                     <div className="flex flex-wrap items-center gap-2">
                       <input
@@ -465,18 +604,9 @@ export function StudentInviteForm({
                         className="min-w-0 flex-1 border border-brand-300 bg-white px-2 py-1 font-mono text-xs text-brand-900"
                       />
                       <CopyButton text={r.link} label="Link kopieren" />
-                      {r.shareText && (
-                        <a
-                          href={`https://wa.me/?text=${encodeURIComponent(r.shareText)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-azure-800 underline"
-                        >
-                          Per WhatsApp teilen
-                        </a>
-                      )}
                     </div>
                   )}
+                  {r.link && r.shareText && <ShareText initial={r.shareText} />}
                 </li>
               ))}
             </ul>

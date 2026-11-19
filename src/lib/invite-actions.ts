@@ -7,6 +7,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { auth } from "@/auth";
+import type { EmailContentOptions } from "@/lib/email-templates";
+import { emailOptionsFromForm } from "@/lib/email-override";
 import { createStudentInvitation, STUDENT_INVITE_TTL_DAYS } from "@/lib/invitations";
 import { enrolledEmails, lookupInvitee, normalizeEmail, type KnownInvitee } from "@/lib/invitees";
 import { prisma } from "@/lib/prisma";
@@ -214,7 +216,23 @@ export async function inviteStudents(_prev: StudentInviteState, formData: FormDa
     }
   }
 
-  if (isTrial) return inviteToTrial(session.user.id, course.id, students, mode, formData);
+  // Optional: Hoerprobe vorab erbitten (persoenlicher Link ohne Konto fuer jeden Eingeladenen).
+  let sampleRequest: string | null = null;
+  if (formData.get("sampleRequest") === "on") {
+    const errors: Record<string, string> = {};
+    sampleRequest = sampleRangeFromForm(formData, errors);
+    if (!sampleRequest) {
+      return { ok: false, message: Object.values(errors)[0] ?? "Bitte Sure und Verse für die Hörprobe angeben." };
+    }
+  }
+
+  // Text der Mail: eigene Vorlage bzw. in der Vorschau angepasst (ggf. als Vorlage gespeichert).
+  const emailOptions = await emailOptionsFromForm(formData, isTrial ? "trial_invite" : "student_invite", session.user.id);
+  if (!emailOptions.ok) return { ok: false, message: emailOptions.message };
+
+  if (isTrial) {
+    return inviteToTrial(session.user.id, course.id, students, mode, formData, sampleRequest, emailOptions.options);
+  }
 
   const enrolled = await enrolledEmails(course.id);
   const results: StudentInviteResult[] = [];
@@ -224,13 +242,15 @@ export async function inviteStudents(_prev: StudentInviteState, formData: FormDa
       continue;
     }
     try {
-      const { link, mailed } = await createStudentInvitation({
+      const { link, mailed, sampleShareText } = await createStudentInvitation({
         courseId,
         invitedById: session.user.id,
         name: name || null,
         email: email || null,
         freeEnrollment,
         delivery: mode,
+        sampleRequest,
+        emailOptions: emailOptions.options,
       });
       const greeting = name ? `Salam alaykum ${name}, ` : "Salam alaykum, ";
       results.push({
@@ -239,7 +259,7 @@ export async function inviteStudents(_prev: StudentInviteState, formData: FormDa
         ok: true,
         message: successMessage(mode, mailed, email || null),
         link,
-        shareText: `${greeting}hier ist deine Einladung zum Kurs „${course.title}“ bei Islam unter Freunden${freeEnrollment ? " (für dich kostenlos)" : ""}. Der Link ist ${STUDENT_INVITE_TTL_DAYS} Tage gültig: ${link}`,
+        shareText: `${greeting}hier ist deine Einladung zum Kurs „${course.title}“ bei Islam unter Freunden${freeEnrollment ? " (für dich kostenlos)" : ""}. Der Link ist ${STUDENT_INVITE_TTL_DAYS} Tage gültig: ${link}${sampleShareText}`,
       });
     } catch (err) {
       console.error("Kurs-Einladung fehlgeschlagen:", err);
@@ -264,18 +284,11 @@ async function inviteToTrial(
   students: { name: string; email: string }[],
   mode: InviteDelivery,
   formData: FormData,
+  sampleRequest: string | null,
+  email: EmailContentOptions,
 ): Promise<StudentInviteState> {
   if (students.some((s) => s.name.length < 2)) {
     return { ok: false, message: "Für die Probestunde braucht jeder Eingeladene einen Namen." };
-  }
-  // Optional: Hoerprobe vorab erbitten (persoenlicher Link ohne Konto fuer jeden Gast).
-  let sampleRequest: string | null = null;
-  if (formData.get("sampleRequest") === "on") {
-    const errors: Record<string, string> = {};
-    sampleRequest = sampleRangeFromForm(formData, errors);
-    if (!sampleRequest) {
-      return { ok: false, message: Object.values(errors)[0] ?? "Bitte Sure und Verse für die Hörprobe angeben." };
-    }
   }
   const guests = students.map((s) => ({ ...s, sampleRequest }));
   // Gleiche Zeitzone wie die Anzeige im Lehrer-Bereich (eigene Zeitzone oder per Schalter MEZ).
@@ -288,7 +301,7 @@ async function inviteToTrial(
     if (!existing || existing.courseId !== courseId) {
       return { ok: false, message: "Diese Probestunde gehört nicht zum gewählten Kurs." };
     }
-    const added = await addTrialGuests({ trialId: existingId, guests, delivery: mode });
+    const added = await addTrialGuests({ trialId: existingId, guests, delivery: mode, email });
     if (!added) return { ok: false, message: "Diese Probestunde ist abgesagt oder schon vorbei." };
     revalidatePath("/teacher/termine");
     return trialResult(added.results, mode, `${formatZonedDateTime(added.trial.startsAt, timeZone, "full")} Uhr`, false);
@@ -314,6 +327,7 @@ async function inviteToTrial(
       durationMin,
       guests,
       delivery: mode,
+      email,
     });
     revalidatePath("/teacher/termine");
     return trialResult(results, mode, `${formatZonedDateTime(startsAt, timeZone, "full")} Uhr`, true);

@@ -9,22 +9,23 @@ import {
   normalizeAudioType,
   storeSampleAudio,
 } from "@/lib/reading-samples";
-import { findGuestBySampleToken } from "@/lib/trial-samples";
+import { findSampleSource } from "@/lib/trial-samples";
 
 function field(formData: FormData, name: string) {
   const value = formData.get(name);
   return typeof value === "string" ? value.trim() : "";
 }
 
-// Nimmt die Hoerprobe eines Probestunden-Gastes entgegen (ohne Konto, ueber den persoenlichen
-// Link). Hoechstens 3 Aufnahmen pro Gast, damit der Link nicht als Ablage missbraucht wird.
+// Nimmt die Hoerprobe eines Probestunden-Gastes oder einer zum Kurs eingeladenen Person entgegen
+// (ohne Konto, ueber den persoenlichen Link). Hoechstens 3 Aufnahmen pro Link, damit er nicht als
+// Ablage missbraucht wird.
 const MAX_SAMPLES_PER_GUEST = 3;
 
 export async function POST(request: Request) {
   const formData = await request.formData().catch(() => null);
   if (!formData) return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
 
-  const guest = await findGuestBySampleToken(field(formData, "token"));
+  const guest = await findSampleSource(field(formData, "token"));
   if (!guest) return NextResponse.json({ error: "Dieser Link ist nicht (mehr) gültig." }, { status: 404 });
   if (formData.get("consent") !== "on") {
     return NextResponse.json({ error: "Bitte bestätige den Hinweis zum Datenschutz." }, { status: 400 });
@@ -65,13 +66,13 @@ export async function POST(request: Request) {
 
   try {
     const stored = await storeSampleAudio({
-      ownerId: `probestunde-${guest.id}`,
+      ownerId: `${guest.kind === "invitation" ? "einladung" : "probestunde"}-${guest.id}`,
       mimeType,
       bytes: Buffer.from(await file.arrayBuffer()),
     });
     const sample = await prisma.trialSample.create({
       data: {
-        trialGuestId: guest.id,
+        ...(guest.kind === "invitation" ? { invitationId: guest.id } : { trialGuestId: guest.id }),
         mimeType,
         sizeBytes: file.size,
         durationSec,
@@ -81,12 +82,17 @@ export async function POST(request: Request) {
       },
       select: { id: true },
     });
-    const course = guest.trialLesson.course;
+    const course = guest.course;
     await recordEvent({
       type: "READING_SAMPLE_UPLOADED",
       dedupeKey: `trial-sample:${sample.id}`,
       courseId: course.id,
-      data: { course: course.title, participants: [guest.name], note: note ?? undefined, trial: true },
+      data: {
+        course: course.title,
+        participants: [guest.name || "Eingeladene Person"],
+        note: note ?? undefined,
+        ...(guest.kind === "invitation" ? { invitation: true } : { trial: true }),
+      },
     });
   } catch (err) {
     console.error("Hörprobe zur Probestunde konnte nicht gespeichert werden:", err);

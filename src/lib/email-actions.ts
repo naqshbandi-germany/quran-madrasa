@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import type { ActionResult } from "@/lib/account-actions";
+import { emailOptionsFromForm } from "@/lib/email-override";
+import { emailRenderer } from "@/lib/email-templates";
 import { groupRecipients } from "@/lib/enrollment-recipients";
 import { getAppUrl } from "@/lib/app-url";
 import { openBlob } from "@/lib/blob";
@@ -31,23 +33,20 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
 
   const errors: Record<string, string> = {};
   const courseId = text(formData, "courseId");
-  // Hoerprobe anfordern: Betreff und Text entstehen aus Sure und Versbereich, dazu ein Knopf zur
-  // Aufnahme-Seite des Kurses.
+  // Hoerprobe anfordern: Mail nach der Vorlage "Bitte um eine Hoerprobe" (eigene Vorlage der
+  // Lehrkraft bzw. in der Vorschau angepasst) mit Knopf zur Aufnahme-Seite des Kurses.
   const isSampleRequest = text(formData, "kind") === "sample";
-  let subject = text(formData, "subject").trim();
-  let message = text(formData, "message").trim();
-  let button: { label: string; url: string } | undefined;
+  const subject = text(formData, "subject").trim();
+  const message = text(formData, "message").trim();
+  let sample: { range: string; note: string; url: string } | null = null;
   if (isSampleRequest) {
     const range = sampleRangeFromForm(formData, errors);
     const note = text(formData, "sampleNote").trim();
     if (note.length > 1000) errors.sampleNote = "Der Hinweis ist zu lang (höchstens 1000 Zeichen).";
     if (range) {
-      subject = `Bitte um eine Hörprobe: ${range}`;
-      message = `bitte lies ${range} laut vor und nimm es als Hörprobe auf. So kann ich mich gezielt auf die nächste Stunde vorbereiten.${note ? `
-
-${note}` : ""}`;
-      button = {
-        label: "Hörprobe aufnehmen",
+      sample = {
+        range,
+        note,
         url: `${getAppUrl()}/dashboard/kurse/${courseId}/leseprobe?abschnitt=${encodeURIComponent(range)}`,
       };
     }
@@ -61,6 +60,7 @@ ${note}` : ""}`;
   const course = await prisma.course.findUnique({
     where: { id: courseId },
     include: {
+      teacher: { select: { name: true } },
       enrollments: {
         include: {
           participant: { select: { id: true, name: true, muslimName: true, email: true } },
@@ -108,6 +108,10 @@ ${note}` : ""}`;
     return { ok: false, message: "Bitte prüfe die markierten Felder.", errors };
   }
 
+  const sampleEmail = isSampleRequest ? await emailOptionsFromForm(formData, "sample_request", session.user.id) : null;
+  if (sampleEmail && !sampleEmail.ok) return { ok: false, message: sampleEmail.message };
+  const renderSample = sampleEmail?.ok ? await emailRenderer("sample_request", sampleEmail.options) : null;
+
   const recipients = groupRecipients(enrollments);
   const attachments: { filename: string; content: Buffer }[] = [];
   for (const f of files.filter((file) => !asLink.has(file.id))) {
@@ -132,18 +136,30 @@ ${note}` : ""}`;
   const failed: string[] = [];
   for (const recipient of recipients) {
     try {
+      const content =
+        renderSample && sample
+          ? renderSample({
+              name: recipient.greetingName,
+              kurs: course.title,
+              lehrer: course.teacher.name,
+              abschnitt: sample.range,
+              hinweis: sample.note,
+              link: sample.url,
+            })
+          : {
+              subject,
+              html: materialEmailHtml({
+                studentName: recipient.greetingName,
+                courseTitle: course.title,
+                message,
+                attachmentNames,
+                links,
+              }),
+            };
       await deliverEmail({
         from: MATERIAL_EMAIL_FROM,
         to: recipient.email,
-        subject,
-        html: materialEmailHtml({
-          studentName: recipient.greetingName,
-          courseTitle: course.title,
-          message,
-          attachmentNames,
-          links,
-          button,
-        }),
+        ...content,
         attachments: attachments.length > 0 ? attachments : undefined,
       });
     } catch (err) {

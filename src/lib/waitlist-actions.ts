@@ -221,16 +221,21 @@ export async function removeParticipantFromCourse(enrollmentId: string): Promise
     await deliverEmail({
       from: EMAIL_FROM,
       to: enrollment.user.email,
-      ...(await buildEmail("participant_removed", {
-        name: callName(enrollment.user),
-        teilnehmer: enrollment.participant.name,
-        kurs: enrollment.course.title,
-        abo: subscriptionInOtherAccount
-          ? "Dein bisheriges Abo lief noch über unser früheres Zahlungskonto. Falls dort weiterhin etwas abgebucht wird, antworte einfach auf diese Mail."
-          : subscriptionEnded
-            ? "Dein Abo für diesen Kurs wurde beendet."
-            : "Dein Abo wurde um einen Teilnehmer verkleinert und wird ab der nächsten Abrechnung entsprechend berechnet.",
-      })),
+      ...(await buildEmail(
+        "participant_removed",
+        {
+          name: callName(enrollment.user),
+          teilnehmer: enrollment.participant.name,
+          kurs: enrollment.course.title,
+          abo: subscriptionInOtherAccount
+            ? "Dein bisheriges Abo lief noch über unser früheres Zahlungskonto. Falls dort weiterhin etwas abgebucht wird, antworte einfach auf diese Mail."
+            : subscriptionEnded
+              ? "Dein Abo für diesen Kurs wurde beendet."
+              : "Dein Abo wurde um einen Teilnehmer verkleinert und wird ab der nächsten Abrechnung entsprechend berechnet.",
+        },
+        // Eigene Vorlage der Lehrkraft des Kurses (Lehrer-Bereich "Mailvorlagen")
+        { senderId: course.teacherId },
+      )),
       replyTo: course.teacher.email,
     });
   } catch (err) {
@@ -271,12 +276,16 @@ export async function contactWaitlistEntry(entryId: string): Promise<ActionResul
     await deliverEmail({
       from: EMAIL_FROM,
       to: entry.email,
-      ...(await buildEmail("waitlist_offer", {
-        name: entry.name,
-        kurs: course.title,
-        lehrer: course.teacher.name,
-        link: `${getAppUrl()}/courses/${course.slug}/anmelden`,
-      })),
+      ...(await buildEmail(
+        "waitlist_offer",
+        {
+          name: entry.name,
+          kurs: course.title,
+          lehrer: course.teacher.name,
+          link: `${getAppUrl()}/courses/${course.slug}/anmelden`,
+        },
+        { senderId: course.teacherId },
+      )),
       replyTo: course.teacher.email,
     });
   } catch (err) {

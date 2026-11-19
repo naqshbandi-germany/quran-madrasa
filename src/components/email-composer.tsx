@@ -3,14 +3,16 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { EmailPreview } from "@/components/email-preview";
 import { FileIcon, XIcon } from "@/components/icons";
 import { MediaBrowser } from "@/components/media-browser";
 import { UploadForm } from "@/components/media-upload-form";
 import type { ActionResult } from "@/lib/account-actions";
 import { sendCourseEmail } from "@/lib/email-actions";
+import type { EditableEmail } from "@/lib/email-templates";
 import { formatBytes } from "@/lib/media";
 import type { MediaItem } from "@/lib/media-items";
-import { SURAH_OPTIONS } from "@/lib/surahs";
+import { SURAH_OPTIONS, sampleRangeFromForm } from "@/lib/surahs";
 
 export type ComposerCourse = {
   id: string;
@@ -110,6 +112,7 @@ export function EmailComposer({
   initialCourseId,
   initialSelectedIds,
   allowSampleRequest = false,
+  sampleEmail,
 }: {
   courses: ComposerCourse[];
   files: MediaItem[];
@@ -118,6 +121,8 @@ export function EmailComposer({
   // Vorausgewaehlte Empfaenger, z. B. ueber "Nachricht schreiben" in der Teilnehmerliste.
   initialSelectedIds?: string[];
   allowSampleRequest?: boolean;
+  // Text der Mail "Bitte um eine Hörprobe" fuer die Vorschau (eigene Vorlage bzw. allgemein)
+  sampleEmail?: { editable: EditableEmail; teacherName: string };
 }) {
   // Vorauswahl: gewuenschter Kurs, sonst der erste Kurs mit Teilnehmern.
   const [courseId, setCourseId] = useState(
@@ -154,6 +159,15 @@ export function EmailComposer({
   const attachedBytes = attachedFiles.filter((f) => !f.asLink).reduce((sum, f) => sum + f.sizeBytes, 0);
   const linkCount = attachedFiles.filter((f) => f.asLink).length;
   const surahAyahs = SURAH_OPTIONS.find((o) => String(o.number) === surah)?.ayahs;
+
+  // Abschnitt als Text fuer die Vorschau (wie beim Versand).
+  const rangeData = new FormData();
+  rangeData.set("surah", surah);
+  if (wholeSurah) rangeData.set("wholeSurah", "on");
+  rangeData.set("fromAyah", fromAyah);
+  rangeData.set("toAyah", toAyah);
+  const sampleRange = sample ? sampleRangeFromForm(rangeData, {}) : null;
+  const firstRecipient = mode === "all" ? participants[0] : participants.find((p) => selected.has(p.id));
 
   function toggle(set: Set<string>, id: string) {
     const next = new Set(set);
@@ -365,6 +379,20 @@ export function EmailComposer({
             />
             {state.errors?.sampleNote && <span className="mt-1 text-red-700">{state.errors.sampleNote}</span>}
           </label>
+          {sampleEmail && (
+            <EmailPreview
+              templateKey="sample_request"
+              editable={sampleEmail.editable}
+              recipientLabel={firstRecipient ? `bei ${firstRecipient.name}` : undefined}
+              values={{
+                ...(firstRecipient ? { name: firstRecipient.name } : {}),
+                ...(course ? { kurs: course.title } : {}),
+                lehrer: sampleEmail.teacherName,
+                ...(sampleRange ? { abschnitt: sampleRange } : {}),
+                hinweis: sampleNote.trim(),
+              }}
+            />
+          )}
         </div>
       ) : (
         <>

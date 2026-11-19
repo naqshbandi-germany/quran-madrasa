@@ -15,10 +15,13 @@ export default async function CourseLayout({
 }) {
   const { id } = await params;
   const { course } = await requireManagedCourse(id);
-  const [participants, unheard] = await Promise.all([
+  const [participants, unheardReading, unheardInvited] = await Promise.all([
     prisma.enrollment.count({ where: { courseId: id } }),
     prisma.readingSample.count({ where: { courseId: id, listenedAt: null } }),
+    // Hoerproben zu Einladungen (noch nicht angemeldet)
+    prisma.trialSample.count({ where: { invitation: { courseId: id }, listenedAt: null } }),
   ]);
+  const unheard = unheardReading + unheardInvited;
   const period = formatCoursePeriod(course.startsOn, course.endsOn);
 
   return (

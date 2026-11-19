@@ -2,7 +2,7 @@ import { Inter } from "next/font/google";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { EMAIL_TEMPLATES } from "@/lib/email-defaults";
+import { EMAIL_TEMPLATES, TEACHER_EMAIL_KEYS } from "@/lib/email-defaults";
 import { countUnreadNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { SITE_NAME } from "@/lib/site";
@@ -42,6 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           links: [
             { href: "/teacher/mediathek", label: "Mediathek", icon: "library" },
             { href: "/teacher/emails", label: "E-Mails", icon: "mail" },
+            { href: "/teacher/mailvorlagen", label: "Mailvorlagen", icon: "template" },
             { href: "/teacher/profil", label: "Mein Profil", icon: "users" },
           ],
         },
@@ -57,6 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             { href: "/teacher/termine", label: "Termine", icon: "calendar" },
             { href: "/teacher/mediathek", label: "Mediathek", icon: "library" },
             { href: "/teacher/emails", label: "E-Mails", icon: "mail" },
+            { href: "/teacher/mailvorlagen", label: "Mailvorlagen", icon: "template" },
             { href: "/teacher/profil", label: "Mein Profil", icon: "users" },
           ],
         },
@@ -70,6 +72,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const crumbNames: Record<string, string> = Object.fromEntries([
     ...courses.map((c) => [`/teacher/courses/${c.id}`, c.title]),
     ...(isAdmin ? Object.entries(EMAIL_TEMPLATES).map(([key, t]) => [`/admin/emails/${key}`, t.label]) : []),
+    ...TEACHER_EMAIL_KEYS.map((key) => [`/teacher/mailvorlagen/${key}`, EMAIL_TEMPLATES[key].label]),
   ]);
 
   return (

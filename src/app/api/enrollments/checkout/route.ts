@@ -197,7 +197,7 @@ export async function POST(request: Request) {
     );
     revalidatePath("/courses/[slug]", "page");
     revalidatePath("/");
-    await adoptTrialSamplesSafely(course.id, participantIds);
+    await adoptTrialSamplesSafely(course.id, participantIds, freeInvitation.id);
     try {
       await sendEnrollmentConfirmation(course.id, enrollments.map((e) => e.id));
     } catch (err) {
