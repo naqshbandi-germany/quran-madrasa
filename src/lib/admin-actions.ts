@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { auth } from "@/auth";
 import { generateAccessCode } from "@/lib/course-access";
+import { loadFamilyTiers } from "@/lib/family-pricing";
 import { DEFAULT_TIME_ZONE, isKnownTimeZone } from "@/lib/time-zones";
 import { prisma } from "@/lib/prisma";
 
@@ -170,6 +171,13 @@ export async function updateCourseSettings(formData: FormData) {
     throw new Error("Für die Anmeldegebühr wird eine Stripe-Preis-ID (einmalig) benötigt.");
   }
 
+  // Familienpreis braucht einen gestaffelten Stripe-Preis (sonst stimmt die Anzeige nicht).
+  if (formData.get("familyPricing") === "on" && parsed.stripePriceId && !(await loadFamilyTiers(parsed.stripePriceId))) {
+    throw new Error(
+      "Für den Familienpreis muss die Stripe-Preis-ID ein gestaffelter Preis sein (Preismodell „Gestaffelt“, monatlich).",
+    );
+  }
+
   const course = await prisma.course.findUniqueOrThrow({ where: { id: parsed.courseId } });
   await prisma.course.update({
     where: { id: course.id },
@@ -180,6 +188,8 @@ export async function updateCourseSettings(formData: FormData) {
       signupFeePriceId: parsed.signupFee ? parsed.signupFeePriceId : null,
       // Das Formular in der Kursverwaltung (Reiter Einstellungen) hat kein Feld dafuer.
       ...(formData.has("maxParticipants") ? { maxParticipants: parsed.maxParticipants } : {}),
+      // Nur Formulare mit dem Schalter (Reiter Einstellungen) aendern den Familienpreis.
+      ...(formData.has("familyPricingField") ? { familyPricing: formData.get("familyPricing") === "on" } : {}),
       isHidden: parsed.isHidden,
       accessCode: parsed.isHidden ? (course.accessCode ?? generateAccessCode()) : course.accessCode,
     },

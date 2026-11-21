@@ -32,6 +32,7 @@ export default async function HomePage() {
     ageGroups: course.ageGroups,
     priceCents: course.priceCents,
     currency: course.currency,
+    familyPricing: course.familyPricing,
     teacherName: course.teacher.name,
     timeZone: teacherTimeZone(course.teacher),
     isFull: capacityOf(course.maxParticipants, course._count.enrollments).isFull,

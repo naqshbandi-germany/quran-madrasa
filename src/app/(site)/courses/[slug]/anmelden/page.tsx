@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { accessQuery, canAccessCourse } from "@/lib/course-access";
 import { getCourseCapacity } from "@/lib/course-capacity";
+import { findFamilySubscription, loadFamilyTiers } from "@/lib/family-pricing";
 import { enrollPathForInvitation, findValidInvitation } from "@/lib/invitations";
 import { prisma } from "@/lib/prisma";
 import { EnrollWizard } from "./enroll-wizard";
@@ -49,8 +50,15 @@ export default async function EnrollPage({
     include: { enrollments: { where: { courseId: course.id }, select: { id: true } } },
   });
 
+  // Kinderkurs mit Familienpreis: Staffel aus Stripe und schon belegte Plaetze im Familien-Abo.
+  const familyPriceId = course.familyPricing && !freeInvitation ? course.stripePriceId : null;
+  const [familyTiers, familySub] = familyPriceId
+    ? await Promise.all([loadFamilyTiers(familyPriceId), findFamilySubscription(user.id, familyPriceId)])
+    : [null, null];
+
   return (
     <EnrollWizard
+      family={familyTiers ? { tiers: familyTiers, places: familySub?.places ?? 0 } : null}
       course={{
         id: course.id,
         slug: course.slug,

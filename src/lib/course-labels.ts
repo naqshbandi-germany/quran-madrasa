@@ -23,6 +23,8 @@ export type CatalogCourse = {
   ageGroups: string[];
   priceCents: number;
   currency: string;
+  // Kinderkurs mit Familienpreis (Geschwister guenstiger)
+  familyPricing: boolean;
   teacherName: string;
   // Teilnehmerbegrenzung erreicht (Anzeige "Ausgebucht")
   isFull: boolean;

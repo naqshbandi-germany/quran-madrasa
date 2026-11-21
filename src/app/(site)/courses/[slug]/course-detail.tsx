@@ -7,7 +7,9 @@ import { OrnamentDivider } from "@/components/ornament";
 import { accessQuery } from "@/lib/course-access";
 import { capacityOf } from "@/lib/course-capacity";
 import { AGE_GROUP_LABELS, WEEKDAY_LABELS } from "@/lib/course-labels";
+import { formatPrice } from "@/lib/course-labels";
 import { priceSummary } from "@/lib/course-pricing";
+import { familyTierSummary, type FamilyTier } from "@/lib/family-tiers";
 import { miniatureFor } from "@/lib/miniatures";
 import { toGermanTime } from "@/lib/schedule-time";
 import { teacherTimeZone } from "@/lib/time-zones";
@@ -24,9 +26,13 @@ export type CourseDetailData = Prisma.CourseGetPayload<{ include: typeof courseD
 
 // Inhalt der Kursseite, genutzt von /courses/<slug> (oeffentliche Kurse) und /zugang/<code>
 // (versteckte Kurse, z. B. Testphase).
-export function CourseDetail({ course }: { course: CourseDetailData }) {
+// familyTiers: Staffel des Familienpreises (Kinderkurse), siehe loadFamilyTiers.
+export function CourseDetail({ course, familyTiers }: { course: CourseDetailData; familyTiers?: FamilyTier[] | null }) {
   const miniature = miniatureFor(course);
-  const price = priceSummary(course);
+  const price = priceSummary(
+    course,
+    familyTiers ? familyTierSummary(familyTiers, (cents) => formatPrice(cents, course.currency)) : null,
+  );
   const isFull = capacityOf(course.maxParticipants, course._count.enrollments).isFull;
 
   return (

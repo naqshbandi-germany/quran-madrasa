@@ -2,8 +2,11 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
+import { findFamilySubscription } from "@/lib/family-pricing";
 import { findValidInvitation } from "@/lib/invitations";
 import { sendEnrollmentConfirmation } from "@/lib/notification-email";
+import { recordEvent } from "@/lib/notifications";
+import { fullName } from "@/lib/names";
 import { adoptTrialSamplesSafely } from "@/lib/trial-samples";
 
 import { auth } from "@/auth";
@@ -48,6 +51,9 @@ function parseNewParticipant(raw: unknown): ParticipantInput | null {
 // Legt neue Teilnehmer an (falls angegeben) und startet die Stripe-Zahlung fuer den Kurs.
 // Der Konto-Inhaber bezahlt ein Abo mit einer Position pro Teilnehmer; die Einschreibung
 // erfolgt erst nach erfolgreicher Zahlung ueber den Webhook (lib/subscription-sync.ts).
+// Kinderkurse mit Familienpreis: Hat das Konto schon ein Familien-Abo, werden die Plaetze dort
+// dazugebucht (gestaffelter Preis, anteilige Rechnung sofort) und die Teilnehmer gleich
+// eingeschrieben; sonst entsteht ueber Stripe Checkout ein neues Familien-Abo.
 export async function POST(request: Request) {
   const session = await auth();
   if (!session) {
@@ -125,6 +131,19 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: `Schon in diesem Kurs angemeldet: ${alreadyIn.join(", ")}.` },
       { status: 400 },
+    );
+  }
+
+  // Familienpreis: Die Anmeldeseite hat den Preis mit der bisherigen Platzzahl im Familien-Abo
+  // angezeigt. Hat sich die Zahl inzwischen geaendert, erst neu laden (kein unerwarteter Preis).
+  const familySub =
+    course.familyPricing && course.stripePriceId && !freeInvitation
+      ? await findFamilySubscription(user.id, course.stripePriceId)
+      : null;
+  if (course.familyPricing && !freeInvitation && (familySub?.places ?? 0) !== Number(body?.familyPlaces ?? 0)) {
+    return NextResponse.json(
+      { error: "Dein Familien-Abo hat sich gerade geändert. Bitte lade die Seite neu, damit du den aktuellen Preis siehst." },
+      { status: 409 },
     );
   }
 
@@ -209,6 +228,52 @@ export async function POST(request: Request) {
   // Ab hier nur mit Stripe-Preis (oben geprueft, da ohne Einladung Pflicht).
   const stripePriceId = course.stripePriceId!;
 
+  if (familySub) {
+    try {
+      // Plaetze dazubuchen: Stripe rechnet die Staffel neu und stellt den Unterschied fuer den
+      // Rest des Monats sofort anteilig in Rechnung (mit einer Anmeldegebuehr, falls vorhanden).
+      await getStripe().subscriptions.update(familySub.remote.id, {
+        items: [{ id: familySub.item.id, quantity: familySub.places + participantIds.length }],
+        proration_behavior: "always_invoice",
+        ...(course.signupFeePriceId
+          ? { add_invoice_items: [{ price: course.signupFeePriceId, quantity: participantIds.length }] }
+          : {}),
+      });
+    } catch (err) {
+      console.error("Familien-Abo konnte nicht erweitert werden:", err);
+      const message = err instanceof Stripe.errors.StripeError ? err.message : "Unbekannter Fehler.";
+      return NextResponse.json({ error: `Stripe-Fehler: ${message}` }, { status: 500 });
+    }
+    const enrollments = await prisma.$transaction(
+      participantIds.map((participantId) =>
+        prisma.enrollment.create({
+          data: { userId: user.id, participantId, courseId: course.id, subscriptionId: familySub.local.id },
+          select: { id: true, participant: { select: { name: true, muslimName: true } } },
+        }),
+      ),
+    );
+    await prisma.subscription.update({
+      where: { id: familySub.local.id },
+      data: { quantity: familySub.places + participantIds.length },
+    });
+    revalidatePath("/courses/[slug]", "page");
+    revalidatePath("/");
+    await adoptTrialSamplesSafely(course.id, participantIds);
+    await recordEvent({
+      type: "ENROLLMENT_CREATED",
+      dedupeKey: `enrollment:${enrollments.map((e) => e.id).sort().join(",")}`,
+      courseId: course.id,
+      participantId: participantIds.length === 1 ? participantIds[0] : null,
+      data: { course: course.title, owner: user.name, participants: enrollments.map((e) => fullName(e.participant)) },
+    });
+    try {
+      await sendEnrollmentConfirmation(course.id, enrollments.map((e) => e.id));
+    } catch (err) {
+      console.error("Bestätigungs-Mail nach Erweiterung des Familien-Abos fehlgeschlagen:", err);
+    }
+    return NextResponse.json({ url: "/dashboard?checkout=success" });
+  }
+
   try {
     const stripe = getStripe();
     const stripeCustomerId = await ensureStripeCustomer(user);
@@ -221,6 +286,8 @@ export async function POST(request: Request) {
       courseId: course.id,
       // Hoechstens 10 IDs (je 25 Zeichen) und damit unter dem Stripe-Limit von 500 Zeichen.
       participantIds: participantIds.join(","),
+      // Familien-Abo: spaeter koennen Plaetze in weiteren Familienpreis-Kursen dazukommen.
+      ...(course.familyPricing ? { family: "1" } : {}),
     };
 
     const checkoutSession = await stripe.checkout.sessions.create({

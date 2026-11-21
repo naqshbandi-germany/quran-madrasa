@@ -123,7 +123,7 @@ export default async function QuranPage() {
                 <div className="mt-auto pt-5">
                   <p className="mb-3 text-sm font-semibold text-azure-800">
                     {course.priceCents > 0
-                      ? `${formatPrice(course.priceCents, course.currency)} / Monat`
+                      ? `${formatPrice(course.priceCents, course.currency)} / Monat${course.familyPricing ? " · Geschwister günstiger" : ""}`
                       : "Preis auf Anfrage"}
                   </p>
                   <Link

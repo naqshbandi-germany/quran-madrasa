@@ -78,6 +78,18 @@ export default async function CourseSettingsPage({ params }: { params: Promise<{
                 className={`${INPUT} font-mono`}
               />
             </label>
+            <div className="space-y-1 sm:col-span-2">
+              <input type="hidden" name="familyPricingField" value="1" />
+              <label className="flex items-center gap-2 font-medium text-brand-700">
+                <input type="checkbox" name="familyPricing" defaultChecked={course.familyPricing} />
+                Kinderkurs mit Familienpreis
+              </label>
+              <p className="pl-6 text-xs text-brand-600">
+                Alle Kinderkurse mit Familienpreis nutzen dieselbe Stripe-Preis-ID: einen gestaffelten Monatspreis
+                (z. B. 1. Platz 25 €, 2. und 3. Platz je 20 €, ab dem 4. Platz 0 €). Eine Familie bekommt dafür ein
+                gemeinsames Abo über alle diese Kurse. „Preis pro Monat“ ist dann der Preis für den ersten Platz.
+              </p>
+            </div>
             <label className="flex items-center gap-2 font-medium text-brand-700 sm:col-span-2">
               <input type="checkbox" name="isHidden" defaultChecked={course.isHidden} />
               Versteckt (nur über geheimen Link erreichbar)

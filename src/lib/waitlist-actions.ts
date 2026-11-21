@@ -183,9 +183,14 @@ export async function removeParticipantFromCourse(enrollmentId: string): Promise
           .split(",")
           .map((id) => id.trim())
           .filter((id) => id && id !== enrollment.participantId);
-        const quantity = item?.quantity ?? 1;
+        // Familien-Abo: Die Plaetze stehen in der Datenbank (auch in anderen Kursen), die
+        // Metadaten nennen nur die erste Anmeldung.
+        const family = enrollment.subscription.family;
+        const quantity = family
+          ? await prisma.enrollment.count({ where: { subscriptionId: enrollment.subscription.id } })
+          : (item?.quantity ?? 1);
 
-        if (!item || quantity <= 1 || remaining.length === 0) {
+        if (!item || quantity <= 1 || (!family && remaining.length === 0)) {
           if (sub.status !== "canceled") await stripe.subscriptions.cancel(sub.id, { prorate: false });
           subscriptionEnded = true;
         } else {

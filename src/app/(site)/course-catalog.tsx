@@ -115,7 +115,7 @@ export function CourseCatalog({ courses }: { courses: CatalogCourse[] }) {
                     <span className="text-brand-900/70">{course.teacherName}</span>
                     <span className="font-semibold text-brand-700">
                       {course.priceCents > 0
-                        ? `${formatPrice(course.priceCents, course.currency)} / Monat`
+                        ? `${formatPrice(course.priceCents, course.currency)} / Monat${course.familyPricing ? " · Geschwister günstiger" : ""}`
                         : "Preis auf Anfrage"}
                     </span>
                   </div>

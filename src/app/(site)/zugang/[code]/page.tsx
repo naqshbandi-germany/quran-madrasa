@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { canAccessCourse } from "@/lib/course-access";
+import { loadFamilyTiers } from "@/lib/family-pricing";
 import { prisma } from "@/lib/prisma";
 import { CourseDetail, courseDetailInclude } from "../../courses/[slug]/course-detail";
 
@@ -18,5 +19,7 @@ export default async function HiddenCoursePage({ params }: { params: Promise<{ c
   });
   if (!course || !course.isHidden || !canAccessCourse(course, code)) notFound();
 
-  return <CourseDetail course={course} />;
+  const familyTiers =
+    course.familyPricing && course.stripePriceId ? await loadFamilyTiers(course.stripePriceId) : null;
+  return <CourseDetail course={course} familyTiers={familyTiers} />;
 }

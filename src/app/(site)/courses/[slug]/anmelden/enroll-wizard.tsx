@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckboxField } from "@/components/form/checkbox-field";
 import { FloatingField } from "@/components/form/floating-field";
 import { FormAlert } from "@/components/form/form-alert";
+import { familyTierSummary, familyTotalCents, type FamilyTier } from "@/lib/family-tiers";
 import {
   MAX_PARTICIPANTS_PER_ORDER,
   childBirthYearRange,
@@ -40,6 +41,8 @@ type Props = {
   freePlaces: number | null;
   // Einladung "ohne Zahlung": Teilnehmer werden direkt eingetragen, ohne Stripe.
   freeInvitationToken?: string | null;
+  // Kinderkurs mit Familienpreis: Staffel und schon belegte Plaetze im Familien-Abo
+  family?: { tiers: FamilyTier[]; places: number } | null;
 };
 
 type Draft = { key: number; input: ParticipantInput; errors: ParticipantErrors };
@@ -59,7 +62,7 @@ const PRIMARY_BUTTON =
 const SECONDARY_BUTTON =
   "h-12 border border-brand-300 bg-white px-6 font-medium text-brand-900 transition hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700";
 
-export function EnrollWizard({ course, account, participants, freePlaces, freeInvitationToken }: Props) {
+export function EnrollWizard({ course, account, participants, freePlaces, freeInvitationToken, family = null }: Props) {
   const isFree = Boolean(freeInvitationToken);
   const [step, setStep] = useState<1 | 2>(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -71,7 +74,11 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
 
   const hasSelf = participants.some((p) => p.relation === "SELF") || drafts.some((d) => d.input.relation === "SELF");
   const count = selected.size + drafts.length;
-  const total = count * course.priceCents;
+  // Familienpreis: neuer Gesamtbetrag des Familien-Abos und die Erhoehung durch diese Anmeldung.
+  const familyBefore = family ? familyTotalCents(family.tiers, family.places) : 0;
+  const familyAfter = family ? familyTotalCents(family.tiers, family.places + count) : 0;
+  const total = family ? familyAfter - familyBefore : count * course.priceCents;
+  const money = (cents: number) => formatPrice(cents, course.currency);
   const fee = course.signupFeeCents && course.signupFeeCents > 0 ? course.signupFeeCents : 0;
   const totalFee = count * fee;
 
@@ -161,6 +168,7 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
           courseId: course.id,
           accessCode: course.accessCode,
           invitationToken: freeInvitationToken ?? undefined,
+          familyPlaces: family?.places ?? undefined,
           existingParticipantIds: [...selected],
           newParticipants: drafts.map((draft) => draft.input),
         }),
@@ -201,9 +209,17 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
           "Du bist eingeladen: Die Teilnahme ist für dich kostenlos."
         ) : (
           <>
-            {formatPrice(course.priceCents, course.currency)} pro Teilnehmer und Monat
+            {family
+              ? `Familienpreis für alle Kinderkurse zusammen: ${familyTierSummary(family.tiers, money)} pro Monat`
+              : `${formatPrice(course.priceCents, course.currency)} pro Teilnehmer und Monat`}
             {fee > 0 && ` · einmalig ${formatPrice(fee, course.currency)} Anmeldegebühr`} · monatlich
             kündbar
+            {family && family.places > 0 && (
+              <span className="mt-1 block text-sm">
+                Du hast schon {family.places} {family.places === 1 ? "Platz" : "Plätze"} im Familien-Abo (
+                {money(familyBefore)} pro Monat). Neue Plätze kommen dazu.
+              </span>
+            )}
           </>
         )}
       </p>
@@ -351,7 +367,7 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
                         "kostenlos"
                       ) : (
                         <>
-                          {formatPrice(course.priceCents, course.currency)} / Monat
+                          {family ? "Familienpreis" : `${formatPrice(course.priceCents, course.currency)} / Monat`}
                           {fee > 0 && ` + ${formatPrice(fee, course.currency)} einmalig`}
                         </>
                       )}
@@ -361,21 +377,46 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
               </ul>
               {!isFree && (
               <>
-              <p className="mt-3 flex items-center justify-between border-t border-brand-200 pt-3 font-semibold text-brand-900">
-                <span>Gesamt pro Monat</span>
-                <span>{formatPrice(total, course.currency)}</span>
-              </p>
+              {family ? (
+                <>
+                  <p className="mt-3 flex items-center justify-between border-t border-brand-200 pt-3 font-semibold text-brand-900">
+                    <span>Familien-Abo pro Monat{family.places > 0 ? " (neu)" : ""}</span>
+                    <span>{money(familyAfter)}</span>
+                  </p>
+                  {family.places > 0 && (
+                    <p className="mt-1 flex items-center justify-between text-sm text-brand-900/80">
+                      <span>
+                        bisher {money(familyBefore)}, also {money(total)} mehr pro Monat
+                      </span>
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="mt-3 flex items-center justify-between border-t border-brand-200 pt-3 font-semibold text-brand-900">
+                  <span>Gesamt pro Monat</span>
+                  <span>{formatPrice(total, course.currency)}</span>
+                </p>
+              )}
               {fee > 0 && (
                 <p className="mt-1 flex items-center justify-between font-semibold text-brand-900">
                   <span>Einmalige Anmeldegebühr</span>
                   <span>{formatPrice(totalFee, course.currency)}</span>
                 </p>
               )}
-              <p className="mt-2 text-sm text-brand-900/75">
-                Monatlich kündbar, keine Mindestlaufzeit. Die Abrechnung erfolgt monatlich über
-                Stripe, die erste Zahlung wird sofort fällig
-                {fee > 0 && " (zusammen mit der Anmeldegebühr)"}.
-              </p>
+              {family && family.places > 0 ? (
+                <p className="mt-2 text-sm text-brand-900/75">
+                  Die neuen Plätze kommen in dein bestehendes Familien-Abo und werden mit der gespeicherten
+                  Zahlungsmethode abgerechnet. Für den Rest des laufenden Monats wird der Unterschied anteilig sofort
+                  berechnet{fee > 0 && " (zusammen mit der Anmeldegebühr)"}. Monatlich kündbar.
+                </p>
+              ) : (
+                <p className="mt-2 text-sm text-brand-900/75">
+                  Monatlich kündbar, keine Mindestlaufzeit. Die Abrechnung erfolgt monatlich über
+                  Stripe, die erste Zahlung wird sofort fällig
+                  {fee > 0 && " (zusammen mit der Anmeldegebühr)"}.
+                  {family && " Weitere Kinder oder Kurse mit Familienpreis kommen später in dasselbe Abo."}
+                </p>
+              )}
               </>
               )}
             </div>
@@ -404,7 +445,13 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
                 Zurück
               </button>
               <button type="button" onClick={submit} disabled={loading} className={PRIMARY_BUTTON}>
-                {loading ? "Einen Moment …" : isFree ? "Kostenlos anmelden" : "Zahlungspflichtig anmelden"}
+                {loading
+                  ? "Einen Moment …"
+                  : isFree
+                    ? "Kostenlos anmelden"
+                    : family && family.places > 0
+                      ? "Zahlungspflichtig dazubuchen"
+                      : "Zahlungspflichtig anmelden"}
               </button>
             </div>
           </>

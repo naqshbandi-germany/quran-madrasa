@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { loadFamilyTiers } from "@/lib/family-pricing";
 import { prisma } from "@/lib/prisma";
 import { CourseDetail, courseDetailInclude } from "./course-detail";
 
@@ -16,5 +17,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
     notFound();
   }
 
-  return <CourseDetail course={course} />;
+  const familyTiers =
+    course.familyPricing && course.stripePriceId ? await loadFamilyTiers(course.stripePriceId) : null;
+  return <CourseDetail course={course} familyTiers={familyTiers} />;
 }

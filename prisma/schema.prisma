@@ -127,6 +127,10 @@ model Course {
   currency         String     @default("eur")
   // ID des Stripe Price-Objekts (recurring, monatlich) für den Checkout
   stripePriceId    String?
+  // Kinderkurs mit Familienpreis: stripePriceId ist dann ein gestaffelter Stripe-Preis, den alle
+  // Familienpreis-Kurse teilen. Eine Familie hat dafuer ein gemeinsames Abo; jeder Kursplatz
+  // zaehlt als eine Einheit (z. B. 25 € + 20 € + 20 €, danach 0 €; Staffel in Stripe).
+  familyPricing    Boolean    @default(false)
   isPublished      Boolean    @default(false)
   createdAt        DateTime   @default(now())
   // Hoechstzahl der Teilnehmer (Personen, nicht Konten); null = unbegrenzt. Ist der Kurs voll,
@@ -321,7 +325,10 @@ model Subscription {
   id                   String             @id @default(cuid())
   userId               String
   user                 User               @relation(fields: [userId], references: [id])
-  courseId             String
+  // Kurs des Abos; leer beim Familien-Abo (family), das Plaetze in mehreren Kursen bezahlt.
+  courseId             String?
+  // Familien-Abo fuer Familienpreis-Kurse (siehe Course.familyPricing)
+  family               Boolean            @default(false)
   stripeSubscriptionId String             @unique
   status               SubscriptionStatus
   currentPeriodEnd     DateTime

@@ -26,9 +26,12 @@ function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionStatus
 // Gleicht ein Stripe-Abo mit der Datenbank ab: Abo-Datensatz aktualisieren und die
 // Teilnehmer aus den Metadaten (participantIds) einschreiben oder bei Kuendigung wieder
 // austragen. Wird fuer jedes Stripe-Ereignis zum Abo aufgerufen und ist idempotent.
+// Familien-Abo (metadata.family): courseId und participantIds beschreiben nur die erste
+// Anmeldung; spaeter dazugebuchte Plaetze (auch in anderen Kursen) stehen nur in der Datenbank.
 export async function syncSubscription(subscription: Stripe.Subscription) {
   const userId = subscription.metadata.userId;
   const courseId = subscription.metadata.courseId;
+  const family = subscription.metadata.family === "1";
   if (!userId || !courseId) return;
 
   // Seit neueren Stripe-API-Versionen liegt current_period_end an den Items. Wir haben
@@ -36,7 +39,8 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
   const item = subscription.items.data[0];
   const data = {
     userId,
-    courseId,
+    courseId: family ? null : courseId,
+    family,
     status: mapStripeStatus(subscription.status),
     currentPeriodEnd: new Date((item?.current_period_end ?? 0) * 1000),
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
@@ -63,16 +67,17 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
   };
 
   if (data.status === "CANCELED") {
-    // Abo beendet: Teilnahme entfaellt (Zugang zu Sitzungen und Mails).
+    // Abo beendet: Teilnahme entfaellt (Zugang zu Sitzungen und Mails). Beim Familien-Abo
+    // betrifft das mehrere Kurse: je Kurs eine Meldung an die Lehrkraft.
     const ended = previous && previous.status !== "CANCELED";
-    const eventData = ended ? await subscriptionEventData(saved.id, userId, courseId) : null;
+    const perCourse = ended ? await subscriptionEventsByCourse(saved.id, userId, courseId) : [];
     await prisma.enrollment.deleteMany({ where: { subscriptionId: saved.id } });
     refreshCourses();
-    if (eventData) {
+    for (const { courseId: affected, data: eventData } of perCourse) {
       await recordEvent({
         type: "SUBSCRIPTION_ENDED",
-        dedupeKey: `subscription-ended:${subscription.id}`,
-        courseId,
+        dedupeKey: `subscription-ended:${subscription.id}:${affected}`,
+        courseId: affected,
         data: eventData,
       });
     }
@@ -82,23 +87,28 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
   // Zum Ende des Zeitraums gekuendigt (vorher nicht): Lehrkraft informieren. Der Zeitraum steht
   // im Schluessel, damit eine spaetere erneute Kuendigung wieder gemeldet wird.
   if (data.cancelAtPeriodEnd && previous && !previous.cancelAtPeriodEnd) {
-    await recordEvent({
-      type: "SUBSCRIPTION_CANCELED",
-      dedupeKey: `subscription-canceled:${subscription.id}:${data.currentPeriodEnd.getTime()}`,
-      courseId,
-      data: {
-        ...(await subscriptionEventData(saved.id, userId, courseId)),
-        periodEnd: data.currentPeriodEnd.toLocaleDateString("de-DE", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-          timeZone: "Europe/Berlin",
-        }),
-      },
+    const periodEnd = data.currentPeriodEnd.toLocaleDateString("de-DE", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "Europe/Berlin",
     });
+    for (const { courseId: affected, data: eventData } of await subscriptionEventsByCourse(saved.id, userId, courseId)) {
+      await recordEvent({
+        type: "SUBSCRIPTION_CANCELED",
+        dedupeKey: `subscription-canceled:${subscription.id}:${affected}:${data.currentPeriodEnd.getTime()}`,
+        courseId: affected,
+        data: { ...eventData, periodEnd },
+      });
+    }
   }
 
   if (data.status !== "ACTIVE") return;
+
+  // Familien-Abo: Teilnehmer aus den Metadaten nur bei der ersten Anmeldung einschreiben.
+  // Danach verwaltet die Website die Plaetze selbst (Dazubuchen, Austragen); sonst kaemen
+  // ausgetragene Teilnehmer beim naechsten Stripe-Ereignis wieder zurueck.
+  if (family && (await prisma.enrollment.count({ where: { subscriptionId: saved.id } })) > 0) return;
 
   let participantIds = (subscription.metadata.participantIds ?? "")
     .split(",")
@@ -168,8 +178,22 @@ export async function syncSubscription(subscription: Stripe.Subscription) {
   }
 }
 
-// Namen fuer Benachrichtigungen: Kurs, Konto-Inhaber und die Teilnehmer des Abos (bzw. nur die
-// angegebenen Einschreibungen).
+// Meldungen je Kurs fuer ein Abo: beim Familien-Abo alle Kurse mit Teilnehmern des Abos, sonst
+// der Kurs des Abos.
+async function subscriptionEventsByCourse(subscriptionId: string, userId: string, fallbackCourseId: string) {
+  const linked = await prisma.enrollment.findMany({
+    where: { subscriptionId },
+    select: { courseId: true },
+    distinct: ["courseId"],
+  });
+  const courseIds = linked.length > 0 ? linked.map((e) => e.courseId) : [fallbackCourseId];
+  return Promise.all(
+    courseIds.map(async (id) => ({ courseId: id, data: await subscriptionEventData(subscriptionId, userId, id) })),
+  );
+}
+
+// Namen fuer Benachrichtigungen: Kurs, Konto-Inhaber und die Teilnehmer des Abos in diesem Kurs
+// (bzw. nur die angegebenen Einschreibungen).
 async function subscriptionEventData(
   subscriptionId: string,
   userId: string,
@@ -180,7 +204,7 @@ async function subscriptionEventData(
     prisma.course.findUnique({ where: { id: courseId }, select: { title: true } }),
     prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
     prisma.enrollment.findMany({
-      where: enrollmentIds ? { id: { in: enrollmentIds } } : { subscriptionId },
+      where: enrollmentIds ? { id: { in: enrollmentIds } } : { subscriptionId, courseId },
       orderBy: { createdAt: "asc" },
       select: { participant: { select: { name: true, muslimName: true } } },
     }),
