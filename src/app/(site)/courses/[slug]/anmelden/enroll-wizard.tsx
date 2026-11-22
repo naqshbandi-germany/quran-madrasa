@@ -16,6 +16,8 @@ import {
   type ParticipantRelationValue,
 } from "@/lib/participant-rules";
 
+import { EmbeddedPayment } from "./embedded-payment";
+
 type SavedParticipant = {
   id: string;
   name: string;
@@ -61,7 +63,9 @@ const SECONDARY_BUTTON =
 
 export function EnrollWizard({ course, account, participants, freePlaces, freeInvitationToken }: Props) {
   const isFree = Boolean(freeInvitationToken);
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  // Eingebetteter Stripe-Checkout (Schritt 3), sobald die Checkout-Session angelegt ist
+  const [payment, setPayment] = useState<{ clientSecret: string; cancelUrl: string } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [nextKey, setNextKey] = useState(1);
@@ -166,6 +170,11 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
         }),
       });
       const data = await response.json().catch(() => ({}));
+      if (data.clientSecret) {
+        setPayment({ clientSecret: data.clientSecret, cancelUrl: data.cancelUrl });
+        setStep(3);
+        return;
+      }
       if (data.url) {
         window.location.href = data.url;
         return;
@@ -212,6 +221,8 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
         {[
           { n: 1, label: "Teilnehmer" },
           { n: 2, label: "Prüfen und anmelden" },
+          // Kostenlose Einladungen brauchen keinen Zahlungsschritt.
+          ...(isFree ? [] : [{ n: 3, label: "Bezahlen" }]),
         ].map(({ n, label }) => (
           <li
             key={n}
@@ -333,7 +344,7 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
               <p className="mt-1 text-brand-900/75">
                 {isFree
                   ? "Bitte kontrolliere deine Angaben. Die Anmeldung ist kostenlos, eine Zahlung ist nicht nötig."
-                  : "Bitte kontrolliere deine Angaben, bevor du zur sicheren Zahlung bei Stripe weitergeleitet wirst."}
+                  : "Bitte kontrolliere deine Angaben, danach bezahlst du im nächsten Schritt sicher über Stripe."}
               </p>
             </div>
 
@@ -405,6 +416,38 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
               </button>
               <button type="button" onClick={submit} disabled={loading} className={PRIMARY_BUTTON}>
                 {loading ? "Einen Moment …" : isFree ? "Kostenlos anmelden" : "Zahlungspflichtig anmelden"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 3 && payment && (
+          <>
+            <div>
+              <h2
+                ref={headingRef}
+                tabIndex={-1}
+                className="text-2xl font-semibold text-azure-800 outline-none"
+              >
+                Bezahlen
+              </h2>
+              <p className="mt-1 text-brand-900/75">
+                Die Zahlung läuft sicher über Stripe. Nach der Zahlung kommst du automatisch zu deinen Kursen.
+              </p>
+            </div>
+
+            <EmbeddedPayment clientSecret={payment.clientSecret} />
+
+            <div className="border-t border-brand-200 pt-5">
+              {/* Neu laden statt nur zurueckzuspringen: Die neuen Teilnehmer sind schon gespeichert. */}
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = payment.cancelUrl;
+                }}
+                className={SECONDARY_BUTTON}
+              >
+                Zurück
               </button>
             </div>
           </>
