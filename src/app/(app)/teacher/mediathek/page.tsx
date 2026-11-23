@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { MediaBrowser } from "@/components/media-browser";
 import { UploadForm } from "@/components/media-upload-form";
+import { SampleLibrary } from "@/components/sample-library";
 import { blobAccess, isBlobConfigured } from "@/lib/blob";
 import { ALLOWED_EXTENSIONS, MAX_BLOB_FILE_BYTES, MAX_FILE_BYTES, formatBytes } from "@/lib/media";
 import { toMediaItem } from "@/lib/media-items";
@@ -59,6 +60,8 @@ export default async function MediaLibraryPage() {
         </h2>
         <MediaBrowser items={items} mode="manage" />
       </section>
+
+      <SampleLibrary userId={session.user.id} isAdmin={isAdmin} />
     </div>
   );
 }

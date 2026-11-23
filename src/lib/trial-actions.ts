@@ -50,6 +50,7 @@ export async function toggleTrialSampleListened(formData: FormData) {
   }
   await prisma.trialSample.update({ where: { id }, data: { listenedAt: sample.listenedAt ? null : new Date() } });
   revalidatePath("/teacher/termine");
+  revalidatePath("/teacher/mediathek");
   if (sample.invitation) revalidatePath(`/teacher/courses/${sample.invitation.courseId}/leseproben`);
 }
 
