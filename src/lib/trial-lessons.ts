@@ -2,6 +2,7 @@ import { getAppUrl } from "@/lib/app-url";
 import { createClassroomMeeting } from "@/lib/classroom";
 import { emailRenderer, type EmailContentOptions } from "@/lib/email-templates";
 import { buildCalendar } from "@/lib/ics";
+import { callName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { formatReminderDate } from "@/lib/reminder-email";
 import { deliverEmail, EMAIL_FROM } from "@/lib/resend";
@@ -50,7 +51,7 @@ export async function createTrialLesson(params: {
 }) {
   const course = await prisma.course.findUniqueOrThrow({
     where: { id: params.courseId },
-    include: { teacher: { select: { name: true, zoomEmail: true } } },
+    include: { teacher: { select: { name: true, muslimName: true, zoomEmail: true } } },
   });
   const meeting = await createClassroomMeeting({
     courseSlug: `${course.slug}-probestunde`,
@@ -94,7 +95,7 @@ export async function addTrialGuests(params: {
 }) {
   const trial = await prisma.trialLesson.findUnique({
     where: { id: params.trialId },
-    include: { course: { include: { teacher: { select: { name: true, zoomEmail: true } } } } },
+    include: { course: { include: { teacher: { select: { name: true, muslimName: true, zoomEmail: true } } } } },
   });
   if (!trial || trial.canceledAt || trial.startsAt.getTime() < Date.now()) return null;
   // Wer mit derselben E-Mail-Adresse schon eingeladen ist, bekommt die Einladung nur erneut,
@@ -129,7 +130,7 @@ export async function addTrialGuests(params: {
 // Einladung (E-Mail mit Kalendereintrag) bzw. Text zum Weiterschicken fuer jeden Gast.
 async function sendTrialInvites(
   trial: { id: string; startsAt: Date; durationMin: number; joinUrl: string },
-  course: { title: string; teacher: { name: string } },
+  course: { title: string; teacher: { name: string; muslimName: string | null } },
   guests: PreparedGuest[],
   delivery: "mail" | "link",
   email?: EmailContentOptions,
@@ -140,7 +141,7 @@ async function sendTrialInvites(
   const ics = calendarFor(trial, course.title);
 
   for (const guest of guests) {
-    const shareText = `Salam alaykum ${guest.name}, du bist herzlich zu einer kostenlosen Probestunde im Kurs „${course.title}“ bei ${course.teacher.name} eingeladen: ${datum}, ${trial.durationMin} Minuten. Hier ist der Link, ein Konto brauchst du nicht: ${trial.joinUrl}${trialSampleShareText(guest.sampleRequest, guest.sampleToken)}`;
+    const shareText = `Salam alaykum ${guest.name}, du bist herzlich zu einer kostenlosen Probestunde im Kurs „${course.title}“ bei ${callName(course.teacher)} eingeladen: ${datum}, ${trial.durationMin} Minuten. Hier ist der Link, ein Konto brauchst du nicht: ${trial.joinUrl}${trialSampleShareText(guest.sampleRequest, guest.sampleToken)}`;
     const base = { name: guest.name, email: guest.email };
     if (!render || !guest.email) {
       results.push({ ...base, ok: true, mailed: false, shareText });
@@ -153,7 +154,7 @@ async function sendTrialInvites(
         ...render({
           name: guest.name,
           kurs: course.title,
-          lehrer: course.teacher.name,
+          lehrer: callName(course.teacher),
           datum,
           dauer: String(trial.durationMin),
           link: trial.joinUrl,

@@ -1,3 +1,4 @@
+import { callName } from "@/lib/names";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -50,13 +51,13 @@ export default async function TrialSamplePage({ params }: { params: Promise<{ to
         </h1>
         {guest.kind === "trial" && guest.startsAt ? (
           <p className="mt-2 text-brand-900/80">
-            {course.teacher.name} bittet dich vor deiner Probestunde im Kurs{" "}
+            {callName(course.teacher)} bittet dich vor deiner Probestunde im Kurs{" "}
             <span className="font-medium">{course.title}</span> am {formatReminderDate(guest.startsAt)} um eine kurze
             Hörprobe. So kann sich die Lehrkraft gezielt auf dich vorbereiten. Ein Konto brauchst du dafür nicht.
           </p>
         ) : (
           <p className="mt-2 text-brand-900/80">
-            {course.teacher.name} hat dich zum Kurs <span className="font-medium">{course.title}</span> eingeladen und
+            {callName(course.teacher)} hat dich zum Kurs <span className="font-medium">{course.title}</span> eingeladen und
             bittet dich um eine kurze Hörprobe. So kann sich die Lehrkraft gezielt auf dich vorbereiten. Ein Konto
             brauchst du dafür nicht; du kannst die Hörprobe auch schon vor der Anmeldung schicken. Meldest du dich
             später mit derselben E-Mail-Adresse an, wird sie deinem Konto zugeordnet.

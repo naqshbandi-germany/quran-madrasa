@@ -5,6 +5,7 @@ import { accessQuery } from "@/lib/course-access";
 import { STUDENT_INVITE_HINTS } from "@/lib/email-defaults";
 import { buildEmail, type EmailContentOptions } from "@/lib/email-templates";
 import { hashResetToken } from "@/lib/password-reset";
+import { callName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { EMAIL_FROM, deliverEmail } from "@/lib/resend";
 import type { InviteDelivery } from "@/lib/teacher-invite";
@@ -66,7 +67,7 @@ export async function createStudentInvitation(params: {
     {
       name: params.name ?? "",
       kurs: course.title,
-      von: inviter.name,
+      von: callName(inviter),
       hinweis: params.freeEnrollment ? STUDENT_INVITE_HINTS.free : STUDENT_INVITE_HINTS.paid,
       link,
       tage: String(STUDENT_INVITE_TTL_DAYS),
@@ -88,7 +89,7 @@ export async function findValidInvitation(token: string | null | undefined) {
     where: { tokenHash: hashResetToken(token) },
     include: {
       course: true,
-      invitedBy: { select: { name: true } },
+      invitedBy: { select: { name: true, muslimName: true } },
     },
   });
   if (!invitation || invitation.expiresAt < new Date()) return null;
