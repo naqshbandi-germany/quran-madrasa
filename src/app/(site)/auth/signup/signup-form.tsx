@@ -17,14 +17,14 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Errors = Partial<Record<"name" | "email" | "password" | "adult" | "privacy", string>>;
 
-export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
+export function SignUpForm({ googleEnabled, initialEmail = "" }: { googleEnabled: boolean; initialEmail?: string }) {
   const searchParams = useSearchParams();
   const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
   const enrolling = callbackUrl.startsWith("/courses/") || callbackUrl.startsWith("/einladung/");
 
   const [name, setName] = useState("");
   const [muslimName, setMuslimName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [adult, setAdult] = useState(false);
   const [privacy, setPrivacy] = useState(false);

@@ -58,8 +58,8 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
           <strong className="text-brand-900">{shortenEmail(invitation.email ?? "")}</strong>.
         </p>
         <p className="text-brand-900/85">
-          Möchtest du mit dem eingeladenen Konto teilnehmen? Dann wechsle das Konto. Gehört dieses Konto dir und soll
-          die Anmeldung darüber laufen (z. B. für dein Kind), mach einfach weiter.
+          Wechsle das Konto, um dich mit der eingeladenen Adresse anzumelden oder dort ein neues Konto anzulegen. Soll
+          die Anmeldung über dein jetziges Konto laufen (z. B. für dein Kind), mach einfach weiter.
         </p>
         <div className="flex flex-wrap gap-3">
           <SwitchAccountButton callbackUrl={invitationPath(token)} />
