@@ -157,7 +157,13 @@ export async function adoptTrialSamples(courseId: string, participantIds: string
         ? [{ trialGuest: { email: sameEmail, trialLesson: { courseId } } }, { invitation: { email: sameEmail, courseId } }]
         : []),
       // Ueber den Einladungslink angemeldet: Hoerproben dieser Einladung gehen an den ersten Teilnehmer.
-      ...(invitationId && index === 0 ? [{ invitationId, invitation: { courseId } }] : []),
+      ...(invitationId && index === 0
+        ? [
+            { invitationId, invitation: { courseId } },
+            // Einladung gehoert zu einem Probestunden-Gast: auch dessen Hoerproben
+            { trialGuest: { invitations: { some: { id: invitationId } }, trialLesson: { courseId } } },
+          ]
+        : []),
     ];
     if (or.length === 0) continue;
     const samples = await prisma.trialSample.findMany({ where: { OR: or } });

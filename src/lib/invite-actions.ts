@@ -120,6 +120,8 @@ export async function resendStaffInvite(_prev: InviteState, formData: FormData):
 const studentEntrySchema = z.object({
   name: z.string().trim().max(100),
   email: z.union([z.literal(""), z.string().trim().toLowerCase().email("Bitte eine gültige E-Mail-Adresse angeben.")]),
+  // Aus einer Probestunde uebernommener Gast
+  guestId: z.string().max(40).optional(),
 });
 
 export type StudentInviteResult = {
@@ -194,7 +196,7 @@ export async function inviteStudents(_prev: StudentInviteState, formData: FormDa
   const mode = delivery(formData);
   // Dieselbe E-Mail-Adresse nur einmal (z. B. versehentlich doppelt in der Liste).
   const seen = new Set<string>();
-  const students = parsed.data.filter((s) => {
+  const students: z.infer<typeof studentEntrySchema>[] = parsed.data.filter((s) => {
     if (!s.name && !s.email) return false;
     if (!s.email) return true;
     const key = normalizeEmail(s.email);
@@ -234,9 +236,18 @@ export async function inviteStudents(_prev: StudentInviteState, formData: FormDa
     return inviteToTrial(session.user.id, course.id, students, mode, formData, sampleRequest, emailOptions.options);
   }
 
+  // Nur Gaeste von Probestunden dieses Kurses lassen sich verknuepfen.
+  const guestIds = new Set(
+    (
+      await prisma.trialGuest.findMany({
+        where: { id: { in: students.flatMap((s) => s.guestId ?? []) }, trialLesson: { courseId: course.id } },
+        select: { id: true },
+      })
+    ).map((g) => g.id),
+  );
   const enrolled = await enrolledEmails(course.id);
   const results: StudentInviteResult[] = [];
-  for (const { name, email } of students) {
+  for (const { name, email, guestId } of students) {
     if (email && enrolled.has(normalizeEmail(email))) {
       results.push({ name, email, ok: false, message: "Ist bereits in diesem Kurs angemeldet, keine Einladung nötig." });
       continue;
@@ -250,6 +261,7 @@ export async function inviteStudents(_prev: StudentInviteState, formData: FormDa
         freeEnrollment,
         delivery: mode,
         sampleRequest,
+        trialGuestId: guestId && guestIds.has(guestId) ? guestId : null,
         emailOptions: emailOptions.options,
       });
       const greeting = name ? `Salam alaykum ${name}, ` : "Salam alaykum, ";
@@ -281,7 +293,7 @@ export async function inviteStudents(_prev: StudentInviteState, formData: FormDa
 async function inviteToTrial(
   userId: string,
   courseId: string,
-  students: { name: string; email: string }[],
+  students: { name: string; email: string; guestId?: string }[],
   mode: InviteDelivery,
   formData: FormData,
   sampleRequest: string | null,
@@ -365,4 +377,31 @@ function trialResult(
       shareText: r.shareText,
     })),
   };
+}
+
+// Einladungslink ohne E-Mail-Adresse einem Probestunden-Gast zuordnen (dieselbe Person).
+export async function assignInvitationToGuest(formData: FormData) {
+  const session = await auth();
+  if (!session || (session.user.role !== Role.ADMIN && session.user.role !== Role.TEACHER)) {
+    throw new Error("Nicht berechtigt.");
+  }
+  const invitationId = text(formData, "invitationId");
+  const guestId = text(formData, "guestId");
+  if (!invitationId || !guestId) return;
+
+  const [invitation, guest] = await Promise.all([
+    prisma.invitation.findUnique({
+      where: { id: invitationId },
+      select: { courseId: true, course: { select: { teacherId: true } } },
+    }),
+    prisma.trialGuest.findUnique({ where: { id: guestId }, select: { trialLesson: { select: { courseId: true } } } }),
+  ]);
+  if (!invitation || !guest) return;
+  if (session.user.role !== Role.ADMIN && invitation.course.teacherId !== session.user.id) {
+    throw new Error("Nicht berechtigt.");
+  }
+  if (guest.trialLesson.courseId !== invitation.courseId) throw new Error("Gast und Einladung gehören nicht zum selben Kurs.");
+
+  await prisma.invitation.update({ where: { id: invitationId }, data: { trialGuestId: guestId } });
+  revalidatePath(`/teacher/courses/${invitation.courseId}`);
 }

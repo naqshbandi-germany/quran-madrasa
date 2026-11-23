@@ -62,13 +62,15 @@ export default async function InviteStudentsPage({
     },
     orderBy: { startsAt: "desc" },
     take: 30,
-    include: { guests: { orderBy: { createdAt: "asc" }, select: { name: true, email: true } } },
+    include: { guests: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, email: true } } },
   });
+  const toEntries = (guests: { id: string; name: string; email: string }[]) =>
+    guests.map((g) => ({ name: g.name, email: g.email, guestId: g.id }));
   const guestSources = recentTrials.map((t) => ({
     id: t.id,
     courseId: t.courseId,
     label: `${courses.find((c) => c.id === t.courseId)?.title ?? ""}, ${formatZonedDateTime(t.startsAt, timeZone)} Uhr (${t.guests.length} ${t.guests.length === 1 ? "Gast" : "Gäste"})`,
-    guests: t.guests,
+    guests: toEntries(t.guests),
   }));
   const guestTrial = recentTrials.find((t) => t.id === gaeste);
 
@@ -107,7 +109,7 @@ export default async function InviteStudentsPage({
             emails={{ student_invite: inviteEmail, trial_invite: trialEmail }}
             senderName={sender?.name ?? session.user.name ?? ""}
             guestSources={guestSources}
-            initialEntries={guestTrial?.guests ?? []}
+            initialEntries={toEntries(guestTrial?.guests ?? [])}
             trials={trialOptions}
             initialTrialId={preselectedTrial?.id}
             allowFree={isAdmin}

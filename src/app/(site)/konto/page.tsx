@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { ParticipantEditor, PasswordForm, ProfileForm } from "./konto-forms";
+import { EmailForm, ParticipantEditor, PasswordForm, ProfileForm } from "./konto-forms";
 
 export const metadata = { title: "Mein Konto" };
 
@@ -36,6 +36,16 @@ export default async function AccountPage() {
           Profil
         </h2>
         <ProfileForm name={user.name} muslimName={user.muslimName} email={user.email} />
+      </section>
+
+      <section aria-labelledby="email" className="space-y-4">
+        <h2 id="email" className="text-2xl font-semibold text-azure-800">
+          E-Mail-Adresse ändern
+        </h2>
+        <p className="text-brand-900/75">
+          Wir schicken einen Link an die neue Adresse. Erst wenn du ihn bestätigst, wird umgestellt.
+        </p>
+        <EmailForm />
       </section>
 
       <section aria-labelledby="passwort" className="space-y-4">

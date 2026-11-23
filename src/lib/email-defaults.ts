@@ -307,6 +307,47 @@ export const EMAIL_TEMPLATES = {
       footer: "Falls du das nicht angefordert hast, kannst du diese E-Mail ignorieren; dein Passwort bleibt dann unverändert.",
     },
   },
+  email_change_confirm: {
+    label: "Neue E-Mail-Adresse bestätigen",
+    group: "Konto",
+    description: "An die neue Adresse, wenn jemand unter „Mein Konto“ die E-Mail-Adresse ändert.",
+    placeholders: [
+      { key: "name", label: "Name des Kontos", example: "Fatima" },
+      { key: "link", label: "Link zum Bestätigen (Ziel des Buttons)", example: "https://www.islamunterfreunden.de/auth/email-bestaetigen?token=…" },
+      { key: "minuten", label: "Gültigkeit des Links in Minuten", example: "60" },
+      BUTTON,
+    ],
+    hasButton: true,
+    defaults: {
+      subject: "Neue E-Mail-Adresse bestätigen",
+      body: [
+        GREETING,
+        "du möchtest dich künftig mit dieser E-Mail-Adresse anmelden. Bitte bestätige sie mit diesem Link. Er ist {{minuten}} Minuten gültig und nur einmal nutzbar:",
+      ].join("\n\n"),
+      buttonLabel: "Adresse bestätigen",
+      footer: "Falls du das nicht angefordert hast, kannst du diese E-Mail ignorieren; dann ändert sich nichts.",
+    },
+  },
+  email_changed: {
+    label: "E-Mail-Adresse geändert",
+    group: "Konto",
+    description: "Hinweis an die bisherige Adresse, nachdem die neue bestätigt wurde.",
+    placeholders: [
+      { key: "name", label: "Name des Kontos", example: "Fatima" },
+      { key: "neu", label: "Neue E-Mail-Adresse", example: "fatima@example.de" },
+    ],
+    hasButton: false,
+    defaults: {
+      subject: "Deine E-Mail-Adresse wurde geändert",
+      body: [
+        GREETING,
+        "die E-Mail-Adresse deines Kontos bei Islam unter Freunden wurde geändert. Du meldest dich jetzt mit {{neu}} an.",
+        "Warst du das nicht? Dann melde dich bitte sofort bei admin@islamunterfreunden.de.",
+      ].join("\n\n"),
+      buttonLabel: "",
+      footer: "Diese E-Mail ging zur Sicherheit an deine bisherige Adresse.",
+    },
+  },
   teacher_invite: {
     label: "Lehrer-Einladung",
     group: "Konto",

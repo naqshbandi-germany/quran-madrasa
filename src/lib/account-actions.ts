@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
+import { confirmEmailChange, requestEmailChange } from "@/lib/email-change";
 import { PASSWORD_MAX_LENGTH, passwordMeetsRules } from "@/lib/password-rules";
 import {
   validateParticipant,
@@ -78,6 +79,52 @@ export async function changePassword(_prev: ActionResult, formData: FormData): P
   await prisma.passwordResetToken.deleteMany({ where: { userId } });
 
   return { ok: true, message: "Dein Passwort wurde geändert." };
+}
+
+// --- E-Mail-Adresse -------------------------------------------------------------------
+
+// Schritt 1: Passwort pruefen und einen Link an die neue Adresse schicken.
+export async function changeEmail(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const userId = await requireUserId();
+  const email = text(formData, "newEmail").trim().toLowerCase();
+  if (email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, errors: { newEmail: "Bitte gib eine gültige E-Mail-Adresse ein." } };
+  }
+
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  const password = text(formData, "emailPassword");
+  if (!password || password.length > PASSWORD_MAX_LENGTH || !(await bcrypt.compare(password, user.passwordHash))) {
+    return { ok: false, errors: { emailPassword: "Das Passwort stimmt nicht." } };
+  }
+  if (email === user.email.toLowerCase()) {
+    return { ok: false, errors: { newEmail: "Das ist bereits deine Adresse." } };
+  }
+
+  switch (await requestEmailChange(user, email)) {
+    case "taken":
+      return { ok: false, errors: { newEmail: "Mit dieser Adresse gibt es schon ein Konto." } };
+    case "too-soon":
+      return { ok: false, message: "Du hast gerade erst einen Link angefordert. Bitte warte eine Minute." };
+    case "mail-failed":
+      return { ok: false, message: "Die E-Mail konnte nicht verschickt werden. Bitte versuche es später noch einmal." };
+    case "sent":
+      return {
+        ok: true,
+        message: `Wir haben einen Link an ${email} geschickt. Bis du ihn bestätigst, gilt deine bisherige Adresse.`,
+      };
+  }
+}
+
+// Schritt 2: Link aus der E-Mail bestaetigen (auch ohne Anmeldung, der Link ist der Nachweis).
+export async function confirmNewEmail(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  switch (await confirmEmailChange(text(formData, "token"))) {
+    case "changed":
+      return { ok: true, message: "Deine neue E-Mail-Adresse ist gespeichert. Melde dich ab jetzt damit an." };
+    case "taken":
+      return { ok: false, message: "Mit dieser Adresse gibt es inzwischen schon ein Konto." };
+    case "invalid":
+      return { ok: false, message: "Dieser Link ist ungültig, abgelaufen oder wurde schon benutzt." };
+  }
 }
 
 // --- Teilnehmer -----------------------------------------------------------------------

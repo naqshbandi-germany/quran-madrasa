@@ -109,16 +109,19 @@ export type PendingInvitee = {
   hasAccount: boolean;
   // z. B. ["Probestunde am 18.11.2026, 18:00 Uhr", "Einladung zur Anmeldung vom 17.11.2026"]
   status: string[];
+  // Einladungslink ohne E-Mail-Adresse, noch keinem Probestunden-Gast zugeordnet: moegliche Gaeste.
+  assign: { invitationId: string; guests: { id: string; label: string }[] } | null;
 };
 
 // Eingeladene eines Kurses, die (noch) nicht angemeldet sind: offene Einladungen und Gaeste von
-// Probestunden der letzten Wochen. Gleiche E-Mail-Adresse = eine Person (eine Zeile).
+// Probestunden der letzten Wochen. Gleiche E-Mail-Adresse oder verknuepfter Gast = eine Person (eine
+// Zeile). Gleiche Namen allein werden nicht zusammengefasst, das koennen zwei Personen sein.
 export async function pendingInvitees(courseId: string, timeZone: string): Promise<PendingInvitee[]> {
   const now = new Date();
   const [invitations, guests, enrolled] = await Promise.all([
     prisma.invitation.findMany({
       where: { courseId, expiresAt: { gt: now }, usedAt: null },
-      select: { id: true, name: true, email: true, createdAt: true, expiresAt: true },
+      select: { id: true, name: true, email: true, createdAt: true, expiresAt: true, trialGuestId: true },
       orderBy: { createdAt: "asc" },
     }),
     prisma.trialGuest.findMany({
@@ -128,6 +131,8 @@ export async function pendingInvitees(courseId: string, timeZone: string): Promi
           canceledAt: null,
           startsAt: { gt: new Date(now.getTime() - TRIAL_PENDING_DAYS * 86_400_000) },
         },
+        // Ueber einen verknuepften Einladungslink schon angemeldet
+        invitations: { none: { courseId, usedAt: { not: null } } },
       },
       select: { id: true, name: true, email: true, trialLesson: { select: { startsAt: true } } },
       orderBy: { createdAt: "asc" },
@@ -150,8 +155,15 @@ export async function pendingInvitees(courseId: string, timeZone: string): Promi
     if (n && !acc.names.includes(n)) acc.names.push(n);
   }
 
+  // Adresse einer Person aus dem Gast oder der verknuepften Einladung
+  const emailByGuest = new Map<string, string>();
+  for (const i of invitations) {
+    if (i.trialGuestId && i.email) emailByGuest.set(i.trialGuestId, normalizeEmail(i.email));
+  }
+  for (const g of guests) if (g.email) emailByGuest.set(g.id, normalizeEmail(g.email));
+
   for (const g of guests) {
-    const email = g.email ? normalizeEmail(g.email) : null;
+    const email = emailByGuest.get(g.id) ?? null;
     if (email && enrolled.has(email)) continue;
     const acc = entry(email ?? `gast-${g.id}`, email);
     addName(acc, g.name);
@@ -160,14 +172,27 @@ export async function pendingInvitees(courseId: string, timeZone: string): Promi
     if (!acc.status.includes(line)) acc.status.push(line);
   }
   for (const i of invitations) {
-    const email = i.email ? normalizeEmail(i.email) : null;
+    const email = i.email
+      ? normalizeEmail(i.email)
+      : i.trialGuestId
+        ? (emailByGuest.get(i.trialGuestId) ?? null)
+        : null;
     if (email && enrolled.has(email)) continue;
-    const acc = entry(email ?? `einladung-${i.id}`, email);
+    const acc = entry(email ?? (i.trialGuestId ? `gast-${i.trialGuestId}` : `einladung-${i.id}`), email);
     addName(acc, i.name);
     acc.status.push(
-      `${email ? "Einladung" : "Einladungslink"} zur Anmeldung vom ${dateFormat.format(i.createdAt)} (gültig bis ${dateFormat.format(i.expiresAt)})`,
+      `${i.email ? "Einladung" : "Einladungslink"} zur Anmeldung vom ${dateFormat.format(i.createdAt)} (gültig bis ${dateFormat.format(i.expiresAt)})`,
     );
   }
+
+  // Fuer die Zuordnung von Hand: Gaeste ohne E-Mail-Adresse, denen noch kein Link zugeordnet ist.
+  const linked = new Set(invitations.flatMap((i) => i.trialGuestId ?? []));
+  const openGuests = guests
+    .filter((g) => !g.email && !linked.has(g.id))
+    .map((g) => ({ id: g.id, label: `${g.name}, Probestunde am ${formatZonedDateTime(g.trialLesson.startsAt, timeZone)} Uhr` }));
+  const unassigned = new Map(
+    invitations.filter((i) => !i.email && !i.trialGuestId).map((i) => [`einladung-${i.id}`, i.id]),
+  );
 
   const emails = [...byKey.values()].flatMap((a) => (a.email ? [a.email] : []));
   const users = emails.length
@@ -186,6 +211,10 @@ export async function pendingInvitees(courseId: string, timeZone: string): Promi
       email: acc.email,
       hasAccount: Boolean(user),
       status: acc.status,
+      assign:
+        unassigned.has(acc.key) && openGuests.length > 0
+          ? { invitationId: unassigned.get(acc.key)!, guests: openGuests }
+          : null,
     };
   });
 }

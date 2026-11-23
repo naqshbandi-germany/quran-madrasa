@@ -4,6 +4,7 @@ import { RemoveForm } from "./remove-form";
 import { ParticipantsList, type ParticipantRow } from "@/components/participants-list";
 import { WaitlistContactButton } from "@/components/waitlist-contact-button";
 import { capacityOf } from "@/lib/course-capacity";
+import { assignInvitationToGuest } from "@/lib/invite-actions";
 import { pendingInvitees } from "@/lib/invitees";
 import { nameWithMuslimName, requireManagedCourse } from "@/lib/course-manage";
 import { prisma } from "@/lib/prisma";
@@ -101,6 +102,33 @@ export default async function CourseParticipantsPage({ params }: { params: Promi
                         <li key={s}>{s}</li>
                       ))}
                     </ul>
+                    {p.assign && (
+                      <details className="mt-1 text-xs">
+                        <summary className="cursor-pointer font-medium text-azure-800 underline">
+                          War schon in einer Probestunde? Zuordnen
+                        </summary>
+                        <form action={assignInvitationToGuest} className="mt-2 flex flex-wrap items-center gap-2">
+                          <input type="hidden" name="invitationId" value={p.assign.invitationId} />
+                          <select
+                            name="guestId"
+                            required
+                            aria-label={`Probestunden-Gast zu ${p.name}`}
+                            defaultValue={p.assign.guests.find((g) => g.label.startsWith(`${p.name},`))?.id ?? ""}
+                            className="border border-brand-300 bg-white px-2 py-1"
+                          >
+                            <option value="" disabled>
+                              Gast wählen
+                            </option>
+                            {p.assign.guests.map((g) => (
+                              <option key={g.id} value={g.id}>
+                                {g.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button className="btn-primary px-3 py-1">Dieselbe Person</button>
+                        </form>
+                      </details>
+                    )}
                   </div>
                   <span className="shrink-0 bg-orange-200 px-2 py-0.5 text-xs font-semibold text-orange-950">
                     {p.hasAccount ? "hat ein Konto, noch nicht angemeldet" : "noch nicht angemeldet"}
