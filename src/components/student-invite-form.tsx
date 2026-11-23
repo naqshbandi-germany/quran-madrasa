@@ -64,6 +64,7 @@ export function StudentInviteForm({
   senderName,
   guestSources = [],
   initialEntries = [],
+  initialGuestSourceId = "",
 }: {
   // Fester Kurs oder Auswahl aus mehreren Kursen (Seite "Schüler einladen").
   courseId?: string;
@@ -84,12 +85,15 @@ export function StudentInviteForm({
   guestSources?: GuestSource[];
   // Vorbelegte Liste, z. B. ueber "Gäste zum Kurs einladen" unter "Termine"
   initialEntries?: Entry[];
+  // Probestunde, aus der die vorbelegten Gaeste stammen
+  initialGuestSourceId?: string;
 }) {
   const [state, formAction, pending] = useActionState<StudentInviteState, FormData>(inviteStudents, null);
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
   const [free, setFree] = useState(false);
   const [sampleRange, setSampleRange] = useState<string | null>(null);
   const [guestNote, setGuestNote] = useState<string | null>(null);
+  const [guestSourceId, setGuestSourceId] = useState(initialGuestSourceId);
   const [draft, setDraft] = useState<Entry>({ name: "", email: "" });
   const [editing, setEditing] = useState<{ index: number; entry: Entry } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -179,23 +183,37 @@ export function StudentInviteForm({
     }
   }
 
-  // Gaeste einer Probestunde in die Liste uebernehmen (ohne doppelte E-Mail-Adressen).
+  // Gaeste einer Probestunde in die Liste uebernehmen (ohne doppelte E-Mail-Adressen). Es gilt immer
+  // nur die gewaehlte Probestunde: vorher uebernommene Gaeste fallen weg, selbst Eingetippte bleiben.
   function takeGuests(sourceId: string) {
     const source = guestSources.find((s) => s.id === sourceId);
-    if (!source) return;
-    const known = new Set(entries.map((e) => e.email.toLowerCase()).filter(Boolean));
-    const taken = new Set(entries.flatMap((e) => e.guestId ?? []));
-    const fresh = source.guests.filter(
-      (g) => !(g.guestId && taken.has(g.guestId)) && (!g.email || !known.has(g.email.toLowerCase())),
-    );
-    setEntries((list) => [...list, ...fresh]);
-    if (!courseId) setSelectedCourse(source.courseId);
+    const own = entries.filter((e) => !e.guestId);
+    const known = new Set(own.map((e) => e.email.toLowerCase()).filter(Boolean));
+    const fresh = (source?.guests ?? []).filter((g) => !g.email || !known.has(g.email.toLowerCase()));
+    setEntries([...own, ...fresh]);
+    setEditing(null);
+    setGuestSourceId(source?.id ?? "");
+    if (source && !courseId) setSelectedCourse(source.courseId);
     setGuestNote(
-      fresh.length === 0
-        ? "Alle Gäste dieser Probestunde stehen schon in der Liste."
-        : `${fresh.length} ${fresh.length === 1 ? "Gast" : "Gäste"} übernommen. Prüfe die Liste und wähle unten, wozu du einlädst.`,
+      !source
+        ? null
+        : fresh.length === 0
+          ? "Alle Gäste dieser Probestunde stehen schon in der Liste."
+          : `${fresh.length} ${fresh.length === 1 ? "Gast" : "Gäste"} übernommen. Prüfe die Liste und wähle unten, wozu du einlädst.`,
     );
   }
+
+  // Anderer Kurs: Gaeste einer Probestunde des bisherigen Kurses aus der Liste nehmen.
+  function changeCourse(nextCourse: string) {
+    setSelectedCourse(nextCourse);
+    const source = guestSources.find((s) => s.id === guestSourceId);
+    if (!source || source.courseId === nextCourse) return;
+    setEntries((list) => list.filter((e) => !e.guestId));
+    setEditing(null);
+    setGuestSourceId("");
+    setGuestNote(null);
+  }
+  const courseGuestSources = activeCourse ? guestSources.filter((s) => s.courseId === activeCourse) : guestSources;
 
   // Beim Abschicken zaehlt auch ein noch nicht mit Enter bestaetigter Eintrag.
   const pendingDraft = draft.name.trim() || draft.email.trim() ? [{ name: draft.name.trim(), email: draft.email.trim() }] : [];
@@ -229,6 +247,7 @@ export function StudentInviteForm({
       setSampleRange(null);
       setFree(false);
       setGuestNote(null);
+      setGuestSourceId("");
     }
   }
 
@@ -272,7 +291,7 @@ export function StudentInviteForm({
             required
             value={selectedCourse}
             onChange={(e) => {
-              setSelectedCourse(e.target.value);
+              changeCourse(e.target.value);
               setTrialChoice("neu");
             }}
             aria-label="Kurs" className={`${INPUT} w-full sm:w-auto`}>
@@ -288,17 +307,17 @@ export function StudentInviteForm({
         )}
         <input type="hidden" name="students" value={JSON.stringify(allEntries)} />
 
-        {guestSources.length > 0 && (
+        {courseGuestSources.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 text-sm text-brand-800">
             <label htmlFor="guest-source">Gäste einer Probestunde übernehmen:</label>
             <select
               id="guest-source"
-              value=""
+              value={guestSourceId}
               onChange={(e) => takeGuests(e.target.value)}
               className={`${INPUT} w-full sm:w-auto`}
             >
               <option value="">Probestunde wählen …</option>
-              {guestSources.map((s) => (
+              {courseGuestSources.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.label}
                 </option>
@@ -445,7 +464,7 @@ export function StudentInviteForm({
                     onChange={(e) => {
                       setTrialChoice(e.target.value);
                       const picked = trials.find((t) => t.id === e.target.value);
-                      if (picked && !courseId) setSelectedCourse(picked.courseId);
+                      if (picked && !courseId) changeCourse(picked.courseId);
                     }}
                     className={`${INPUT} mt-1 block`}
                   >
