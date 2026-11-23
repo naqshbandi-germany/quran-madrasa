@@ -158,7 +158,7 @@ export async function removeParticipantFromCourse(enrollmentId: string): Promise
   const enrollment = await prisma.enrollment.findUnique({
     where: { id: enrollmentId },
     include: {
-      participant: { select: { id: true, name: true } },
+      participant: { select: { id: true, name: true, muslimName: true } },
       user: { select: { name: true, muslimName: true, email: true } },
       subscription: true,
       course: { select: { id: true, slug: true, title: true } },
@@ -208,6 +208,21 @@ export async function removeParticipantFromCourse(enrollmentId: string): Promise
   }
 
   await prisma.enrollment.delete({ where: { id: enrollmentId } });
+
+  // Traegt ein Admin aus, erfaehrt es die Lehrkraft (eigene Austragungen kennt sie).
+  const session = await auth();
+  if (session?.user.id !== course.teacherId) {
+    await recordEvent({
+      type: "ENROLLMENT_REMOVED",
+      dedupeKey: `enrollment-removed:${enrollmentId}`,
+      courseId: course.id,
+      data: {
+        course: course.title,
+        owner: enrollment.user.name,
+        participants: [fullName(enrollment.participant)],
+      },
+    });
+  }
 
   if (subscriptionInOtherAccount && enrollment.subscription) {
     // Ohne verbliebene Teilnehmer gilt das alte Abo hier als beendet.

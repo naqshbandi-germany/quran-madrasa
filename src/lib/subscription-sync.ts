@@ -182,12 +182,13 @@ async function subscriptionEventData(
     prisma.enrollment.findMany({
       where: enrollmentIds ? { id: { in: enrollmentIds } } : { subscriptionId },
       orderBy: { createdAt: "asc" },
-      select: { participant: { select: { name: true, muslimName: true } } },
+      select: { participantId: true, participant: { select: { name: true, muslimName: true } } },
     }),
   ]);
   return {
     course: course?.title,
     owner: owner?.name,
     participants: enrollments.map((e) => fullName(e.participant)),
+    participantIds: enrollments.map((e) => e.participantId),
   };
 }

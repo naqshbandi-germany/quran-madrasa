@@ -91,7 +91,7 @@ export async function POST(request: Request) {
         course: course.title,
         participants: [guest.name || "Eingeladene Person"],
         note: note ?? undefined,
-        ...(guest.kind === "invitation" ? { invitation: true } : { trial: true }),
+        ...(guest.kind === "invitation" ? { invitation: true } : { trial: true, trialStartsAt: guest.startsAt?.toISOString() }),
       },
     });
   } catch (err) {

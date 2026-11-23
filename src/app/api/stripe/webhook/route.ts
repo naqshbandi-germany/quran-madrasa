@@ -52,14 +52,14 @@ export async function POST(request: Request) {
         await sendPaymentFailedNotice(customerId, courseId);
         // Admins informieren (einmal pro Rechnung, auch wenn Stripe mehrmals versucht).
         const [owner, course] = await Promise.all([
-          prisma.user.findUnique({ where: { stripeCustomerId: customerId }, select: { name: true, email: true } }),
+          prisma.user.findUnique({ where: { stripeCustomerId: customerId }, select: { id: true, name: true, email: true } }),
           courseId ? prisma.course.findUnique({ where: { id: courseId }, select: { title: true } }) : null,
         ]);
         await recordEvent({
           type: "PAYMENT_FAILED",
           dedupeKey: `payment-failed:${invoice.id}`,
           courseId,
-          data: { owner: owner?.name, ownerEmail: owner?.email, course: course?.title },
+          data: { ownerId: owner?.id, owner: owner?.name, ownerEmail: owner?.email, course: course?.title },
         });
       }
       break;
