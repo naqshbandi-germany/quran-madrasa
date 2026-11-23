@@ -92,6 +92,7 @@ model User {
   enrollments         Enrollment[]
   subscriptions       Subscription[]
   passwordResetTokens PasswordResetToken[]
+  emailChangeToken EmailChangeToken?
   sentInvitations     Invitation[]             @relation("InvitationsSent")
   participants        Participant[]
   mediaFiles          MediaFile[]
@@ -350,6 +351,17 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+// Offener Link zum Aendern der Anmelde-Adresse (hoechstens einer pro Konto, nur als Hash).
+model EmailChangeToken {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  newEmail  String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 // Datei der Mediathek (Lehrmaterial wie PDFs). Mit Vercel Blob (BLOB_READ_WRITE_TOKEN gesetzt)

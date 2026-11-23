@@ -8,6 +8,7 @@ import { FloatingField } from "@/components/form/floating-field";
 import { PasswordField } from "@/components/form/password-field";
 import { PencilIcon, TrashIcon } from "@/components/icons";
 import {
+  changeEmail,
   changePassword,
   deleteParticipant,
   updateParticipant,
@@ -67,12 +68,53 @@ export function ProfileForm({ name, muslimName, email }: { name: string; muslimN
         <p className="text-sm text-brand-900/70">E-Mail-Adresse (Anmeldung und Zugangslinks)</p>
         <p className="font-medium text-brand-900">{email}</p>
         <p className="text-xs text-brand-900/60">
-          Die Adresse lässt sich hier noch nicht ändern. Schreib uns, wenn sie sich geändert hat.
+          Ändern kannst du sie weiter unten unter „E-Mail-Adresse ändern“.
         </p>
       </div>
       <Feedback result={state} />
       <button type="submit" disabled={pending} className={PRIMARY_BUTTON}>
         {pending ? "Wird gespeichert …" : "Speichern"}
+      </button>
+    </form>
+  );
+}
+
+export function EmailForm() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [state, action, pending] = useActionState(async (prev: ActionResult, formData: FormData) => {
+    const result = await changeEmail(prev, formData);
+    if (result.ok) {
+      setEmail("");
+      setPassword("");
+    }
+    return result;
+  }, INITIAL);
+  return (
+    <form action={action} className="space-y-4 border border-gold-400/40 bg-white p-5">
+      <FloatingField
+        id="new-email"
+        name="newEmail"
+        type="email"
+        label="Neue E-Mail-Adresse"
+        required
+        autoComplete="email"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        error={state.errors?.newEmail}
+      />
+      <PasswordField
+        id="email-password"
+        name="emailPassword"
+        label="Dein Passwort"
+        value={password}
+        onChange={setPassword}
+        autoComplete="current-password"
+        error={state.errors?.emailPassword}
+      />
+      <Feedback result={state} />
+      <button type="submit" disabled={pending} className={PRIMARY_BUTTON}>
+        {pending ? "Wird gesendet …" : "Bestätigungslink senden"}
       </button>
     </form>
   );
