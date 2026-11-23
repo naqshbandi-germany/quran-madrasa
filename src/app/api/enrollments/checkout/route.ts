@@ -292,18 +292,34 @@ export async function POST(request: Request) {
 
     // Eingebetteter Checkout: Stripe zeigt das Zahlungsformular auf unserer Anmeldeseite
     // (siehe enroll-wizard.tsx). Nach der Zahlung leitet Stripe auf return_url weiter.
+    // Ohne NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (z. B. in Preview) wie bisher zur Stripe-Seite.
+    const embedded = Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+    const lineItems = [
+      { price: stripePriceId, quantity: participantIds.length },
+      // Optional: einmalige Anmeldegebuehr pro Teilnehmer, faellig mit der ersten Rechnung.
+      ...(course.signupFeePriceId ? [{ price: course.signupFeePriceId, quantity: participantIds.length }] : []),
+    ];
+    const successUrl = `${appUrl}/dashboard?checkout=success`;
+
+    if (!embedded) {
+      const checkoutSession = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        customer: stripeCustomerId,
+        line_items: lineItems,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata,
+        subscription_data: { metadata },
+      });
+      return NextResponse.json({ url: checkoutSession.url });
+    }
+
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
       ui_mode: "embedded_page",
       customer: stripeCustomerId,
-      // Optional: einmalige Anmeldegebuehr pro Teilnehmer, faellig mit der ersten Rechnung.
-      line_items: [
-        { price: stripePriceId, quantity: participantIds.length },
-        ...(course.signupFeePriceId
-          ? [{ price: course.signupFeePriceId, quantity: participantIds.length }]
-          : []),
-      ],
-      return_url: `${appUrl}/dashboard?checkout=success`,
+      line_items: lineItems,
+      return_url: successUrl,
       metadata,
       subscription_data: { metadata },
     });
