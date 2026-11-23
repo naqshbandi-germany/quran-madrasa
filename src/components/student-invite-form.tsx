@@ -12,7 +12,8 @@ import { inviteStudents, lookupInviteEmail, type StudentInviteState } from "@/li
 import type { KnownInvitee } from "@/lib/invitees";
 import { SAMPLE_WHEN, sampleBlockHtml } from "@/lib/sample-block";
 
-type Entry = { name: string; email: string };
+// guestId: aus einer Probestunde uebernommen, die Einladung wird mit dem Gast verknuepft.
+type Entry = { name: string; email: string; guestId?: string };
 
 // Probestunde, deren Gaeste sich in die Liste uebernehmen lassen (z. B. um sie danach zum Kurs
 // einzuladen).
@@ -126,7 +127,7 @@ export function StudentInviteForm({
   const draftKnown = EMAIL_PATTERN.test(draftEmail) ? known[lookupKey] : undefined;
 
   function validate(entry: Entry, exceptIndex = -1) {
-    const e = { name: entry.name.trim(), email: entry.email.trim() };
+    const e: Entry = { ...entry, name: entry.name.trim(), email: entry.email.trim() };
     if (!e.name && !e.email) return null;
     if (e.email && !EMAIL_PATTERN.test(e.email)) {
       setError(`„${e.email}“ ist keine gültige E-Mail-Adresse.`);
@@ -183,7 +184,10 @@ export function StudentInviteForm({
     const source = guestSources.find((s) => s.id === sourceId);
     if (!source) return;
     const known = new Set(entries.map((e) => e.email.toLowerCase()).filter(Boolean));
-    const fresh = source.guests.filter((g) => !g.email || !known.has(g.email.toLowerCase()));
+    const taken = new Set(entries.flatMap((e) => e.guestId ?? []));
+    const fresh = source.guests.filter(
+      (g) => !(g.guestId && taken.has(g.guestId)) && (!g.email || !known.has(g.email.toLowerCase())),
+    );
     setEntries((list) => [...list, ...fresh]);
     if (!courseId) setSelectedCourse(source.courseId);
     setGuestNote(

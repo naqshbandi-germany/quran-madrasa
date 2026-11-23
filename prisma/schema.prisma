@@ -466,7 +466,12 @@ model Invitation {
 
   samples TrialSample[]
 
+  // Dieselbe Person war schon Gast einer Probestunde (auch ohne E-Mail-Adresse zuordenbar).
+  trialGuestId String?
+  trialGuest   TrialGuest? @relation(fields: [trialGuestId], references: [id], onDelete: SetNull)
+
   @@index([courseId])
+  @@index([trialGuestId])
 }
 
 // Ereignisse fuer Lehrkraefte und Admins (Feed unter /teacher/benachrichtigungen bzw.
@@ -563,7 +568,9 @@ model TrialGuest {
   // src/lib/trial-samples.ts.
   createdAt     DateTime    @default(now())
 
-  samples TrialSample[]
+  samples     TrialSample[]
+  // Spaetere Einladungen dieser Person zum Kurs
+  invitations Invitation[]
 
   @@index([trialLessonId])
 }

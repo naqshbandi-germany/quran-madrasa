@@ -32,6 +32,8 @@ export async function createStudentInvitation(params: {
   delivery: InviteDelivery;
   // Erbetene Hoerprobe, z. B. "Sure 67 Al-Mulk, Verse 1–10" (persoenlicher Link ohne Konto)
   sampleRequest?: string | null;
+  // Probestunden-Gast, der hier eingeladen wird
+  trialGuestId?: string | null;
   // Text der Mail (eigene Vorlage bzw. fuer diesen Versand angepasst)
   emailOptions?: EmailContentOptions;
 }): Promise<{ link: string; mailed: boolean; sampleShareText: string }> {
@@ -48,6 +50,7 @@ export async function createStudentInvitation(params: {
       freeEnrollment: params.freeEnrollment,
       invitedById: inviter.id,
       sampleRequest: params.sampleRequest || null,
+      trialGuestId: params.trialGuestId || null,
       expiresAt: new Date(Date.now() + STUDENT_INVITE_TTL_DAYS * 24 * 3600 * 1000),
     },
     select: { id: true },
