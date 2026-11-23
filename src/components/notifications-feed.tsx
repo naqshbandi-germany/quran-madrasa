@@ -11,6 +11,7 @@ import {
   typesForRole,
   type EventData,
 } from "@/lib/notification-types";
+import { fullName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { formatGermanDateTime } from "@/lib/schedule-time";
 
@@ -54,6 +55,18 @@ export async function NotificationsFeed({
         select: { participantId: true },
       })
     ).map((e) => e.participantId),
+  );
+
+  // Admins sehen alle Kurse, daher mit Angabe der Lehrkraft.
+  const teacherByCourse = new Map(
+    role === "ADMIN"
+      ? (
+          await prisma.course.findMany({
+            where: { id: { in: notifications.flatMap((n) => n.event.courseId ?? []) } },
+            select: { id: true, teacher: { select: { name: true, muslimName: true } } },
+          })
+        ).map((c) => [c.id, fullName(c.teacher)] as const)
+      : [],
   );
 
   const filterLink = (value?: string) => {
@@ -105,6 +118,7 @@ export async function NotificationsFeed({
             const people = eventParticipants(n.event.participantId, data).filter((p) => reachable.has(p.id));
             const href = eventHref(eventType, n.event.courseId, data, people.length === 1 ? people[0].id : null);
             const unread = !n.readAt;
+            const teacherName = n.event.courseId ? teacherByCourse.get(n.event.courseId) : undefined;
             return (
               <li key={n.id} className={`flex gap-3 p-4 ${unread ? "bg-azure-50/60" : ""}`}>
                 <span
@@ -129,6 +143,7 @@ export async function NotificationsFeed({
                   <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-brand-600">
                     <span>{formatGermanDateTime(n.createdAt)} Uhr</span>
                     <span>{NOTIFICATION_TYPE_INFO[eventType].label}</span>
+                    {teacherName && <span>Lehrkraft: {teacherName}</span>}
                     {n.emailedAt && <span>per E-Mail verschickt</span>}
                   </p>
                 </div>

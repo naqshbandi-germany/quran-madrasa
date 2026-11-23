@@ -6,6 +6,7 @@ import { NotificationSettingsForm } from "@/components/notification-settings-for
 import { NotificationsFeed } from "@/components/notifications-feed";
 import { emailWanted, notificationsBasePath } from "@/lib/notifications";
 import { typesForRole } from "@/lib/notification-types";
+import { prisma } from "@/lib/prisma";
 
 // Gemeinsame Seiten fuer /teacher/benachrichtigungen und /admin/benachrichtigungen.
 
@@ -22,7 +23,7 @@ export async function NotificationsPage({ searchParams }: { searchParams: Promis
           <h1 className="text-2xl font-bold text-azure-800">Benachrichtigungen</h1>
           <p className="mt-1 text-sm text-brand-600">
             {session.user.role === "ADMIN"
-              ? "Ereignisse aus deinen Kursen und fehlgeschlagene Zahlungen."
+              ? "Ereignisse aus allen Kursen und fehlgeschlagene Zahlungen."
               : "Was in deinen Kursen passiert: neue Anmeldungen, Kündigungen, Hörproben und Einträge auf der Warteliste."}
           </p>
         </div>
@@ -44,6 +45,12 @@ export async function NotificationSettingsPage({ area }: { area: "teacher" | "ad
   const email = Object.fromEntries(
     await Promise.all(types.map(async (t) => [t, await emailWanted(session.user.id, t)] as const)),
   );
+  // Nur Admins: E-Mails auch fuer Kurse anderer Lehrkraefte
+  const allCourses =
+    session.user.role === "ADMIN"
+      ? (await prisma.user.findUnique({ where: { id: session.user.id }, select: { notifyAllCourses: true } }))
+          ?.notifyAllCourses ?? false
+      : null;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -54,7 +61,7 @@ export async function NotificationSettingsPage({ area }: { area: "teacher" | "ad
           zusätzlich eine E-Mail an {session.user.email} bekommst.
         </p>
       </div>
-      <NotificationSettingsForm types={types} email={email} />
+      <NotificationSettingsForm types={types} email={email} allCourses={allCourses} />
       <Link href={basePath} className="inline-block text-sm font-medium text-brand-700 underline">
         Zurück zu den Benachrichtigungen
       </Link>

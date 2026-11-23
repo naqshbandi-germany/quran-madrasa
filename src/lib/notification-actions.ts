@@ -47,6 +47,12 @@ export async function saveNotificationPreferences(
 ): Promise<PreferencesResult> {
   const session = await requireStaff();
   const types = typesForRole(session.user.role);
+  if (session.user.role === "ADMIN") {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { notifyAllCourses: formData.get("notifyAllCourses") === "on" },
+    });
+  }
   await prisma.$transaction(
     types.map((type) => {
       const email = formData.get(`email_${type}`) === "on";
