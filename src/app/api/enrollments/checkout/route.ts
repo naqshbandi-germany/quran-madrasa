@@ -261,7 +261,7 @@ export async function POST(request: Request) {
 
     // cancelUrl: "Zurück" im Wizard laedt die Anmeldeseite neu (die eben angelegten Teilnehmer
     // sind dann gespeichert und werden nicht doppelt angelegt).
-    return NextResponse.json({ clientSecret: checkoutSession.client_secret, cancelUrl });
+    return NextResponse.json({ clientSecret: checkoutSession.client_secret, sessionId: checkoutSession.id, cancelUrl });
   } catch (err) {
     console.error("Stripe checkout error:", err);
     const message = err instanceof Stripe.errors.StripeError ? err.message : "Unbekannter Fehler.";

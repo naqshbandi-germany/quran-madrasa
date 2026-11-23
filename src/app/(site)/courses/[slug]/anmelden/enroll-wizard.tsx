@@ -65,7 +65,7 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
   const isFree = Boolean(freeInvitationToken);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   // Eingebetteter Stripe-Checkout (Schritt 3), sobald die Checkout-Session angelegt ist
-  const [payment, setPayment] = useState<{ clientSecret: string; cancelUrl: string } | null>(null);
+  const [payment, setPayment] = useState<{ clientSecret: string; sessionId: string; cancelUrl: string } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [nextKey, setNextKey] = useState(1);
@@ -171,7 +171,7 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
       });
       const data = await response.json().catch(() => ({}));
       if (data.clientSecret) {
-        setPayment({ clientSecret: data.clientSecret, cancelUrl: data.cancelUrl });
+        setPayment({ clientSecret: data.clientSecret, sessionId: data.sessionId, cancelUrl: data.cancelUrl });
         setStep(3);
         return;
       }
@@ -192,6 +192,28 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
     } finally {
       setLoading(false);
     }
+  }
+
+  // Ausweg, wenn die eingebettete Zahlung klemmt: dieselbe Zahlung auf der Stripe-Seite.
+  async function openHostedPayment(sessionId: string) {
+    setFormError(null);
+    setLoading(true);
+    try {
+      const response = await fetch("/api/enrollments/checkout/hosted", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      setFormError(data.error ?? "Die Stripe-Seite konnte nicht geöffnet werden.");
+    } catch {
+      setFormError("Die Stripe-Seite konnte nicht geöffnet werden. Bitte versuche es noch einmal.");
+    }
+    setLoading(false);
   }
 
   const summaryRows = [
@@ -441,6 +463,18 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
             </div>
 
             <EmbeddedPayment clientSecret={payment.clientSecret} />
+
+            <p className="text-sm text-brand-900/75">
+              Probleme beim Bezahlen, z. B. werden deine Kartendaten nicht automatisch ausgefüllt?{" "}
+              <button
+                type="button"
+                onClick={() => openHostedPayment(payment.sessionId)}
+                disabled={loading}
+                className="font-medium text-azure-800 underline disabled:opacity-60"
+              >
+                {loading ? "Einen Moment …" : "Auf der Stripe-Seite bezahlen"}
+              </button>
+            </p>
 
             <div className="border-t border-brand-200 pt-5">
               {/* Neu laden statt nur zurueckzuspringen: Die neuen Teilnehmer sind schon gespeichert. */}
