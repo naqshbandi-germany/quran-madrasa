@@ -111,6 +111,7 @@ export default async function InviteStudentsPage({
             senderName={sender ? callName(sender) : (session.user.name ?? "")}
             guestSources={guestSources}
             initialEntries={toEntries(guestTrial?.guests ?? [])}
+            initialGuestSourceId={guestTrial?.id}
             trials={trialOptions}
             initialTrialId={preselectedTrial?.id}
             allowFree={isAdmin}
