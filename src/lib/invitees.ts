@@ -10,6 +10,11 @@ import { fullName } from "@/lib/names";
 // Probestunden, die laenger als so viele Tage zurueckliegen, gelten nicht mehr als offen.
 const TRIAL_PENDING_DAYS = 60;
 
+// Fuer Eingeladene ohne E-Mail-Adresse (Link weitergegeben): Abgleich ueber den Namen.
+export function normalizeName(name: string) {
+  return name.trim().replace(/\s+/g, " ").toLocaleLowerCase("de");
+}
+
 export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
@@ -112,7 +117,8 @@ export type PendingInvitee = {
 };
 
 // Eingeladene eines Kurses, die (noch) nicht angemeldet sind: offene Einladungen und Gaeste von
-// Probestunden der letzten Wochen. Gleiche E-Mail-Adresse = eine Person (eine Zeile).
+// Probestunden der letzten Wochen. Gleiche E-Mail-Adresse = eine Person (eine Zeile); ohne Adresse
+// (per Link eingeladen) zaehlt der gleiche Name.
 export async function pendingInvitees(courseId: string, timeZone: string): Promise<PendingInvitee[]> {
   const now = new Date();
   const [invitations, guests, enrolled] = await Promise.all([
@@ -147,25 +153,42 @@ export async function pendingInvitees(courseId: string, timeZone: string): Promi
   }
   function addName(acc: Acc, name: string | null) {
     const n = name?.trim();
-    if (n && !acc.names.includes(n)) acc.names.push(n);
+    if (n && !acc.names.some((known) => normalizeName(known) === normalizeName(n))) acc.names.push(n);
+  }
+
+  // Schluessel ohne E-Mail-Adresse: die einzige Adresse zu diesem Namen, sonst der Name selbst.
+  const emailsByName = new Map<string, Set<string>>();
+  for (const x of [...guests, ...invitations]) {
+    if (!x.email || !x.name?.trim()) continue;
+    const name = normalizeName(x.name);
+    emailsByName.set(name, (emailsByName.get(name) ?? new Set()).add(normalizeEmail(x.email)));
+  }
+  function emailFor(email: string | null, name: string | null) {
+    if (email) return normalizeEmail(email);
+    const known = name ? emailsByName.get(normalizeName(name)) : undefined;
+    return known?.size === 1 ? [...known][0] : null;
+  }
+  function keyWithoutEmail(name: string | null, fallback: string) {
+    const n = name ? normalizeName(name) : "";
+    return n ? `name-${n}` : fallback;
   }
 
   for (const g of guests) {
-    const email = g.email ? normalizeEmail(g.email) : null;
+    const email = emailFor(g.email, g.name);
     if (email && enrolled.has(email)) continue;
-    const acc = entry(email ?? `gast-${g.id}`, email);
+    const acc = entry(email ?? keyWithoutEmail(g.name, `gast-${g.id}`), email);
     addName(acc, g.name);
     const when = formatZonedDateTime(g.trialLesson.startsAt, timeZone);
     const line = `${g.trialLesson.startsAt < now ? "Probestunde war am" : "Probestunde am"} ${when} Uhr`;
     if (!acc.status.includes(line)) acc.status.push(line);
   }
   for (const i of invitations) {
-    const email = i.email ? normalizeEmail(i.email) : null;
+    const email = emailFor(i.email, i.name);
     if (email && enrolled.has(email)) continue;
-    const acc = entry(email ?? `einladung-${i.id}`, email);
+    const acc = entry(email ?? keyWithoutEmail(i.name, `einladung-${i.id}`), email);
     addName(acc, i.name);
     acc.status.push(
-      `${email ? "Einladung" : "Einladungslink"} zur Anmeldung vom ${dateFormat.format(i.createdAt)} (gültig bis ${dateFormat.format(i.expiresAt)})`,
+      `${i.email ? "Einladung" : "Einladungslink"} zur Anmeldung vom ${dateFormat.format(i.createdAt)} (gültig bis ${dateFormat.format(i.expiresAt)})`,
     );
   }
 

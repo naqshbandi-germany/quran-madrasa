@@ -2,6 +2,7 @@ import { getAppUrl } from "@/lib/app-url";
 import { createClassroomMeeting } from "@/lib/classroom";
 import { emailRenderer, type EmailContentOptions } from "@/lib/email-templates";
 import { buildCalendar } from "@/lib/ics";
+import { normalizeName } from "@/lib/invitees";
 import { prisma } from "@/lib/prisma";
 import { formatReminderDate } from "@/lib/reminder-email";
 import { deliverEmail, EMAIL_FROM } from "@/lib/resend";
@@ -102,12 +103,14 @@ export async function addTrialGuests(params: {
   // Wird dabei (neu) eine Hoerprobe erbeten, wird sie beim bestehenden Eintrag ergaenzt.
   const existing = await prisma.trialGuest.findMany({
     where: { trialLessonId: trial.id },
-    select: { id: true, email: true, sampleRequest: true },
+    select: { id: true, name: true, email: true, sampleRequest: true },
   });
   const byEmail = new Map(existing.flatMap((g) => (g.email ? [[g.email.trim().toLowerCase(), g] as const] : [])));
+  // Ohne Adresse (per Link eingeladen) gilt derselbe Name als dieselbe Person.
+  const byName = new Map(existing.flatMap((g) => (g.email ? [] : [[normalizeName(g.name), g] as const])));
   const guests: PreparedGuest[] = [];
   for (const g of params.guests) {
-    const found = g.email ? byEmail.get(g.email.trim().toLowerCase()) : undefined;
+    const found = g.email ? byEmail.get(g.email.trim().toLowerCase()) : byName.get(normalizeName(g.name));
     if (found) {
       if (g.sampleRequest && g.sampleRequest !== found.sampleRequest) {
         await prisma.trialGuest.update({ where: { id: found.id }, data: { sampleRequest: g.sampleRequest } });
