@@ -9,9 +9,12 @@ import { NOTIFICATION_TYPE_INFO, type NotificationTypeKey } from "@/lib/notifica
 export function NotificationSettingsForm({
   types,
   email,
+  allCourses,
 }: {
   types: NotificationTypeKey[];
   email: Record<string, boolean>;
+  // Nur fuer Admins (sonst null): E-Mails auch fuer Kurse anderer Lehrkraefte
+  allCourses: boolean | null;
 }) {
   const [state, formAction, pending] = useActionState<PreferencesResult, FormData>(
     saveNotificationPreferences,
@@ -20,6 +23,23 @@ export function NotificationSettingsForm({
 
   return (
     <form action={formAction} className="space-y-4">
+      {allCourses !== null && (
+        <label className="flex items-start gap-3 border border-brand-200 bg-white p-4">
+          <input
+            name="notifyAllCourses"
+            type="checkbox"
+            defaultChecked={allCourses}
+            className="mt-0.5 h-5 w-5 shrink-0 accent-brand-600"
+          />
+          <span className="min-w-0">
+            <span className="block font-medium text-brand-900">E-Mails auch für Kurse anderer Lehrkräfte</span>
+            <span className="block text-sm text-brand-600">
+              Aus: Ereignisse fremder Kurse erscheinen nur hier in der Liste. An: Es gelten die Einstellungen unten
+              für alle Kurse.
+            </span>
+          </span>
+        </label>
+      )}
       <fieldset className="border border-brand-200 bg-white">
         <legend className="sr-only">E-Mail pro Ereignis</legend>
         <ul className="divide-y divide-brand-200">

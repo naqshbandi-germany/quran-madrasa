@@ -27,18 +27,25 @@ type RecordEventInput = {
   data: EventData;
 };
 
-// Wer ein Ereignis bekommt: Kurs-Ereignisse die Lehrkraft des Kurses, Zahlungsprobleme die
-// Admins. Sollen Admins spaeter weitere Ereignisse bekommen, nur hier ergaenzen.
+// Wer ein Ereignis bekommt: Admins alle, die Lehrkraft die Ereignisse ihres Kurses.
+// wantsEmail = false: nur im Feed, unabhaengig von den Einstellungen pro Ereignistyp (Admins bei
+// Kursen anderer Lehrkraefte, solange sie das nicht einschalten).
 async function recipientsFor(type: NotificationType, courseId: string | null | undefined) {
-  if (NOTIFICATION_TYPE_INFO[type].audience === "admins") {
-    return prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true, name: true, muslimName: true, email: true, role: true } });
-  }
-  if (!courseId) return [];
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    select: { teacher: { select: { id: true, name: true, muslimName: true, email: true, role: true } } },
-  });
-  return course ? [course.teacher] : [];
+  const select = { id: true, name: true, muslimName: true, email: true, role: true, notifyAllCourses: true } as const;
+  const adminsOnly = NOTIFICATION_TYPE_INFO[type].audience === "admins";
+  const [admins, course] = await Promise.all([
+    prisma.user.findMany({ where: { role: "ADMIN" }, select }),
+    !adminsOnly && courseId
+      ? prisma.course.findUnique({ where: { id: courseId }, select: { teacher: { select } } })
+      : null,
+  ]);
+  const teacher = course?.teacher;
+  return [
+    ...(teacher ? [{ ...teacher, wantsEmail: true }] : []),
+    ...admins
+      .filter((admin) => admin.id !== teacher?.id)
+      .map((admin) => ({ ...admin, wantsEmail: adminsOnly || admin.notifyAllCourses })),
+  ];
 }
 
 export async function emailWanted(userId: string, type: NotificationType) {
@@ -81,7 +88,7 @@ export async function recordEvent(input: RecordEventInput) {
     const href = eventHref(input.type, input.courseId ?? null, input.data, people.length === 1 ? people[0].id : null);
 
     for (const recipient of recipients) {
-      if (!(await emailWanted(recipient.id, input.type))) continue;
+      if (!recipient.wantsEmail || !(await emailWanted(recipient.id, input.type))) continue;
       const base = notificationsBasePath(recipient.role);
       try {
         await deliverEmail({
