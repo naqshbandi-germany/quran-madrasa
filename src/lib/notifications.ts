@@ -6,6 +6,7 @@ import {
   NOTIFICATION_TYPE_INFO,
   describeEvent,
   eventHref,
+  eventParticipants,
   type EventData,
 } from "@/lib/notification-types";
 import { callName, fullName } from "@/lib/names";
@@ -76,7 +77,8 @@ export async function recordEvent(input: RecordEventInput) {
 
     const { title, detail } = describeEvent(input.type, input.data);
     const appUrl = getAppUrl();
-    const href = eventHref(input.type, input.courseId ?? null, input.data);
+    const people = eventParticipants(input.participantId ?? null, input.data);
+    const href = eventHref(input.type, input.courseId ?? null, input.data, people.length === 1 ? people[0].id : null);
 
     for (const recipient of recipients) {
       if (!(await emailWanted(recipient.id, input.type))) continue;
@@ -103,6 +105,53 @@ export async function recordEvent(input: RecordEventInput) {
     }
   } catch (err) {
     console.error(`Ereignis ${input.type} (${input.dedupeKey}) konnte nicht gespeichert werden:`, err);
+  }
+}
+
+// Einschreibungen als Ereignis "Neuer Schüler angemeldet" melden (kostenlose Einladung usw.).
+export async function recordEnrollments(courseId: string, enrollmentIds: string[]) {
+  try {
+    const enrollments = await prisma.enrollment.findMany({
+      where: { id: { in: enrollmentIds } },
+      orderBy: { createdAt: "asc" },
+      select: {
+        participantId: true,
+        participant: { select: { name: true, muslimName: true } },
+        user: { select: { name: true } },
+        course: { select: { title: true } },
+      },
+    });
+    if (enrollments.length === 0) return;
+    await recordEvent({
+      type: "ENROLLMENT_CREATED",
+      dedupeKey: `enrollment:${[...enrollmentIds].sort().join(",")}`,
+      courseId,
+      participantId: enrollments.length === 1 ? enrollments[0].participantId : null,
+      data: {
+        course: enrollments[0].course.title,
+        owner: enrollments[0].user.name,
+        participants: enrollments.map((e) => fullName(e.participant)),
+        participantIds: enrollments.map((e) => e.participantId),
+      },
+    });
+  } catch (err) {
+    console.error("Ereignis zur Anmeldung konnte nicht gespeichert werden:", err);
+  }
+}
+
+// Bisherige Ereignisse eines Kurses fuer die neue Lehrkraft sichtbar machen (Kurs uebertragen).
+export async function copyCourseNotifications(courseId: string, teacherId: string) {
+  try {
+    const events = await prisma.activityEvent.findMany({
+      where: { courseId, type: { not: "PAYMENT_FAILED" } },
+      select: { id: true, createdAt: true },
+    });
+    await prisma.notification.createMany({
+      data: events.map((e) => ({ eventId: e.id, userId: teacherId, createdAt: e.createdAt, readAt: new Date() })),
+      skipDuplicates: true,
+    });
+  } catch (err) {
+    console.error(`Ereignisse des Kurses ${courseId} konnten nicht übertragen werden:`, err);
   }
 }
 

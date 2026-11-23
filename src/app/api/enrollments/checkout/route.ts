@@ -4,6 +4,7 @@ import Stripe from "stripe";
 
 import { findValidInvitation } from "@/lib/invitations";
 import { sendEnrollmentConfirmation } from "@/lib/notification-email";
+import { recordEnrollments } from "@/lib/notifications";
 import { adoptTrialSamplesSafely } from "@/lib/trial-samples";
 
 import { auth } from "@/auth";
@@ -198,6 +199,7 @@ export async function POST(request: Request) {
     revalidatePath("/courses/[slug]", "page");
     revalidatePath("/");
     await adoptTrialSamplesSafely(course.id, participantIds, freeInvitation.id);
+    await recordEnrollments(course.id, enrollments.map((e) => e.id));
     try {
       await sendEnrollmentConfirmation(course.id, enrollments.map((e) => e.id));
     } catch (err) {

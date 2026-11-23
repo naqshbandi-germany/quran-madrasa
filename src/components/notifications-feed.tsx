@@ -5,7 +5,9 @@ import {
   NOTIFICATION_TYPE_INFO,
   describeEvent,
   eventHref,
+  eventParticipants,
   isNotificationType,
+  studentHref,
   typesForRole,
   type EventData,
 } from "@/lib/notification-types";
@@ -40,6 +42,19 @@ export async function NotificationsFeed({
     }),
     prisma.notification.count({ where: { userId, readAt: null } }),
   ]);
+
+  // Schuelerprofile nur verlinken, wenn sie fuer diese Person noch erreichbar sind.
+  const participantIds = notifications.flatMap((n) =>
+    eventParticipants(n.event.participantId, (n.event.data ?? {}) as EventData).map((p) => p.id),
+  );
+  const reachable = new Set(
+    (
+      await prisma.enrollment.findMany({
+        where: { participantId: { in: participantIds }, ...(role === "ADMIN" ? {} : { course: { teacherId: userId } }) },
+        select: { participantId: true },
+      })
+    ).map((e) => e.participantId),
+  );
 
   const filterLink = (value?: string) => {
     const active = value === type;
@@ -87,7 +102,8 @@ export async function NotificationsFeed({
             const eventType = n.event.type;
             const data = (n.event.data ?? {}) as EventData;
             const { title, detail } = describeEvent(eventType, data);
-            const href = eventHref(eventType, n.event.courseId, data);
+            const people = eventParticipants(n.event.participantId, data).filter((p) => reachable.has(p.id));
+            const href = eventHref(eventType, n.event.courseId, data, people.length === 1 ? people[0].id : null);
             const unread = !n.readAt;
             return (
               <li key={n.id} className={`flex gap-3 p-4 ${unread ? "bg-azure-50/60" : ""}`}>
@@ -101,6 +117,15 @@ export async function NotificationsFeed({
                     {title}
                   </p>
                   <p className="mt-0.5 text-sm text-brand-700">{detail}</p>
+                  {people.length > 0 && (
+                    <p className="mt-1 flex flex-wrap gap-x-3 text-sm">
+                      {people.map((p) => (
+                        <Link key={p.id} href={studentHref(p.id)} className="text-brand-700 underline">
+                          Schülerprofil: {p.name}
+                        </Link>
+                      ))}
+                    </p>
+                  )}
                   <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-brand-600">
                     <span>{formatGermanDateTime(n.createdAt)} Uhr</span>
                     <span>{NOTIFICATION_TYPE_INFO[eventType].label}</span>

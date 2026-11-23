@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { fullName } from "@/lib/names";
+import { copyCourseNotifications, recordEvent } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { deleteSampleAudio } from "@/lib/reading-samples";
 import { getStripe } from "@/lib/stripe";
@@ -84,6 +86,17 @@ export async function deleteAccount(_prev: DeleteAccountResult, formData: FormDa
     return { message: "Ein Abo konnte bei Stripe nicht gekündigt werden. Es wurde nichts gelöscht." };
   }
 
+  // Vor dem Loeschen merken, wer aus welchem Kurs faellt (Ereignis fuer die Lehrkraft).
+  const lost = await prisma.enrollment.findMany({
+    where: { OR: [{ userId: user.id }, { participant: { ownerId: user.id } }] },
+    select: {
+      id: true,
+      courseId: true,
+      course: { select: { title: true } },
+      participant: { select: { name: true, muslimName: true } },
+    },
+  });
+
   for (const participant of user.participants) {
     for (const sample of participant.readingSamples) await deleteSampleAudio(sample);
   }
@@ -102,6 +115,16 @@ export async function deleteAccount(_prev: DeleteAccountResult, formData: FormDa
     // Cascade: Teilnehmer (mit Auswertungen und Leseproben) und Passwort-Links.
     prisma.user.delete({ where: { id: user.id } }),
   ]);
+
+  for (const t of courseTargets) await copyCourseNotifications(t.courseId, t.teacherId);
+  for (const e of lost) {
+    await recordEvent({
+      type: "ENROLLMENT_REMOVED",
+      dedupeKey: `enrollment-removed:${e.id}`,
+      courseId: e.courseId,
+      data: { course: e.course.title, participants: [fullName(e.participant)] },
+    });
+  }
 
   // Freie Plaetze und Lehrer-Angaben aendern sich. Danach zur Kontenliste: Die Seite des
   // geloeschten Kontos gibt es nicht mehr. Abos aus einem frueheren Stripe-Konto (dort von Hand

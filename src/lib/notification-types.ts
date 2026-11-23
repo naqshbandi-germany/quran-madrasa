@@ -6,6 +6,7 @@ export const NOTIFICATION_TYPES = [
   "ENROLLMENT_CREATED",
   "SUBSCRIPTION_CANCELED",
   "SUBSCRIPTION_ENDED",
+  "ENROLLMENT_REMOVED",
   "READING_SAMPLE_UPLOADED",
   "WAITLIST_JOINED",
   "PAYMENT_FAILED",
@@ -22,7 +23,7 @@ export const NOTIFICATION_TYPE_INFO: Record<
 > = {
   ENROLLMENT_CREATED: {
     label: "Neuer Schüler angemeldet",
-    description: "Nach erfolgreicher Zahlung ist ein Teilnehmer neu im Kurs eingeschrieben.",
+    description: "Ein Teilnehmer ist neu im Kurs eingeschrieben (nach Zahlung oder mit kostenloser Einladung).",
     audience: "course",
     emailByDefault: true,
   },
@@ -38,9 +39,15 @@ export const NOTIFICATION_TYPE_INFO: Record<
     audience: "course",
     emailByDefault: false,
   },
+  ENROLLMENT_REMOVED: {
+    label: "Teilnehmer ausgetragen",
+    description: "Ein Admin hat einen Teilnehmer ausgetragen oder sein Konto gelöscht.",
+    audience: "course",
+    emailByDefault: false,
+  },
   READING_SAMPLE_UPLOADED: {
-    label: "Leseprobe hochgeladen",
-    description: "Ein Teilnehmer hat eine Leseprobe aufgenommen oder hochgeladen.",
+    label: "Hörprobe hochgeladen",
+    description: "Ein Teilnehmer, Probestunden-Gast oder Eingeladener hat eine Hörprobe aufgenommen oder hochgeladen.",
     audience: "course",
     emailByDefault: true,
   },
@@ -72,12 +79,18 @@ export function isNotificationType(value: string): value is NotificationTypeKey 
 export type EventData = {
   course?: string;
   participants?: string[];
+  // IDs passend zu "participants" (gleiche Reihenfolge), fuer Links zum Schuelerprofil
+  participantIds?: string[];
+  // Konto-ID (Link ins Admin-Konto)
+  ownerId?: string;
   owner?: string;
   ownerEmail?: string;
   periodEnd?: string;
   note?: string;
   // Hoerprobe eines Probestunden-Gastes (ohne Konto)
   trial?: boolean;
+  // Beginn der Probestunde (ISO), damit der Link zu "Termine" auch danach stimmt
+  trialStartsAt?: string;
   // Hoerprobe zu einer Kurseinladung (ohne Konto, noch nicht angemeldet)
   invitation?: boolean;
 };
@@ -123,19 +136,24 @@ export function describeEvent(type: NotificationTypeKey, data: EventData): { tit
           "Die Teilnehmer sind",
         )} nicht mehr eingeschrieben.`,
       };
+    case "ENROLLMENT_REMOVED":
+      return {
+        title: `Ausgetragen: ${data.course ?? "Kurs"}`,
+        detail: `${names(data)}${account(data)} ${plural(data, "ist", "sind")} nicht mehr im Kurs ${course} eingeschrieben.`,
+      };
     case "READING_SAMPLE_UPLOADED":
       return {
         title: data.trial
           ? `Neue Hörprobe zur Probestunde: ${data.course ?? "Kurs"}`
           : data.invitation
             ? `Neue Hörprobe zur Einladung: ${data.course ?? "Kurs"}`
-            : `Neue Leseprobe: ${data.course ?? "Kurs"}`,
+            : `Neue Hörprobe: ${data.course ?? "Kurs"}`,
         detail: `${names(data)} hat ${
           data.trial
             ? `für die Probestunde im Kurs ${course} eine Hörprobe`
             : data.invitation
               ? `zur Einladung in den Kurs ${course} eine Hörprobe`
-              : `im Kurs ${course} eine Leseprobe`
+              : `im Kurs ${course} eine Hörprobe`
         } hochgeladen.${
           data.note ? ` Hinweis: „${data.note}“` : ""
         }`,
@@ -156,10 +174,34 @@ export function describeEvent(type: NotificationTypeKey, data: EventData): { tit
 }
 
 // Ziel eines Ereignisses im Lehrer- bzw. Admin-Bereich.
-export function eventHref(type: NotificationTypeKey, courseId: string | null, data?: EventData): string | null {
-  if (type === "PAYMENT_FAILED") return "/admin/konten";
-  if (data?.trial) return "/teacher/termine";
+export function eventHref(
+  type: NotificationTypeKey,
+  courseId: string | null,
+  data: EventData = {},
+  participantId: string | null = null,
+): string | null {
+  if (type === "PAYMENT_FAILED") return data.ownerId ? `/admin/konten/${data.ownerId}` : "/admin/konten";
+  if (data.trial) {
+    const past = data.trialStartsAt ? new Date(data.trialStartsAt).getTime() < Date.now() : false;
+    return `/teacher/termine${past ? "?zeit=vergangen" : ""}#probestunden`;
+  }
   if (!courseId) return null;
-  if (type === "READING_SAMPLE_UPLOADED") return `/teacher/courses/${courseId}/leseproben`;
+  if (type === "READING_SAMPLE_UPLOADED") {
+    return participantId ? `${studentHref(participantId)}#hoerproben` : `/teacher/courses/${courseId}/leseproben`;
+  }
+  if (type === "WAITLIST_JOINED") return `/teacher/courses/${courseId}#warteliste`;
+  if (participantId && (type === "ENROLLMENT_CREATED" || type === "SUBSCRIPTION_CANCELED")) {
+    return studentHref(participantId);
+  }
   return `/teacher/courses/${courseId}`;
+}
+
+export function studentHref(participantId: string) {
+  return `/teacher/schueler/${participantId}`;
+}
+
+// Teilnehmer eines Ereignisses (einer in participantId, mehrere in data.participantIds).
+export function eventParticipants(participantId: string | null, data: EventData) {
+  const ids = data.participantIds ?? (participantId ? [participantId] : []);
+  return ids.map((id, i) => ({ id, name: data.participants?.[i] ?? "Teilnehmer" }));
 }

@@ -23,7 +23,7 @@ export async function NotificationsPage({ searchParams }: { searchParams: Promis
           <p className="mt-1 text-sm text-brand-600">
             {session.user.role === "ADMIN"
               ? "Ereignisse aus deinen Kursen und fehlgeschlagene Zahlungen."
-              : "Was in deinen Kursen passiert: neue Anmeldungen, Kündigungen, Leseproben und Einträge auf der Warteliste."}
+              : "Was in deinen Kursen passiert: neue Anmeldungen, Kündigungen, Hörproben und Einträge auf der Warteliste."}
           </p>
         </div>
         <Link href={`${basePath}/einstellungen`} className="text-sm font-medium text-brand-700 underline">
