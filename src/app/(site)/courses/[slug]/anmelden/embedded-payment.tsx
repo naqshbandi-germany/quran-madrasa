@@ -9,7 +9,8 @@ const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 // Zahlungsformular von Stripe direkt auf der Anmeldeseite (eingebetteter Checkout). Nach der
 // Zahlung leitet Stripe auf die return_url der Checkout-Session weiter (Dashboard).
-export function EmbeddedPayment({ clientSecret }: { clientSecret: string }) {
+// children: Hinweise ueber dem Formular, im selben Rahmen.
+export function EmbeddedPayment({ clientSecret, children }: { clientSecret: string; children?: React.ReactNode }) {
   if (!stripePromise) {
     return (
       <p className="border border-red-300 bg-red-50 p-4 text-sm text-red-900">
@@ -18,10 +19,13 @@ export function EmbeddedPayment({ clientSecret }: { clientSecret: string }) {
     );
   }
   return (
-    <div id="stripe-checkout" className="min-h-[420px] border border-gold-400/40 bg-white py-4">
-      <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
-        <EmbeddedCheckout />
-      </EmbeddedCheckoutProvider>
+    <div className="border border-gold-400/40 bg-white">
+      {children}
+      <div id="stripe-checkout" className="min-h-[420px] py-4">
+        <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
+          <EmbeddedCheckout />
+        </EmbeddedCheckoutProvider>
+      </div>
     </div>
   );
 }
