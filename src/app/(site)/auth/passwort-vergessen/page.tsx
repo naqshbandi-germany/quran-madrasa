@@ -54,6 +54,13 @@ export default function ForgotPasswordPage() {
             Zurücksetzen geschickt. Er ist 60 Minuten gültig. Schau bei Bedarf auch im
             Spam-Ordner nach.
           </p>
+          <p className="text-sm text-brand-900/80">
+            Keine Mail bekommen? Dann gibt es zu dieser Adresse vielleicht noch kein Konto.{" "}
+            <Link href="/auth/signup" className="font-medium text-azure-800 underline">
+              Konto anlegen
+            </Link>
+            . Hast du eine Einladung zu einem Kurs, öffne stattdessen deren Link noch einmal.
+          </p>
           <Link href="/auth/signin" className="inline-block text-sm font-medium text-azure-800 underline">
             Zurück zur Anmeldung
           </Link>
