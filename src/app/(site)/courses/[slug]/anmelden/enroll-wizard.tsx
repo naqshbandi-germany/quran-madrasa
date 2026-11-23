@@ -462,19 +462,25 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
               </p>
             </div>
 
-            <EmbeddedPayment clientSecret={payment.clientSecret} />
-
-            <p className="text-sm text-brand-900/75">
-              Probleme beim Bezahlen, z. B. werden deine Kartendaten nicht automatisch ausgefüllt?{" "}
-              <button
-                type="button"
-                onClick={() => openHostedPayment(payment.sessionId)}
-                disabled={loading}
-                className="font-medium text-azure-800 underline disabled:opacity-60"
-              >
-                {loading ? "Einen Moment …" : "Auf der Stripe-Seite bezahlen"}
-              </button>
-            </p>
+            <EmbeddedPayment clientSecret={payment.clientSecret}>
+              <div className="space-y-3 border-b border-gold-400/40 bg-brand-50 p-4 text-sm text-brand-900">
+                <p>
+                  Wähle unten eine Zahlungsart. Die E-Mail-Adresse <strong>{account.email}</strong> ist schon
+                  eingetragen, dort musst du nichts ausfüllen.
+                </p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <span>Klappt etwas nicht, z. B. das automatische Ausfüllen?</span>
+                  <button
+                    type="button"
+                    onClick={() => openHostedPayment(payment.sessionId)}
+                    disabled={loading}
+                    className="border border-azure-800 bg-white px-4 py-2 font-medium text-azure-800 transition hover:bg-azure-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700 disabled:opacity-60"
+                  >
+                    {loading ? "Einen Moment …" : "Auf der Stripe-Seite bezahlen"}
+                  </button>
+                </div>
+              </div>
+            </EmbeddedPayment>
 
             <div className="border-t border-brand-200 pt-5">
               {/* Neu laden statt nur zurueckzuspringen: Die neuen Teilnehmer sind schon gespeichert. */}
