@@ -290,8 +290,11 @@ export async function POST(request: Request) {
       ...(course.familyPricing ? { family: "1" } : {}),
     };
 
+    // Eingebetteter Checkout: Stripe zeigt das Zahlungsformular auf unserer Anmeldeseite
+    // (siehe enroll-wizard.tsx). Nach der Zahlung leitet Stripe auf return_url weiter.
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
+      ui_mode: "embedded_page",
       customer: stripeCustomerId,
       // Optional: einmalige Anmeldegebuehr pro Teilnehmer, faellig mit der ersten Rechnung.
       line_items: [
@@ -300,13 +303,14 @@ export async function POST(request: Request) {
           ? [{ price: course.signupFeePriceId, quantity: participantIds.length }]
           : []),
       ],
-      success_url: `${appUrl}/dashboard?checkout=success`,
-      cancel_url: cancelUrl,
+      return_url: `${appUrl}/dashboard?checkout=success`,
       metadata,
       subscription_data: { metadata },
     });
 
-    return NextResponse.json({ url: checkoutSession.url });
+    // cancelUrl: "Zurück" im Wizard laedt die Anmeldeseite neu (die eben angelegten Teilnehmer
+    // sind dann gespeichert und werden nicht doppelt angelegt).
+    return NextResponse.json({ clientSecret: checkoutSession.client_secret, cancelUrl });
   } catch (err) {
     console.error("Stripe checkout error:", err);
     const message = err instanceof Stripe.errors.StripeError ? err.message : "Unbekannter Fehler.";
