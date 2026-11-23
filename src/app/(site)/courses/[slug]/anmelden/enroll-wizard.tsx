@@ -217,6 +217,10 @@ export function EnrollWizard({ course, account, participants, freePlaces, freeIn
         )}
       </p>
 
+      <p className="mt-1 text-sm text-brand-900/75">
+        Angemeldet als {account.name} ({account.email})
+      </p>
+
       <ol className="mt-6 flex gap-3 text-sm" aria-label="Fortschritt">
         {[
           { n: 1, label: "Teilnehmer" },

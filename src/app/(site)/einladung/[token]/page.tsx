@@ -3,7 +3,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { enrollPathForInvitation, findValidInvitation, invitationPath } from "@/lib/invitations";
+import { enrollPathForInvitation, findValidInvitation, invitationPath, shortenEmail } from "@/lib/invitations";
+import { normalizeEmail } from "@/lib/invitees";
+import { prisma } from "@/lib/prisma";
+import { SwitchAccountButton } from "./switch-account-button";
 
 // Persoenlicher Einladungslink zu einem Kurs. Nicht zwischenspeichern und nicht indexieren.
 export const dynamic = "force-dynamic";
@@ -28,10 +31,47 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
     );
   }
 
-  // Angemeldet: direkt weiter zur Kursanmeldung mit dieser Einladung.
+  // Angemeldet: direkt weiter zur Kursanmeldung mit dieser Einladung. Ging die Einladung an eine
+  // andere Adresse als die des Kontos, vorher nachfragen (sonst wird leicht das falsche Konto,
+  // z. B. ein Admin, eingeschrieben).
   const session = await auth();
   const enrollPath = enrollPathForInvitation(invitation.course, token);
-  if (session) redirect(enrollPath);
+  if (session) {
+    const account = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { name: true, email: true },
+    });
+    const matches =
+      !invitation.email || !account || normalizeEmail(invitation.email) === normalizeEmail(account.email);
+    if (matches) redirect(enrollPath);
+
+    return (
+      <div className="mx-auto max-w-md space-y-5">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-azure-700">Einladung</p>
+          <h1 className="mt-1 text-3xl font-semibold leading-tight text-azure-800">Anderes Konto angemeldet</h1>
+        </div>
+        <p className="text-brand-900/85">
+          Du bist als <strong className="text-brand-900">{account.name}</strong> ({account.email}) angemeldet. Die
+          Einladung zum Kurs <strong className="text-brand-900">{invitation.course.title}</strong> ging an{" "}
+          <strong className="text-brand-900">{shortenEmail(invitation.email ?? "")}</strong>.
+        </p>
+        <p className="text-brand-900/85">
+          Möchtest du mit dem eingeladenen Konto teilnehmen? Dann wechsle das Konto. Gehört dieses Konto dir und soll
+          die Anmeldung darüber laufen (z. B. für dein Kind), mach einfach weiter.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <SwitchAccountButton callbackUrl={invitationPath(token)} />
+          <Link
+            href={enrollPath}
+            className="border border-brand-300 bg-white px-5 py-2.5 font-medium text-brand-900 hover:bg-brand-50"
+          >
+            Trotzdem mit diesem Konto weiter
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const back = encodeURIComponent(invitationPath(token));
   return (

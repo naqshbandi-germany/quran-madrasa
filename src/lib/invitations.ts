@@ -17,6 +17,12 @@ export function invitationPath(token: string) {
   return `/einladung/${token}`;
 }
 
+// Gekuerzte Adresse fuer Hinweise ("f…@gmail.com"), falls ein Link weitergeleitet wurde.
+export function shortenEmail(email: string) {
+  const at = email.lastIndexOf("@");
+  return at > 0 ? `${email[0]}…${email.slice(at)}` : "eine andere Adresse";
+}
+
 export async function createStudentInvitation(params: {
   courseId: string;
   invitedById: string;
