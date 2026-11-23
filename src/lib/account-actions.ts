@@ -50,7 +50,7 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
   });
 
   revalidatePath("/konto");
-  return { ok: true, message: "Dein Name wurde gespeichert. In der Kopfzeile erscheint er nach der nächsten Anmeldung." };
+  return { ok: true, message: "Dein Name wurde gespeichert. In der Kopfzeile erscheint er nach dem Neuladen der Seite." };
 }
 
 // --- Passwort -------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { useViewAs } from "@/components/view-as-banner";
+import { fullName, shortName } from "@/lib/names";
 
 type Role = "STUDENT" | "TEACHER" | "ADMIN";
 
@@ -16,6 +17,9 @@ const ROLE_LABELS: Record<Role, string> = {
   TEACHER: "Lehrer",
   ADMIN: "Administrator",
 };
+
+// Zusatz hinter dem Rufnamen in der Kopfzeile, z. B. "Ibrahim (Admin)".
+const ROLE_SUFFIX: Record<Role, string | null> = { STUDENT: null, TEACHER: "Lehrer", ADMIN: "Admin" };
 
 function menuLinksFor(role: Role): MenuLink[] {
   const links: MenuLink[] = [
@@ -109,14 +113,17 @@ export function UserMenu({ inline = false }: { inline?: boolean }) {
   }
 
   // Im Entwicklermodus zeigt das Menue die angesehene Person (die Sitzung bleibt die des Admins).
-  const { name, email, image, role } = viewAs ? { ...viewAs, image: null } : session.user;
+  const { name, muslimName, email, image, role } = viewAs ? { ...viewAs, image: null } : session.user;
   const links = menuLinksFor(role);
-  const displayName = name || email || "Konto";
+  const displayName = name ? fullName({ name, muslimName }) : email || "Konto";
+  const calledName = name ? shortName({ name, muslimName }) : displayName;
+  const suffix = ROLE_SUFFIX[role];
+  const headerName = suffix && calledName !== suffix ? `${calledName} (${suffix})` : calledName;
 
   const content = (
     <>
       <div className="flex items-center gap-3 px-3 py-3">
-        <Avatar name={displayName} image={image} size="h-11 w-11" />
+        <Avatar name={calledName} image={image} size="h-11 w-11" />
         <div className="min-w-0">
           <p className="truncate font-semibold text-brand-900">{displayName}</p>
           <p className="truncate text-xs text-brand-900/70">{email}</p>
@@ -183,9 +190,9 @@ export function UserMenu({ inline = false }: { inline?: boolean }) {
         }}
         className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 text-brand-900 transition hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure-700"
       >
-        <Avatar name={displayName} image={image} />
-        <span className="hidden max-w-[9rem] truncate text-sm font-medium xl:inline">{displayName}</span>
-        <span className="sr-only xl:hidden">Benutzermenü, {displayName}</span>
+        <Avatar name={calledName} image={image} />
+        <span className="hidden max-w-[12rem] truncate text-sm font-medium xl:inline">{headerName}</span>
+        <span className="sr-only xl:hidden">Benutzermenü, {headerName}</span>
         <svg viewBox="0 0 12 12" className={`h-3 w-3 transition ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
           <path d="M2.5 4.5 6 8l3.5-3.5" />
         </svg>

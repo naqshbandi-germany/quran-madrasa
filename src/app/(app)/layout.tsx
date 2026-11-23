@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { EMAIL_TEMPLATES, TEACHER_EMAIL_KEYS } from "@/lib/email-defaults";
+import { shortName } from "@/lib/names";
 import { countUnreadNotifications } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { SITE_NAME } from "@/lib/site";
@@ -81,7 +82,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         siteName={SITE_NAME}
         areaLabel={isAdmin ? "Admin-Bereich" : "Lehrer-Bereich"}
         groups={navGroups}
-        userName={session.user.name ?? ""}
+        userName={session.user.name ? shortName({ name: session.user.name, muslimName: session.user.muslimName }) : ""}
         userRole={isAdmin ? "Administrator" : "Lehrkraft"}
       />
 

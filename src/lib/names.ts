@@ -8,6 +8,17 @@ export function callName(person: Named) {
   return person.muslimName?.trim() || person.name;
 }
 
+const TITLES = new Set(["ustadh", "ustadha", "ustad", "sheikh", "shaykh", "scheich", "imam", "hafiz", "dr."]);
+
+// Kurzform fuer die Kopfzeile: muslimischer Name, sonst der Vorname.
+export function shortName(person: Named) {
+  const muslim = person.muslimName?.trim();
+  if (muslim) return muslim;
+  const [first, second] = person.name.trim().split(/\s+/);
+  // "Ustadh Muhammad" statt nur "Ustadh"
+  return second && TITLES.has(first.toLowerCase()) ? `${first} ${second}` : first || person.name;
+}
+
 // Vollstaendige Anzeige fuer Lehrkraefte und Admins: "Abdullah (Thomas Müller)".
 export function fullName(person: Named) {
   const muslim = person.muslimName?.trim();
