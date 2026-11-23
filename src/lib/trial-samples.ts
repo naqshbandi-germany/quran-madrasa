@@ -55,7 +55,7 @@ const SAMPLE_SELECT = {
   orderBy: { createdAt: "desc" },
   select: { id: true, createdAt: true, durationSec: true, note: true, listenedAt: true },
 } as const;
-const COURSE_SELECT = { select: { id: true, title: true, teacherId: true, teacher: { select: { name: true } } } } as const;
+const COURSE_SELECT = { select: { id: true, title: true, teacherId: true, teacher: { select: { name: true, muslimName: true } } } } as const;
 
 export type SampleSource = {
   kind: "trial" | "invitation";
@@ -65,7 +65,7 @@ export type SampleSource = {
   sampleRequest: string;
   // Beginn der Probestunde (nur bei kind "trial")
   startsAt: Date | null;
-  course: { id: string; title: string; teacherId: string; teacher: { name: string } };
+  course: { id: string; title: string; teacherId: string; teacher: { name: string; muslimName: string | null } };
   samples: { id: string; createdAt: Date; durationSec: number | null; note: string | null; listenedAt: Date | null }[];
 };
 

@@ -8,4 +8,4 @@ export const VIEW_AS_INFO_COOKIE = "ansicht-als-info";
 export const VIEW_AS_MAX_AGE = 60 * 60 * 4;
 export const VIEW_AS_EXIT_PATH = "/api/ansicht/beenden";
 
-export type ViewAsInfo = { name: string; email: string; role: "STUDENT" | "TEACHER" };
+export type ViewAsInfo = { name: string; muslimName?: string | null; email: string; role: "STUDENT" | "TEACHER" };

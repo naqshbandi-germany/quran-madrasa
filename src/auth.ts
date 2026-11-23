@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { VIEW_AS_COOKIE } from "@/lib/view-as";
 
 const baseJwt = authConfig.callbacks!.jwt!;
+const baseSession = authConfig.callbacks!.session!;
 
 const nextAuth = NextAuth({
   ...authConfig,
@@ -95,6 +96,22 @@ const nextAuth = NextAuth({
       }
       return baseJwt(params);
     },
+    // Name und Adresse aktuell aus der Datenbank (nicht nur vom Zeitpunkt der Anmeldung).
+    async session(params) {
+      const session = await baseSession(params);
+      try {
+        const account = session.user?.id
+          ? await prisma.user.findUnique({
+              where: { id: session.user.id },
+              select: { name: true, muslimName: true, email: true },
+            })
+          : null;
+        if (account && session.user) Object.assign(session.user, account);
+      } catch (err) {
+        console.error("Name der Sitzung konnte nicht geladen werden:", err);
+      }
+      return session;
+    },
   },
 });
 
@@ -113,7 +130,7 @@ export async function auth(): Promise<Session | null> {
   if (!targetId) return session;
   const target = await prisma.user.findUnique({
     where: { id: targetId },
-    select: { id: true, name: true, email: true, image: true, role: true },
+    select: { id: true, name: true, muslimName: true, email: true, image: true, role: true },
   });
   if (!target || target.role === Role.ADMIN) return session;
 

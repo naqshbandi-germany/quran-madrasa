@@ -18,11 +18,11 @@ export async function startViewAs(formData: FormData) {
   const userId = z.string().cuid().parse(formData.get("userId"));
   const target = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true, role: true },
+    select: { id: true, name: true, muslimName: true, email: true, role: true },
   });
   if (!target || target.role === Role.ADMIN) throw new Error("Diese Person lässt sich nicht ansehen.");
 
-  const info: ViewAsInfo = { name: target.name, email: target.email, role: target.role };
+  const info: ViewAsInfo = { name: target.name, muslimName: target.muslimName, email: target.email, role: target.role };
   const store = await cookies();
   const options = {
     sameSite: "lax" as const,

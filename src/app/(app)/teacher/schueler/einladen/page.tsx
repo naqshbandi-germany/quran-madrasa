@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { StudentInviteForm } from "@/components/student-invite-form";
 import { editableEmail } from "@/lib/email-templates";
+import { callName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { formatZonedDateTime } from "@/lib/schedule-time";
 import { timeZoneLabel } from "@/lib/time-zones";
@@ -28,12 +29,12 @@ export default async function InviteStudentsPage({
     prisma.course.findMany({
       where: { isPublished: true, ...(isAdmin ? {} : { teacherId: session.user.id }) },
       orderBy: { title: "asc" },
-      select: { id: true, title: true, isHidden: true, teacher: { select: { name: true } } },
+      select: { id: true, title: true, isHidden: true, teacher: { select: { name: true, muslimName: true } } },
     }),
     resolveViewTimeZone(session.user.id),
     editableEmail("student_invite", session.user.id),
     editableEmail("trial_invite", session.user.id),
-    prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true } }),
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true, muslimName: true } }),
   ]);
   const timeZone = view.timeZone;
 
@@ -103,11 +104,11 @@ export default async function InviteStudentsPage({
             courses={courses.map((c) => ({
               id: c.id,
               title: c.isHidden ? `${c.title} (versteckt)` : c.title,
-              teacherName: c.teacher.name,
+              teacherName: callName(c.teacher),
             }))}
             initialCourseId={initialCourseId}
             emails={{ student_invite: inviteEmail, trial_invite: trialEmail }}
-            senderName={sender?.name ?? session.user.name ?? ""}
+            senderName={sender ? callName(sender) : (session.user.name ?? "")}
             guestSources={guestSources}
             initialEntries={toEntries(guestTrial?.guests ?? [])}
             trials={trialOptions}

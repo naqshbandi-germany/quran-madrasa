@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { enrollPathForInvitation, findValidInvitation, invitationPath, shortenEmail } from "@/lib/invitations";
 import { normalizeEmail } from "@/lib/invitees";
+import { callName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { SwitchAccountButton } from "./switch-account-button";
 
@@ -83,7 +84,7 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
         </h1>
       </div>
       <p className="text-brand-900/85">
-        {invitation.invitedBy.name} lädt dich zum Kurs{" "}
+        {callName(invitation.invitedBy)} lädt dich zum Kurs{" "}
         <strong className="text-brand-900">{invitation.course.title}</strong> ein.{" "}
         {invitation.freeEnrollment
           ? "Die Teilnahme ist für dich kostenlos."
