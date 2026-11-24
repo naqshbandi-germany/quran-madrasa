@@ -135,7 +135,7 @@ export async function deleteAccount(_prev: DeleteAccountResult, formData: FormDa
   revalidatePath("/");
   revalidatePath("/quran");
   revalidatePath("/lehrer");
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   const params = new URLSearchParams({ geloescht: "1" });
   if (otherAccountSubscriptions.length > 0) params.set("alteAbos", otherAccountSubscriptions.join(","));
   redirect(`/admin/konten?${params}`);
