@@ -57,7 +57,7 @@ export default async function DeleteAccountPage({ params }: { params: Promise<{ 
       {isTeacher && !blocked && (
         <p className="border border-gold-400/60 bg-gold-200/30 px-4 py-3 text-sm text-brand-900">
           <strong>Nur eine neue E-Mail-Adresse?</strong> Dann das Konto nicht löschen, sondern im{" "}
-          <Link href="/admin#lehrer" className="underline">
+          <Link href="/admin/lehrer" className="underline">
             Lehrerprofil
           </Link>{" "}
           die Adresse ändern und „Einladung erneut senden“. So bleiben Kurse, Foto, Vita, Mediathek
@@ -72,7 +72,7 @@ export default async function DeleteAccountPage({ params }: { params: Promise<{ 
       ) : isTeacher && needsTeacher && otherTeachers.length === 0 ? (
         <p className="border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
           Die Kurse und die Mediathek dieses Kontos brauchen eine neue Lehrkraft. Bitte zuerst im{" "}
-          <Link href="/admin#lehrer" className="underline">
+          <Link href="/admin/lehrer" className="underline">
             Admin-Bereich
           </Link>{" "}
           eine andere Lehrkraft einladen.

@@ -10,6 +10,8 @@ const STATIC_LABELS: Record<string, string> = {
   "/admin": "Admin-Bereich",
   "/admin/emails": "E-Mail-Texte",
   "/admin/konten": "Konten",
+  "/admin/lehrer": "Lehrer",
+  "/admin/admins": "Admins",
   "/admin/benachrichtigungen": "Benachrichtigungen",
   "/admin/benachrichtigungen/einstellungen": "E-Mail-Einstellungen",
   "/teacher/benachrichtigungen": "Benachrichtigungen",

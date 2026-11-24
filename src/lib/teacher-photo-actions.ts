@@ -21,7 +21,7 @@ function photoUrl(teacherId: string) {
 }
 
 function done() {
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/lehrer");
 }
 

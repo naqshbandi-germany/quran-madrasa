@@ -51,7 +51,7 @@ export async function updateTeacherProfile(formData: FormData) {
     where: { email: parsed.email, id: { not: parsed.teacherId } },
     select: { id: true },
   });
-  if (taken) redirect("/admin?einladung=vergeben#lehrer");
+  if (taken) redirect("/admin/lehrer?einladung=vergeben");
 
   // Neue Adresse: Links, die an die alte Adresse gingen, entwerten.
   const before = await prisma.user.findUnique({ where: { id: parsed.teacherId }, select: { email: true } });
@@ -65,7 +65,7 @@ export async function updateTeacherProfile(formData: FormData) {
     data: { email: parsed.email, bio: parsed.bio, zoomEmail: parsed.zoomEmail, timeZone },
   });
 
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/lehrer");
   // Stundenplan-Zeiten haengen an der Zeitzone der Lehrkraft.
   revalidatePath("/");
@@ -91,7 +91,7 @@ export async function updateSiteContent(formData: FormData) {
     update: { missionStatement: parsed.missionStatement },
   });
 
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/ueber-uns");
 }
 
@@ -114,7 +114,7 @@ export async function updateLegalTexts(formData: FormData) {
     update: parsed,
   });
 
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/impressum");
   revalidatePath("/datenschutz");
 }
@@ -201,7 +201,7 @@ export async function regenerateAccessCode(formData: FormData) {
 }
 
 function revalidateCoursePages(slug: string) {
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
   revalidatePath("/teacher");
   revalidatePath("/teacher/kurse");
   revalidatePath("/");

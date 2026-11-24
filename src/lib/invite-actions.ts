@@ -79,7 +79,7 @@ export async function inviteStaff(_prev: InviteState, formData: FormData): Promi
 
   const passwordHash = await bcrypt.hash(randomBytes(32).toString("hex"), 10);
   const user = await prisma.user.create({ data: { name, email, passwordHash, role } });
-  revalidatePath("/admin");
+  revalidatePath("/admin", "layout");
 
   const mode = delivery(formData);
   try {
