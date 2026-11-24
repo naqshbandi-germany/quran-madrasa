@@ -36,6 +36,14 @@ async function loadCourses() {
   }
 }
 
+// Preise zum Start (Entscheidung des Vereins, Nov. 2026). Verbindlich ist der Preis vor der Zahlung.
+const PRICES = [
+  { label: "Erwachsene", price: "35 € im Monat", detail: "pro Person und Kurs" },
+  { label: "Kinder, ein Kursplatz", price: "25 € im Monat", detail: "ein Kind in einem Kurs" },
+  { label: "Kinder, zwei Kursplätze", price: "45 € im Monat", detail: "zusammen pro Familie" },
+  { label: "Kinder, ab drei Kursplätzen", price: "65 € im Monat", detail: "zusammen pro Familie, mehr wird es nicht" },
+];
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
@@ -85,7 +93,7 @@ export default async function InfoPage() {
         </div>
 
         {courses.length > 0 && (
-          <Section title="Unsere Kurse und Preise">
+          <Section title="Unsere Kurse">
             <ul className="divide-y divide-brand-200 border border-brand-200 bg-white">
               {courses.map((course) => {
                 const price = priceSummary(course);
@@ -93,7 +101,7 @@ export default async function InfoPage() {
                   <li key={course.id} className="space-y-1 p-4">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-4">
                       <h3 className="font-semibold text-azure-800">{course.title}</h3>
-                      <p className="text-sm font-medium">{price ? price.headline : "Preis auf Anfrage"}</p>
+                      {price && <p className="text-sm font-medium">{price.headline}</p>}
                     </div>
                     <p className="text-sm">{course.description}</p>
                     {price && <p className="text-xs text-brand-700">{price.detail}</p>}
@@ -103,6 +111,24 @@ export default async function InfoPage() {
             </ul>
           </Section>
         )}
+
+        <Section title="Preise zum Start">
+          <ul className="divide-y divide-brand-200 border border-brand-200 bg-white">
+            {PRICES.map((p) => (
+              <li key={p.label} className="flex flex-wrap items-baseline justify-between gap-x-4 p-4">
+                <span>
+                  <span className="font-medium">{p.label}</span>{" "}
+                  <span className="text-sm text-brand-700">({p.detail})</span>
+                </span>
+                <span className="font-semibold text-azure-800">{p.price}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-sm text-brand-700">
+            Monatlich kündbar. Verbindlich ist immer der Preis, der vor der Zahlung angezeigt wird; in der Testphase
+            können andere Preise gelten.
+          </p>
+        </Section>
 
         <Section title="So läuft es ab">
           <ol className="list-decimal space-y-1 pl-5">
