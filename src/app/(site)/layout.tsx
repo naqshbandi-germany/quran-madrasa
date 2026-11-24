@@ -11,6 +11,15 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
       <footer className="border-t border-brand-200 py-6 text-center text-sm text-brand-700">
         <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+          <Link href="/kontakt" className="underline underline-offset-2 hover:text-brand-600">
+            Kontakt
+          </Link>
+          <Link href="/agb" className="underline underline-offset-2 hover:text-brand-600">
+            AGB
+          </Link>
+          <Link href="/widerruf" className="underline underline-offset-2 hover:text-brand-600">
+            Widerruf
+          </Link>
           <Link href="/impressum" className="underline underline-offset-2 hover:text-brand-600">
             Impressum
           </Link>
