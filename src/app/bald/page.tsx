@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { priceSummary } from "@/lib/course-pricing";
 import { prisma } from "@/lib/prisma";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import { OPERATOR } from "@/lib/terms-defaults";
 
 // Oeffentliche Infoseite, solange die Website im Vorschau-Modus ist (siehe src/proxy.ts): Angebot,
-// Preise, Ablauf, Kuendigung, Traeger und Kontakt. Preise kommen aus den veroeffentlichten Kursen.
+// Preise, Ablauf, Kuendigung, Traeger und Kontakt. Die Preise
+// stehen hier (PRICES), weil die Kurse noch fruehere Preise tragen.
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: { absolute: `${SITE_NAME} – ${SITE_TAGLINE}` },
@@ -25,9 +25,6 @@ async function loadCourses() {
         id: true,
         title: true,
         description: true,
-        priceCents: true,
-        currency: true,
-        signupFeeCents: true,
       },
     });
   } catch (err) {
@@ -95,19 +92,12 @@ export default async function InfoPage() {
         {courses.length > 0 && (
           <Section title="Unsere Kurse">
             <ul className="divide-y divide-brand-200 border border-brand-200 bg-white">
-              {courses.map((course) => {
-                const price = priceSummary(course);
-                return (
-                  <li key={course.id} className="space-y-1 p-4">
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-                      <h3 className="font-semibold text-azure-800">{course.title}</h3>
-                      {price && <p className="text-sm font-medium">{price.headline}</p>}
-                    </div>
-                    <p className="text-sm">{course.description}</p>
-                    {price && <p className="text-xs text-brand-700">{price.detail}</p>}
-                  </li>
-                );
-              })}
+              {courses.map((course) => (
+                <li key={course.id} className="space-y-1 p-4">
+                  <h3 className="font-semibold text-azure-800">{course.title}</h3>
+                  <p className="text-sm">{course.description}</p>
+                </li>
+              ))}
             </ul>
           </Section>
         )}
