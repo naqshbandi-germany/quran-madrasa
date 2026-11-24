@@ -273,6 +273,13 @@ Wer den aktuellen Stand der ganzen Seite sehen soll, öffnet einmal
 (180 Tage), danach ist die Seite in diesem Browser normal sichtbar. Zum Veröffentlichen die
 Variable in Vercel löschen und neu deployen.
 
+### Wenn ein Produktions-Deploy fehlschlägt
+
+Schlägt der Build mit „Can't reach database server“ oder beim Abruf der Google-Schriften fehl, ist das
+meist vorübergehend: In Vercel unter *Deployments* beim Eintrag *Redeploy* wählen. Die Website läuft
+solange mit der letzten erfolgreichen Version weiter. Hängt der Redeploy, stößt jeder Merge auf `main`
+einen neuen Deploy an.
+
 ### Umzug auf die eigene Domain
 
 Beim Wechsel auf die eigene Domain (z. B. `islamunterfreunden.de`) anpassen:
