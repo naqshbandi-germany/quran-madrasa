@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { PreviewHeader } from "@/components/preview-header";
 import { prisma } from "@/lib/prisma";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import { OPERATOR } from "@/lib/terms-defaults";
@@ -56,15 +57,7 @@ export default async function InfoPage() {
   return (
     <>
       <header className="border-b border-gold-400/40 bg-white">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-          <div>
-            <p className="font-display text-2xl font-semibold text-azure-800">{SITE_NAME}</p>
-            <p className="text-sm text-brand-700">{SITE_TAGLINE}</p>
-          </div>
-          <Link href="/auth/signin" className="text-sm font-medium text-azure-800 underline">
-            Anmelden
-          </Link>
-        </div>
+        <PreviewHeader maxWidth="max-w-3xl" />
       </header>
 
       <main className="mx-auto max-w-3xl space-y-10 px-4 py-10 text-brand-900">

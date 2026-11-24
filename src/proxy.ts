@@ -3,6 +3,7 @@ import type { NextFetchEvent, NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { authConfig } from "@/auth.config";
+import { PREVIEW_COOKIE, previewCode } from "@/lib/preview";
 import { VIEW_AS_COOKIE, VIEW_AS_INFO_COOKIE } from "@/lib/view-as";
 
 // In Next.js 16 heißt die Datei "proxy.ts" statt "middleware.ts". Sie erledigt zwei Dinge:
@@ -23,7 +24,6 @@ const authMiddleware = NextAuth(authConfig).auth as unknown as (
   event: NextFetchEvent,
 ) => Promise<Response>;
 
-const PREVIEW_COOKIE = "vorschau";
 const PREVIEW_PARAM = "vorschau";
 
 const AUTH_PREFIXES = ["/dashboard", "/teacher", "/admin", "/konto"];
@@ -59,7 +59,7 @@ function isOpenPath(pathname: string) {
 }
 
 function previewGate(request: NextRequest) {
-  const code = process.env.SITE_PREVIEW_CODE?.trim();
+  const code = previewCode();
   if (!code) return null;
 
   const { nextUrl } = request;
