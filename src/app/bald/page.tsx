@@ -36,10 +36,15 @@ async function loadCourses() {
 
 // Preise zum Start (Entscheidung des Vereins, Nov. 2026). Verbindlich ist der Preis vor der Zahlung.
 const PRICES = [
-  { label: "Erwachsene", price: "35 € im Monat", detail: "pro Person und Kurs" },
-  { label: "Kinder, ein Kursplatz", price: "25 € im Monat", detail: "ein Kind in einem Kurs" },
+  { label: "Erwachsene, Gruppenkurs", price: "35 € im Monat", detail: "pro Person und Kurs" },
+  { label: "Kinder, ein Platz im Gruppenkurs", price: "25 € im Monat", detail: "ein Kind in einem Kurs" },
   { label: "Kinder, zwei Kursplätze", price: "45 € im Monat", detail: "zusammen pro Familie" },
   { label: "Kinder, ab drei Kursplätzen", price: "65 € im Monat", detail: "zusammen pro Familie, mehr wird es nicht" },
+  {
+    label: "Einzelunterricht, z. B. Hifz-Begleitung",
+    price: "20 € pro Stunde",
+    detail: "bei 2 Stunden pro Woche rund 173 € im Monat",
+  },
 ];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
