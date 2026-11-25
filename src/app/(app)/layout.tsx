@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             { href: "/teacher/kurse", label: "Kurse", icon: "book" },
             {
               label: "Personen",
-              icon: "users",
+              icon: "student",
               children: [
                 { href: "/teacher/schueler", label: "Schüler" },
                 { href: "/admin/lehrer", label: "Lehrer" },
