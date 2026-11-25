@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { PreviewHeader } from "@/components/preview-header";
 import { prisma } from "@/lib/prisma";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 import { OPERATOR } from "@/lib/terms-defaults";
@@ -35,10 +36,15 @@ async function loadCourses() {
 
 // Preise zum Start (Entscheidung des Vereins, Nov. 2026). Verbindlich ist der Preis vor der Zahlung.
 const PRICES = [
-  { label: "Erwachsene", price: "35 € im Monat", detail: "pro Person und Kurs" },
-  { label: "Kinder, ein Kursplatz", price: "25 € im Monat", detail: "ein Kind in einem Kurs" },
+  { label: "Erwachsene, Gruppenkurs", price: "35 € im Monat", detail: "pro Person und Kurs" },
+  { label: "Kinder, ein Platz im Gruppenkurs", price: "25 € im Monat", detail: "ein Kind in einem Kurs" },
   { label: "Kinder, zwei Kursplätze", price: "45 € im Monat", detail: "zusammen pro Familie" },
   { label: "Kinder, ab drei Kursplätzen", price: "65 € im Monat", detail: "zusammen pro Familie, mehr wird es nicht" },
+  {
+    label: "Einzelunterricht, z. B. Hifz-Begleitung",
+    price: "20 € pro Stunde",
+    detail: "bei 2 Stunden pro Woche rund 173 € im Monat",
+  },
 ];
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -56,15 +62,7 @@ export default async function InfoPage() {
   return (
     <>
       <header className="border-b border-gold-400/40 bg-white">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-          <div>
-            <p className="font-display text-2xl font-semibold text-azure-800">{SITE_NAME}</p>
-            <p className="text-sm text-brand-700">{SITE_TAGLINE}</p>
-          </div>
-          <Link href="/auth/signin" className="text-sm font-medium text-azure-800 underline">
-            Anmelden
-          </Link>
-        </div>
+        <PreviewHeader maxWidth="max-w-3xl" />
       </header>
 
       <main className="mx-auto max-w-3xl space-y-10 px-4 py-10 text-brand-900">
