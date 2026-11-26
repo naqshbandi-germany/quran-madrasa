@@ -1,10 +1,9 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { DayPicker } from "react-day-picker";
-import { de } from "react-day-picker/locale";
 
-import { dayFormat, DURATIONS, inputClass, minutes, timeOf, today, toKey } from "@/components/series-form";
+import { DateField, TimeField } from "@/components/date-time-fields";
+import { DURATIONS, inputClass, minutes, timeOf } from "@/components/series-form";
 import { createClassSession, type SessionField, type SessionFormState } from "@/lib/teacher-actions";
 
 // Formular fuer eine einzelne Stunde (die Terminserie steht in series-form.tsx). Im Reiter
@@ -33,11 +32,10 @@ export function SingleSessionForm({
   const [state, action, pending] = useActionState(createClassSession, INITIAL);
   const [selectedCourse, setSelectedCourse] = useState(courseId ?? "");
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState<Date | undefined>();
+  const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState("60");
   const [joinUrl, setJoinUrl] = useState("");
-  const [calendarOpen, setCalendarOpen] = useState(false);
   const [clientErrors, setClientErrors] = useState<SessionFormState["errors"]>({});
   const [touched, setTouched] = useState<Set<SessionField>>(new Set());
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -53,7 +51,7 @@ export function SingleSessionForm({
   }, [state]);
 
   const touch = (field: SessionField) => setTouched((prev) => new Set([...prev, field]));
-  const startsAt = date && time ? `${toKey(date)}T${time}` : "";
+  const startsAt = date && time ? `${date}T${time}` : "";
   const durationNumber = Number(duration);
   const endLabel = time && durationNumber > 0 ? timeOf(minutes(time) + durationNumber) : null;
 
@@ -70,7 +68,6 @@ export function SingleSessionForm({
     setTouched(new Set());
     if (Object.keys(found).length > 0) {
       event.preventDefault();
-      if (found.startsAt && !date) setCalendarOpen(true);
       requestAnimationFrame(() => summaryRef.current?.focus());
     }
   }
@@ -159,54 +156,35 @@ export function SingleSessionForm({
       </label>
 
       <div className="flex flex-col text-brand-700">
-        <span id={`${prefix}-date-label`}>Datum</span>
-        <button
+        <label htmlFor={`${prefix}-startsAt`}>Datum</label>
+        <DateField
           id={`${prefix}-startsAt`}
-          type="button"
-          aria-expanded={calendarOpen}
-          aria-labelledby={`${prefix}-date-label ${prefix}-startsAt`}
-          onClick={() => setCalendarOpen((v) => !v)}
-          className={`${inputClass(Boolean(errors.startsAt) && !date)} flex items-center justify-between text-left`}
-          {...aria("startsAt")}
-        >
-          <span className={date ? "text-brand-900" : "text-brand-600"}>{date ? dayFormat.format(date) : "Datum wählen"}</span>
-          <span aria-hidden="true">{calendarOpen ? "▲" : "▼"}</span>
-        </button>
-      </div>
-      <label className="flex flex-col text-brand-700">
-        Beginn
-        <input
-          type="time"
-          step={300}
-          value={time}
-          onChange={(e) => {
-            setTime(e.target.value);
+          value={date}
+          onChange={(d) => {
+            setDate(d);
             touch("startsAt");
           }}
-          className={inputClass(Boolean(errors.startsAt) && !time)}
+          notBefore="today"
+          clearable={false}
+          invalid={Boolean(errors.startsAt) && !date}
+          describedBy={errors.startsAt ? `${prefix}-startsAt-error` : undefined}
         />
-      </label>
+      </div>
+      <div className="flex flex-col text-brand-700">
+        <label htmlFor={`${prefix}-time`}>Beginn</label>
+        <TimeField
+          id={`${prefix}-time`}
+          value={time}
+          onChange={(t) => {
+            setTime(t);
+            touch("startsAt");
+          }}
+          invalid={Boolean(errors.startsAt) && !time}
+          suggestFrom="16:00"
+        />
+      </div>
       <input type="hidden" name="startsAt" value={startsAt} />
       {errors.startsAt && <div className="col-span-full -mt-2">{fieldError("startsAt")}</div>}
-
-      {calendarOpen && (
-        <div className="series-calendar col-span-full border border-brand-200 bg-white p-3">
-          <DayPicker
-            mode="single"
-            locale={de}
-            weekStartsOn={1}
-            showOutsideDays
-            defaultMonth={date ?? today()}
-            disabled={{ before: today() }}
-            selected={date}
-            onSelect={(next) => {
-              setDate(next);
-              touch("startsAt");
-              if (next) setCalendarOpen(false);
-            }}
-          />
-        </div>
-      )}
 
       <div className="col-span-full flex flex-col text-brand-700">
         <label htmlFor={`${prefix}-durationMin`}>Dauer in Minuten</label>

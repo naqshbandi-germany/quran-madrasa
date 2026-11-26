@@ -5,6 +5,7 @@ import { DayPicker, type DateRange } from "react-day-picker";
 import { de } from "react-day-picker/locale";
 import "react-day-picker/style.css";
 
+import { TimeField } from "@/components/date-time-fields";
 import { WEEKDAY_LABELS, WEEKDAY_ORDER, WEEKDAY_SHORT } from "@/lib/course-labels";
 import { saveSeries, type SeriesField, type SeriesFormState } from "@/lib/series-actions";
 
@@ -347,34 +348,32 @@ export function SeriesForm({
         {fieldError("weekdays")}
       </fieldset>
 
-      <label className="flex flex-col text-brand-700">
-        Beginn
-        <input
+      <div className="flex flex-col text-brand-700">
+        <label htmlFor={`${idPrefix}-startTime`}>Beginn</label>
+        <TimeField
           id={`${idPrefix}-startTime`}
           name="startTime"
-          type="time"
-          step={300}
           value={startTime}
-          onChange={(e) => changeStart(e.target.value)}
-          className={inputClass(Boolean(errors.startTime))}
-          {...aria("startTime")}
+          onChange={changeStart}
+          invalid={Boolean(errors.startTime)}
+          describedBy={errors.startTime ? "startTime-error" : undefined}
+          suggestFrom="16:00"
         />
         {fieldError("startTime")}
-      </label>
+      </div>
       <div className="flex flex-col text-brand-700">
         <label htmlFor={`${idPrefix}-endTime`}>Ende</label>
-        <input
+        <TimeField
           id={`${idPrefix}-endTime`}
           name="endTime"
-          type="time"
-          step={300}
           value={endTime}
-          onChange={(e) => {
-            setEndTime(e.target.value);
+          onChange={(value) => {
+            setEndTime(value);
             touch("endTime");
           }}
-          className={inputClass(Boolean(errors.endTime))}
-          {...aria("endTime")}
+          invalid={Boolean(errors.endTime)}
+          describedBy={errors.endTime ? "endTime-error" : undefined}
+          suggestFrom={startTime || "17:00"}
         />
         {fieldError("endTime")}
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
