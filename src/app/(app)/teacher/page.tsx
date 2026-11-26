@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { NotificationsFeed } from "@/components/notifications-feed";
 import { prisma } from "@/lib/prisma";
+import { CourseStatusBadge } from "@/components/course-status-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -55,8 +56,7 @@ export default async function TeacherPage() {
                 <div>
                   <p className="font-medium text-brand-700">{course.title}</p>
                   <p className="text-sm text-brand-600">
-                    {course._count.enrollments} eingeschriebene Schüler ·{" "}
-                    {course.isPublished ? "veröffentlicht" : "Entwurf"}
+                    <CourseStatusBadge course={course} /> {course._count.enrollments} eingeschriebene Schüler
                   </p>
                 </div>
                 <Link href={`/teacher/courses/${course.id}`} className="text-sm font-medium text-brand-700 underline">

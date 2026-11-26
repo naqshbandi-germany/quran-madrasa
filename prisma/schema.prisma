@@ -148,6 +148,10 @@ model Course {
   // Laufzeit des Kurses (optional), z. B. 01.02. bis 30.06.
   startsOn         DateTime?  @db.Date
   endsOn           DateTime?  @db.Date
+  // Kurs gestartet ("Kurs starten" im Reiter Sitzungen): Erst dann entstehen aus den
+  // Terminserien einzelne Stunden mit Zoom-Link und Erinnerungen. Zustaende des Kurses:
+  // Entwurf (nicht veroeffentlicht), Anmeldung offen (veroeffentlicht), Laeuft (gestartet).
+  startedAt        DateTime?
 
   teacherId String
   teacher   User   @relation("TeacherCourses", fields: [teacherId], references: [id])
@@ -155,6 +159,7 @@ model Course {
   sessions       ClassSession[]
   enrollments    Enrollment[]
   scheduleSlots  ScheduleSlot[]
+  series         SessionSeries[]
   waitlist       WaitlistEntry[]
   readingSamples ReadingSample[]
   invitations    Invitation[]
@@ -174,6 +179,32 @@ model ScheduleSlot {
   endTime   String
   // Optionaler Hinweis, z.B. "Morgens"
   note      String?
+  // Eintraege entstehen aus einer Terminserie (ein Eintrag je Wochentag).
+  seriesId  String?
+  series    SessionSeries? @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+}
+
+// Terminserie eines Kurses, z. B. "Mo + Mi, 18:00-19:00, 1.12. bis 25.2.". Daraus entstehen
+// die Stundenplan-Eintraege (schon vor dem Start, als geplante Zeiten) und, sobald der Kurs
+// gestartet ist, die einzelnen Stunden (ClassSession) mit Zoom-Link. Uhrzeiten gelten in der
+// Zeitzone der Lehrkraft des Kurses.
+model SessionSeries {
+  id        String    @id @default(cuid())
+  courseId  String
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  weekdays  Weekday[]
+  startTime String
+  endTime   String
+  // Zeitraum; darf vor dem Start leer sein (nur Stundenplan), zum Starten noetig.
+  firstDate DateTime? @db.Date
+  lastDate  DateTime? @db.Date
+  // Hinweis fuer den Stundenplan, z. B. "Morgens"
+  note      String?
+  createdAt DateTime  @default(now())
+
+  slots    ScheduleSlot[]
+  sessions ClassSession[]
 }
 
 // Eine wiederkehrende oder einmalige Unterrichtseinheit innerhalb eines Kurses.
@@ -190,6 +221,15 @@ model ClassSession {
   // Zoom-Meeting-ID, falls der Link automatisch ueber die Zoom-API erzeugt wurde.
   zoomMeetingId       String?
   createdAt           DateTime      @default(now())
+  // Stunde aus einer Terminserie: seriesDate ist der Tag laut Serie (auch wenn die Stunde
+  // einzeln verschoben wurde). Einzeln verschobene oder abgesagte Stunden (isException)
+  // laesst eine Aenderung der Serie unberuehrt.
+  seriesId            String?
+  series              SessionSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  seriesDate          DateTime?     @db.Date
+  isException         Boolean       @default(false)
+  // Abgesagt: bleibt sichtbar (durchgestrichen), ohne Link und Erinnerungen.
+  cancelledAt         DateTime?
   // Zeitpunkt, zu dem die jeweilige Erinnerungs-E-Mail verschickt wurde (verhindert
   // doppelten Versand bei jedem Cron-Durchlauf).
   reminder24hSentAt   DateTime?

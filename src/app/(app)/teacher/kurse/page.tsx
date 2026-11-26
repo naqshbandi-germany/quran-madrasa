@@ -13,6 +13,7 @@ import { formatCoursePeriod } from "@/lib/course-manage";
 import { deleteCourse } from "@/lib/course-manage-actions";
 import { prisma } from "@/lib/prisma";
 import { createCourse, togglePublish } from "@/lib/teacher-actions";
+import { CourseStatusBadge } from "@/components/course-status-badge";
 
 export const metadata = { title: "Kurse" };
 export const dynamic = "force-dynamic";
@@ -87,9 +88,8 @@ export default async function CoursesPage({
                     </Link>
                     <p className="mt-0.5 text-brand-600">
                       {isAdmin && <>Lehrer: {course.teacher.name} · </>}
-                      {course._count.enrollments} eingeschriebene Schüler ·{" "}
-                      {course.isPublished ? "veröffentlicht" : "Entwurf"}
-                      {course.isHidden && " · versteckt"}
+                      <CourseStatusBadge course={course} />{" "}
+                      {course._count.enrollments} eingeschriebene Schüler
                       {!course.stripePriceId &&
                         " · kein Stripe-Preis hinterlegt"}
                       {formatCoursePeriod(course.startsOn, course.endsOn) &&
@@ -101,8 +101,8 @@ export default async function CoursesPage({
                       <input type="hidden" name="courseId" value={course.id} />
                       <button className="font-medium text-brand-700 underline">
                         {course.isPublished
-                          ? "Entwurf setzen"
-                          : "Veröffentlichen"}
+                          ? "Auf Entwurf setzen"
+                          : "Zur Anmeldung öffnen"}
                       </button>
                     </form>
                     {course._count.enrollments === 0 ? (

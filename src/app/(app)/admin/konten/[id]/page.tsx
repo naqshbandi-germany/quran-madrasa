@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { DeleteAccountForm } from "@/components/delete-account-form";
 import { prisma } from "@/lib/prisma";
+import { courseStatusText } from "@/lib/course-status";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function DeleteAccountPage({ params }: { params: Promise<{ 
       subscriptions: { where: { status: { not: "CANCELED" } }, select: { id: true } },
       taughtCourses: {
         orderBy: { title: "asc" },
-        select: { id: true, title: true, isPublished: true, isHidden: true, _count: { select: { enrollments: true } } },
+        select: { id: true, title: true, isPublished: true, isHidden: true, startedAt: true, _count: { select: { enrollments: true } } },
       },
       _count: { select: { mediaFiles: true } },
     },
@@ -121,7 +122,7 @@ export default async function DeleteAccountPage({ params }: { params: Promise<{ 
             courses={user.taughtCourses.map((c) => ({
               id: c.id,
               title: c.title,
-              detail: `${!c.isPublished ? "nicht veröffentlicht" : c.isHidden ? "versteckt" : "veröffentlicht"} · ${c._count.enrollments} Teilnehmer`,
+              detail: `${courseStatusText(c)} · ${c._count.enrollments} Teilnehmer`,
             }))}
             mediaCount={user._count.mediaFiles}
             teachers={otherTeachers}
