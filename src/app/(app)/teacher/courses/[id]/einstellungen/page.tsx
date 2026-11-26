@@ -1,10 +1,14 @@
+import Link from "next/link";
+
 import { RemoveForm } from "../remove-form";
 import { CopyButton } from "@/components/copy-button";
 import { CourseDetailsForm } from "@/components/course-details-form";
+import { CourseStatusBadge } from "@/components/course-status-badge";
 import { regenerateAccessCode, updateCourseSettings } from "@/lib/admin-actions";
 import { getAppUrl } from "@/lib/app-url";
 import { deleteCourse } from "@/lib/course-manage-actions";
 import { requireManagedCourse } from "@/lib/course-manage";
+import { courseStatus } from "@/lib/course-status";
 import { prisma } from "@/lib/prisma";
 import { togglePublish } from "@/lib/teacher-actions";
 
@@ -101,20 +105,38 @@ export default async function CourseSettingsPage({ params }: { params: Promise<{
       )}
 
       <section aria-labelledby="status" className={SECTION}>
-        <h2 id="status" className="text-lg font-semibold text-azure-800">
-          Veröffentlichen
-        </h2>
-        <p className="text-sm text-brand-700">
-          {course.isPublished
-            ? "Der Kurs ist veröffentlicht und kann gebucht werden."
-            : "Der Kurs ist ein Entwurf und erscheint nicht auf der Website."}
-        </p>
-        <form action={togglePublish}>
-          <input type="hidden" name="courseId" value={course.id} />
-          <button className="border border-azure-800 px-4 py-2 text-sm font-medium text-azure-800 transition hover:bg-azure-800 hover:text-white">
-            {course.isPublished ? "Auf Entwurf setzen" : "Veröffentlichen"}
-          </button>
-        </form>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 id="status" className="text-lg font-semibold text-azure-800">
+            Kursstatus
+          </h2>
+          <CourseStatusBadge course={course} />
+        </div>
+        <ol className="space-y-1 text-sm text-brand-700">
+          {(
+            [
+              ["DRAFT", "Entwurf: nur für das Team sichtbar, nicht buchbar."],
+              ["OPEN", "Anmeldung offen: auf der Website, buchbar, die Terminserien stehen im Stundenplan."],
+              ["RUNNING", "Läuft: Die Stunden mit Zoom-Link sind angelegt, die Teilnehmer werden erinnert. Bleibt buchbar, solange der Kurs veröffentlicht ist."],
+            ] as const
+          ).map(([key, text], i) => (
+            <li key={key} className={courseStatus(course) === key ? "font-semibold text-brand-900" : ""}>
+              {i + 1}. {text}
+            </li>
+          ))}
+        </ol>
+        <div className="flex flex-wrap items-center gap-4">
+          <form action={togglePublish}>
+            <input type="hidden" name="courseId" value={course.id} />
+            <button className="border border-azure-800 px-4 py-2 text-sm font-medium text-azure-800 transition hover:bg-azure-800 hover:text-white">
+              {course.isPublished ? "Auf Entwurf setzen" : "Zur Anmeldung öffnen"}
+            </button>
+          </form>
+          {!course.startedAt && (
+            <Link href={`/teacher/courses/${course.id}/sitzungen`} className="text-sm font-medium text-azure-800 underline">
+              Kurs starten (Reiter Sitzungen)
+            </Link>
+          )}
+        </div>
       </section>
 
       <section aria-labelledby="loeschen" className="space-y-3 border border-red-300 bg-white p-6">
@@ -129,7 +151,7 @@ export default async function CourseSettingsPage({ params }: { params: Promise<{
         ) : (
           <>
             <p className="text-sm text-brand-700">
-              Löscht den Kurs mit allen Sitzungen, Stundenplan-Einträgen, Probestunden, Einladungen,
+              Löscht den Kurs mit allen Stunden, Terminserien, Probestunden, Einladungen,
               Warteliste und Leseproben. Das lässt sich nicht rückgängig machen.
             </p>
             <RemoveForm

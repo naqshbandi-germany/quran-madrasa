@@ -24,6 +24,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
   const sessions = await prisma.classSession.findMany({
     where: {
       courseId: { in: courseIds },
+      cancelledAt: null,
       startsAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
     },
     include: { course: { select: { title: true } } },

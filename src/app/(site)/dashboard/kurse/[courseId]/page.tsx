@@ -37,7 +37,7 @@ export default async function CourseProgressPage({ params }: { params: Promise<{
 
   const [sessions, summaries] = await Promise.all([
     prisma.classSession.findMany({
-      where: { courseId, startsAt: { lt: new Date() } },
+      where: { courseId, startsAt: { lt: new Date() }, cancelledAt: null },
       orderBy: { startsAt: "desc" },
       include: { evaluations: { where: { participantId: { in: participantIds } } } },
     }),

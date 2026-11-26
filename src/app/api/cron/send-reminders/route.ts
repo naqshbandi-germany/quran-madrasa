@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getAppUrl } from "@/lib/app-url";
 import { groupRecipients } from "@/lib/enrollment-recipients";
+import { callName } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 import { emailRenderer } from "@/lib/email-templates";
 import { deleteExpiredSamples } from "@/lib/reading-samples";
@@ -42,6 +43,7 @@ async function findDueSessions(minutesBefore: number, windowMinutes: number, fie
     include: {
       course: {
         include: {
+          teacher: { select: { name: true, muslimName: true, email: true } },
           enrollments: {
             include: {
               user: { select: { name: true, muslimName: true, email: true } },
@@ -61,10 +63,32 @@ async function sendRemindersFor(
 ) {
   const appUrl = getAppUrl();
   const render = await emailRenderer(REMINDER_TEMPLATES[kind]);
+  // Eine Stunde vorher bekommt auch die Lehrkraft eine Erinnerung mit dem Meeting-Link.
+  const renderTeacher = kind === "1h" ? await emailRenderer("teacher_reminder_1h") : null;
   let emailCount = 0;
 
   for (const classSession of sessions) {
     const joinUrl = `${appUrl}/dashboard/classroom/${classSession.id}`;
+
+    if (renderTeacher && classSession.joinUrl) {
+      const teacher = classSession.course.teacher;
+      try {
+        await deliverEmail({
+          from: EMAIL_FROM,
+          to: teacher.email,
+          ...renderTeacher({
+            name: callName(teacher),
+            kurs: classSession.course.title,
+            datum: formatReminderDate(classSession.startsAt),
+            teilnehmer: String(classSession.course.enrollments.length),
+            link: classSession.joinUrl,
+          }),
+        });
+        emailCount++;
+      } catch (err) {
+        console.error(`Erinnerung an die Lehrkraft (${teacher.email}) fehlgeschlagen:`, err);
+      }
+    }
 
     for (const recipient of groupRecipients(classSession.course.enrollments)) {
       try {

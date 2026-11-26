@@ -40,7 +40,7 @@ export default async function ReadingSamplePage({
   const now = new Date();
   const [upcoming, samples] = await Promise.all([
     prisma.classSession.findMany({
-      where: { courseId, startsAt: { gte: now } },
+      where: { courseId, startsAt: { gte: now }, cancelledAt: null },
       orderBy: { startsAt: "asc" },
       take: 4,
       select: { id: true, title: true, startsAt: true, readingRequest: true },

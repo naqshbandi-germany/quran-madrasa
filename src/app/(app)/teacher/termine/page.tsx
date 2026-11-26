@@ -35,7 +35,7 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
 
   const [sessions, trials, cancelEmail] = await Promise.all([
     prisma.classSession.findMany({
-      where: { startsAt: range, ...courseWhere },
+      where: { startsAt: range, cancelledAt: null, ...courseWhere },
       orderBy: { startsAt: past ? "desc" : "asc" },
       take: 200,
       include: {

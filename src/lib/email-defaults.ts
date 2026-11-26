@@ -195,6 +195,56 @@ export const EMAIL_TEMPLATES = {
       footer: ENROLLED_FOOTER,
     },
   },
+  series_changed: {
+    label: "Kurszeiten geändert",
+    group: "Kurs und Termine",
+    description:
+      "Wenn die Lehrkraft eine Terminserie ändert (Uhrzeit, Wochentage, Zeitraum) oder beendet, einmal an alle Teilnehmer des Kurses.",
+    placeholders: [
+      NAME,
+      KURS,
+      { key: "termine", label: "Die neuen Kurszeiten", example: "Montag und Mittwoch, 18:00–19:00 Uhr (deutsche Zeit), 1.12.2026 – 25.2.2027" },
+      KURS_LINK,
+      BUTTON,
+    ],
+    hasButton: true,
+    defaults: {
+      subject: 'Neue Kurszeiten: "{{kurs}}"',
+      body: [
+        GREETING,
+        "die Termine im Kurs **{{kurs}}** haben sich geändert.",
+        "**Neu:** {{termine}}",
+        "Der Link zum Unterricht bleibt gleich. Alle Termine siehst du in deinem Konto, ein abonnierter Kalender aktualisiert sich von selbst.",
+      ].join("\n\n"),
+      buttonLabel: "Alle Termine ansehen",
+      footer: ENROLLED_FOOTER,
+    },
+  },
+  teacher_reminder_1h: {
+    label: "Erinnerung an die Lehrkraft",
+    group: "Kurs und Termine",
+    description: "Automatisch eine Stunde vor jeder Kursstunde an die Lehrkraft des Kurses, mit dem Zoom-Link.",
+    placeholders: [
+      NAME,
+      KURS,
+      DATUM,
+      { key: "teilnehmer", label: "Zahl der Teilnehmer", example: "5" },
+      { key: "link", label: "Link zum Meeting (Ziel des Buttons)", example: "https://us06web.zoom.us/j/123456789" },
+      BUTTON,
+    ],
+    hasButton: true,
+    defaults: {
+      subject: 'In einer Stunde: "{{kurs}}"',
+      body: [
+        GREETING,
+        "dein Kurs **{{kurs}}** beginnt in einer Stunde.",
+        "**Wann:** {{datum}}\n**Teilnehmer:** {{teilnehmer}}",
+        "Melde dich in Zoom mit deinem Zoom-Konto an, dann startest du das Meeting als Gastgeber.",
+      ].join("\n\n"),
+      buttonLabel: "Meeting starten",
+      footer: "Diese E-Mail wurde automatisch verschickt, weil du diesen Kurs unterrichtest.",
+    },
+  },
   payment_failed: {
     label: "Zahlung fehlgeschlagen",
     group: "Zahlung und Abo",

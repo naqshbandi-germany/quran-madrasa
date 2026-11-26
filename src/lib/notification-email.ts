@@ -36,7 +36,7 @@ export async function sendEnrollmentConfirmation(courseId: string, enrollmentIds
     where: { id: courseId },
     include: {
       teacher: { select: { name: true } },
-      sessions: { where: { startsAt: { gte: new Date() } }, orderBy: { startsAt: "asc" }, take: 3 },
+      sessions: { where: { startsAt: { gte: new Date() }, cancelledAt: null }, orderBy: { startsAt: "asc" }, take: 3 },
     },
   });
   if (!course) return;
@@ -107,6 +107,22 @@ export async function sendSessionChangeNotice(
             dauer: String(after.durationMin),
           })
         : renderCancelled({ ...values, datum: when(before.startsAt) }),
+    );
+  }
+}
+
+// Terminserie geaendert oder beendet: einmal an alle Teilnehmer, mit den neuen Kurszeiten.
+export async function sendSeriesChangeNotice(courseId: string, termine: string) {
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    include: { enrollments: { include: enrollmentInclude } },
+  });
+  if (!course || course.enrollments.length === 0) return;
+  const render = await emailRenderer("series_changed");
+  for (const recipient of groupRecipients(course.enrollments)) {
+    await sendSafely(
+      recipient.email,
+      render({ name: recipient.greetingName, kurs: course.title, termine, link: `${getAppUrl()}/dashboard` }),
     );
   }
 }

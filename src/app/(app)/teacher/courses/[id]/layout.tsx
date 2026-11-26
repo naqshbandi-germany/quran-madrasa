@@ -1,6 +1,7 @@
 import { CourseTabs } from "./course-tabs";
 import { formatCoursePeriod, requireManagedCourse } from "@/lib/course-manage";
 import { prisma } from "@/lib/prisma";
+import { CourseStatusBadge } from "@/components/course-status-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +30,8 @@ export default async function CourseLayout({
       <div>
         <p className="font-display text-3xl font-bold leading-tight text-azure-800">{course.title}</p>
         <p className="mt-1 text-sm text-brand-600">
-          {course.isPublished ? "veröffentlicht" : "Entwurf"}
-          {course.isHidden && " · versteckt"}
-          {period && ` · Laufzeit ${period}`}
+          <CourseStatusBadge course={course} />
+          {period && ` Laufzeit ${period}`}
         </p>
       </div>
       <CourseTabs courseId={course.id} counts={{ participants, unheard }} />

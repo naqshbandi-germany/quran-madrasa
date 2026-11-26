@@ -29,7 +29,7 @@ export default async function DashboardPage() {
       course: {
         include: {
           sessions: {
-            where: { startsAt: { gte: new Date() } },
+            where: { startsAt: { gte: new Date() }, cancelledAt: null },
             orderBy: { startsAt: "asc" },
             take: 3,
           },
