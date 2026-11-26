@@ -54,3 +54,53 @@ h3 {
     @apply inline-flex items-center justify-center text-center font-display text-xl font-bold leading-tight tracking-wide;
   }
 }
+
+/* Kalender in den Formularen fuer Terminserie und Einzelstunde (react-day-picker). */
+.series-calendar .rdp-root {
+  --rdp-accent-color: rgb(var(--azure-800));
+  --rdp-accent-background-color: rgb(var(--azure-50));
+  --rdp-today-color: rgb(var(--brand-600));
+  --rdp-day-height: 40px;
+  --rdp-day-width: 40px;
+  --rdp-day_button-height: 38px;
+  --rdp-day_button-width: 38px;
+  --rdp-day_button-border-radius: 6px;
+  --rdp-range_middle-background-color: rgb(var(--azure-50));
+  --rdp-range_start-date-background-color: rgb(var(--azure-800));
+  --rdp-range_end-date-background-color: rgb(var(--azure-800));
+  --rdp-months-gap: 2rem;
+  font-size: 0.875rem;
+}
+.series-calendar .rdp-caption_label {
+  font-weight: 600;
+  color: rgb(var(--azure-800));
+}
+.series-calendar .rdp-today:not(.rdp-selected) .rdp-day_button {
+  font-weight: 700;
+  text-decoration: underline;
+}
+/* Tage, an denen laut Serie eine Stunde stattfindet: Punkt unter der Zahl. */
+.series-calendar .series-lesson .rdp-day_button {
+  position: relative;
+  font-weight: 700;
+}
+.series-calendar .series-lesson .rdp-day_button::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  border-radius: 9999px;
+  background: rgb(var(--gold-600));
+}
+.series-calendar .rdp-range_start .rdp-day_button::after,
+.series-calendar .rdp-range_end .rdp-day_button::after {
+  background: rgb(var(--gold-200));
+}
+/* Zeitraum ruhig darstellen, hervorgehoben sind nur die Tage mit Stunden. */
+.series-calendar .rdp-selected {
+  font-weight: inherit;
+  font-size: inherit;
+}

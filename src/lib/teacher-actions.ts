@@ -124,11 +124,16 @@ const createSessionSchema = z.object({
   joinUrl: z.string().url("Der Link ist ungültig.").optional().or(z.literal("")),
 });
 
+export type SessionField = "courseId" | "title" | "startsAt" | "durationMin" | "joinUrl" | "form";
+export type SessionFormState = { errors?: Partial<Record<SessionField, string>> };
+
 // Einzelne Stunde ausserhalb einer Serie (z. B. Zusatztermin), mit eigenem oder automatisch
-// erzeugtem Meeting-Link.
-export async function createClassSession(formData: FormData) {
+// erzeugtem Meeting-Link. Formular mit useActionState: Fehler kommen je Feld zurueck, die
+// Eingaben bleiben erhalten; nach dem Anlegen geht es in den Reiter Sitzungen.
+export async function createClassSession(_prev: SessionFormState, formData: FormData): Promise<SessionFormState> {
   const session = await requireTeacher();
   const courseId = String(formData.get("courseId") ?? "");
+  if (!courseId) return { errors: { courseId: "Bitte einen Kurs wählen." } };
 
   const parsed = createSessionSchema.safeParse({
     courseId,
@@ -137,7 +142,14 @@ export async function createClassSession(formData: FormData) {
     durationMin: formData.get("durationMin") || undefined,
     joinUrl: formData.get("joinUrl") ?? "",
   });
-  if (!parsed.success) backToSessions(courseId, parsed.error.issues[0]?.message ?? "Bitte prüfe die Eingaben.", "fehler");
+  if (!parsed.success) {
+    const errors: SessionFormState["errors"] = {};
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0] as SessionField;
+      errors[field] ??= field === "durationMin" ? "Bitte eine Dauer zwischen 5 und 480 Minuten angeben." : issue.message;
+    }
+    return { errors };
+  }
   const data = parsed.data;
 
   const course = await prisma.course.findUniqueOrThrow({
@@ -161,7 +173,7 @@ export async function createClassSession(formData: FormData) {
           teacherZoomEmail: course.teacher.zoomEmail,
         });
   } catch (err) {
-    backToSessions(course.id, `Die Stunde wurde nicht angelegt: ${errorText(err)}`, "fehler");
+    return { errors: { form: `Das Meeting konnte nicht angelegt werden: ${errorText(err)}` } };
   }
 
   await prisma.classSession.create({

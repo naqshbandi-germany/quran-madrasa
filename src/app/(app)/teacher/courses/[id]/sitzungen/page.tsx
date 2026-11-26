@@ -4,7 +4,8 @@ import { RemoveForm } from "../remove-form";
 import { ConfirmButton } from "@/components/confirm-button";
 import { CourseStatusBadge } from "@/components/course-status-badge";
 import { EditableRow } from "@/components/editable-row";
-import { SeriesForm, SingleSessionForm } from "@/components/session-forms";
+import { SeriesForm } from "@/components/series-form";
+import { SingleSessionForm } from "@/components/session-forms";
 import { TimeZoneNotice } from "@/components/time-zone-notice";
 import { isZoomProvider } from "@/lib/classroom";
 import { requireManagedCourse } from "@/lib/course-manage";
@@ -329,7 +330,8 @@ export default async function CourseSessionsPage({
                 >
                   <SeriesForm
                     courseId={course.id}
-                    datesRequired={started}
+                    started={started}
+                    courseEndsOn={dateInput(course.endsOn) || null}
                     submitLabel={started ? "Für alle kommenden Stunden speichern" : "Speichern"}
                     defaults={{
                       id: s.id,
@@ -352,7 +354,8 @@ export default async function CourseSessionsPage({
           <div className="mt-4">
             <SeriesForm
               courseId={course.id}
-              datesRequired={started}
+              started={started}
+                    courseEndsOn={dateInput(course.endsOn) || null}
               submitLabel="Serie anlegen"
               defaults={{
                 title: course.title,
