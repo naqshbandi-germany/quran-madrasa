@@ -190,7 +190,7 @@ export function AppNav({
                         </svg>
                       </button>
                       {expanded && (
-                        <ul className="mt-1 space-y-0.5 rounded-md bg-[#1d4272] p-1.5">
+                        <ul className="mt-1 space-y-0.5 rounded-md bg-white/[0.06] p-1.5">
                           {link.children.map((child) => {
                             const childActive = child.href === current;
                             return (
@@ -200,7 +200,7 @@ export function AppNav({
                                   aria-current={childActive ? "page" : undefined}
                                   className={`block rounded py-2 pl-9 pr-3 text-base transition-colors ${
                                     childActive
-                                      ? "bg-white/15 font-medium text-white shadow-[inset_3px_0_0_0_#7fb0e6]"
+                                      ? "bg-white/10 font-medium text-white shadow-[inset_3px_0_0_0_#7fb0e6]"
                                       : "text-slate-200 hover:bg-white/10 hover:text-white"
                                   }`}
                                 >
