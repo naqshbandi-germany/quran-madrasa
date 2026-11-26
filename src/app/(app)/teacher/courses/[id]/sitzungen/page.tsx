@@ -3,8 +3,10 @@ import Link from "next/link";
 import { RemoveForm } from "../remove-form";
 import { ConfirmButton } from "@/components/confirm-button";
 import { CourseStatusBadge } from "@/components/course-status-badge";
+import { DateTimeField } from "@/components/date-time-fields";
 import { EditableRow } from "@/components/editable-row";
-import { SeriesForm, SingleSessionForm } from "@/components/session-forms";
+import { SeriesForm } from "@/components/series-form";
+import { SingleSessionForm } from "@/components/session-forms";
 import { TimeZoneNotice } from "@/components/time-zone-notice";
 import { isZoomProvider } from "@/lib/classroom";
 import { requireManagedCourse } from "@/lib/course-manage";
@@ -136,16 +138,10 @@ function SessionRow({
       <form action={updateClassSession} className="grid gap-3 sm:grid-cols-2">
         <input type="hidden" name="sessionId" value={s.id} />
         <input name="title" required defaultValue={s.title} aria-label="Titel" className={`col-span-full ${INPUT}`} />
-        <label className="flex flex-col text-brand-700">
-          Beginn
-          <input
-            name="startsAt"
-            type="datetime-local"
-            required
-            defaultValue={toZonedInputValue(s.startsAt, timeZone)}
-            className={`mt-1 ${INPUT}`}
-          />
-        </label>
+        <div className="flex flex-col text-brand-700">
+          <label htmlFor={`stunde-${s.id}-date`}>Beginn</label>
+          <DateTimeField name="startsAt" idPrefix={`stunde-${s.id}`} defaultValue={toZonedInputValue(s.startsAt, timeZone)} />
+        </div>
         <label className="flex flex-col text-brand-700">
           Dauer in Minuten
           <input
@@ -329,7 +325,8 @@ export default async function CourseSessionsPage({
                 >
                   <SeriesForm
                     courseId={course.id}
-                    datesRequired={started}
+                    started={started}
+                    courseEndsOn={dateInput(course.endsOn) || null}
                     submitLabel={started ? "Für alle kommenden Stunden speichern" : "Speichern"}
                     defaults={{
                       id: s.id,
@@ -352,7 +349,8 @@ export default async function CourseSessionsPage({
           <div className="mt-4">
             <SeriesForm
               courseId={course.id}
-              datesRequired={started}
+              started={started}
+                    courseEndsOn={dateInput(course.endsOn) || null}
               submitLabel="Serie anlegen"
               defaults={{
                 title: course.title,

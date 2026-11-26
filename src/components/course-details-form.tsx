@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 
+import { DateField } from "@/components/date-time-fields";
 import type { ActionResult } from "@/lib/account-actions";
 import { AGE_GROUP_LABELS } from "@/lib/course-labels";
 import { updateCourseDetails } from "@/lib/course-manage-actions";
@@ -44,16 +45,16 @@ export function CourseDetailsForm({ course }: { course: CourseDetails }) {
         Level (optional)
         <input name="level" defaultValue={course.level} placeholder="z. B. Level 1" className={INPUT} />
       </label>
-      <label className="text-sm font-medium text-brand-700">
-        Laufzeit von
-        <input name="startsOn" type="date" defaultValue={course.startsOn} className={INPUT} />
+      <div className="text-sm font-medium text-brand-700">
+        <label htmlFor="kurs-startsOn">Laufzeit von</label>
+        <DateField id="kurs-startsOn" name="startsOn" defaultValue={course.startsOn} invalid={Boolean(state.errors?.startsOn)} />
         {error("startsOn")}
-      </label>
-      <label className="text-sm font-medium text-brand-700">
-        Laufzeit bis
-        <input name="endsOn" type="date" defaultValue={course.endsOn} className={INPUT} />
+      </div>
+      <div className="text-sm font-medium text-brand-700">
+        <label htmlFor="kurs-endsOn">Laufzeit bis</label>
+        <DateField id="kurs-endsOn" name="endsOn" defaultValue={course.endsOn} invalid={Boolean(state.errors?.endsOn)} />
         {error("endsOn")}
-      </label>
+      </div>
       <label className="text-sm font-medium text-brand-700">
         Höchstzahl Teilnehmer
         <input

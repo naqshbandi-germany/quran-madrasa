@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { EMPTY_SERIES, SeriesForm, SingleSessionForm } from "@/components/session-forms";
+import { EMPTY_SERIES, SeriesForm } from "@/components/series-form";
+import { SingleSessionForm } from "@/components/session-forms";
 import { prisma } from "@/lib/prisma";
 import { timeZoneLabel } from "@/lib/time-zones";
 import { resolveViewTimeZone } from "@/lib/view-time-zone";
@@ -24,8 +25,14 @@ export default async function NewAppointmentPage() {
   const courses = await prisma.course.findMany({
     where: isAdmin ? {} : { teacherId: session.user.id },
     orderBy: { title: "asc" },
-    select: { id: true, title: true },
+    select: { id: true, title: true, startedAt: true, endsOn: true },
   });
+  const seriesCourses = courses.map((c) => ({
+    id: c.id,
+    title: c.title,
+    started: Boolean(c.startedAt),
+    endsOn: c.endsOn ? c.endsOn.toISOString().slice(0, 10) : null,
+  }));
   const zoneHint = timeZone === "Europe/Berlin" ? "" : ` Zeiten in ${timeZoneLabel(timeZone)}.`;
 
   return (
@@ -50,7 +57,7 @@ export default async function NewAppointmentPage() {
               Z. B. Montag und Mittwoch 18:00–19:00. Steht sofort im Stundenplan; die Stunden mit Zoom-Link entstehen,
               sobald der Kurs läuft. Für einen laufenden Kurs sind erster und letzter Tag nötig.
             </p>
-            <SeriesForm courses={courses} defaults={EMPTY_SERIES} datesRequired={false} submitLabel="Serie anlegen" />
+            <SeriesForm courses={seriesCourses} defaults={EMPTY_SERIES} submitLabel="Serie anlegen" />
           </section>
 
           <section className={BOX}>

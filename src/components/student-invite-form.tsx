@@ -3,6 +3,7 @@
 import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 
 import { CopyButton } from "@/components/copy-button";
+import { DateTimeField } from "@/components/date-time-fields";
 import { EmailPreview } from "@/components/email-preview";
 import { PencilIcon, XIcon } from "@/components/icons";
 import { SampleRangeFields } from "@/components/sample-range-fields";
@@ -486,17 +487,16 @@ export function StudentInviteForm({
               ) : (
                 <>
                   <div className="flex flex-wrap gap-3">
-                    <label className="text-sm text-brand-800">
-                      Datum und Uhrzeit
-                      <input
-                        type="datetime-local"
+                    <div className="min-w-[20rem] text-sm text-brand-800">
+                      <label htmlFor="probestunde-date">Datum und Uhrzeit</label>
+                      <DateTimeField
                         name="trialStartsAt"
-                        required
+                        idPrefix="probestunde"
                         value={trialStartsAt}
-                        onChange={(e) => setTrialStartsAt(e.target.value)}
-                        className={`${INPUT} mt-1 block`}
+                        onChange={setTrialStartsAt}
+                        notBefore="today"
                       />
-                    </label>
+                    </div>
                     <label className="text-sm text-brand-800">
                       Dauer
                       <select
