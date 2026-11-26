@@ -105,7 +105,8 @@ export async function saveSeries(formData: FormData) {
   const parsed = seriesSchema.safeParse({
     courseId,
     seriesId: text(formData, "seriesId") || undefined,
-    title: text(formData, "title"),
+    // Ohne Titel (Termine > Termin anlegen) gilt der Kurstitel.
+    title: text(formData, "title") || course.title,
     weekdays: formData.getAll("weekdays"),
     startTime: text(formData, "startTime"),
     endTime: text(formData, "endTime"),
