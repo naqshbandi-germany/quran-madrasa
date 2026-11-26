@@ -72,8 +72,8 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
           </p>
         </div>
         <div className="flex flex-wrap gap-3 text-sm">
-          <Link href={past ? "/teacher/termine" : "/teacher/termine?zeit=vergangen"} className="font-medium text-brand-700 underline">
-            {past ? "Kommende Termine" : "Vergangene Termine"}
+          <Link href="/teacher/termine/neu" className="btn-primary px-4 py-2">
+            Termin anlegen
           </Link>
           <Link href="/teacher/schueler/einladen" className="btn-primary px-4 py-2">
             Zur Probestunde einladen
@@ -82,6 +82,25 @@ export default async function AppointmentsPage({ searchParams }: { searchParams:
       </div>
 
       <TimeZoneNotice timeZone={timeZone} ownTimeZone={ownTimeZone} showingOwn={showingOwn} />
+
+      {/* Umschalter kommende / vergangene Termine, direkt ueber den Listen */}
+      <nav aria-label="Zeitraum" className="inline-flex border border-brand-300 bg-white text-sm">
+        {(
+          [
+            ["/teacher/termine", "Kommende", !past],
+            ["/teacher/termine?zeit=vergangen", "Vergangene (60 Tage)", past],
+          ] as const
+        ).map(([href, label, active]) => (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={`px-4 py-2 font-medium ${active ? "bg-azure-800 text-white" : "text-brand-700 hover:bg-brand-50"}`}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
 
       <section aria-labelledby="kurstermine" className="space-y-3">
         <h2 id="kurstermine" className="font-semibold text-azure-800">

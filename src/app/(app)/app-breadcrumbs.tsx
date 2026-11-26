@@ -21,6 +21,7 @@ const STATIC_LABELS: Record<string, string> = {
   "/teacher/schueler": "Schüler",
   "/teacher/schueler/einladen": "Schüler einladen",
   "/teacher/termine": "Termine",
+  "/teacher/termine/neu": "Termin anlegen",
   "/teacher/profil": "Mein Profil",
   "/teacher/mediathek": "Mediathek",
   "/teacher/emails": "E-Mails",

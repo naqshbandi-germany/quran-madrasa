@@ -4,15 +4,15 @@ import { RemoveForm } from "../remove-form";
 import { ConfirmButton } from "@/components/confirm-button";
 import { CourseStatusBadge } from "@/components/course-status-badge";
 import { EditableRow } from "@/components/editable-row";
+import { SeriesForm, SingleSessionForm } from "@/components/session-forms";
 import { TimeZoneNotice } from "@/components/time-zone-notice";
 import { isZoomProvider } from "@/lib/classroom";
-import { WEEKDAY_LABELS, WEEKDAY_ORDER } from "@/lib/course-labels";
 import { requireManagedCourse } from "@/lib/course-manage";
 import { prisma } from "@/lib/prisma";
 import { formatGermanDateTime, formatZonedDateTime, toZonedInputValue } from "@/lib/schedule-time";
 import { convertSeriesZone, dateKey, formatSeriesPeriod, formatSeriesTimes, seriesOccurrences } from "@/lib/series";
-import { endSeries, saveSeries, startCourse } from "@/lib/series-actions";
-import { cancelClassSession, createClassSession, deleteClassSession, updateClassSession } from "@/lib/teacher-actions";
+import { endSeries, startCourse } from "@/lib/series-actions";
+import { cancelClassSession, deleteClassSession, updateClassSession } from "@/lib/teacher-actions";
 import { teacherTimeZone, timeZoneLabel } from "@/lib/time-zones";
 import { resolveViewTimeZone } from "@/lib/view-time-zone";
 
@@ -169,84 +169,6 @@ function SessionRow({
         <button className={`col-span-full ${SAVE_BUTTON}`}>Speichern</button>
       </form>
     </EditableRow>
-  );
-}
-
-type SeriesDefaults = {
-  id?: string;
-  title: string;
-  weekdays: string[];
-  startTime: string;
-  endTime: string;
-  firstDate: string;
-  lastDate: string;
-  note: string;
-};
-
-function SeriesForm({
-  courseId,
-  defaults,
-  datesRequired,
-  submitLabel,
-}: {
-  courseId: string;
-  defaults: SeriesDefaults;
-  datesRequired: boolean;
-  submitLabel: string;
-}) {
-  return (
-    <form action={saveSeries} className="grid gap-3 text-sm sm:grid-cols-2">
-      <input type="hidden" name="courseId" value={courseId} />
-      {defaults.id && <input type="hidden" name="seriesId" value={defaults.id} />}
-      <label className="col-span-full flex flex-col text-brand-700">
-        Titel der Stunden
-        <input name="title" required defaultValue={defaults.title} className={`mt-1 ${INPUT}`} />
-      </label>
-      <fieldset className="col-span-full">
-        <legend className="text-brand-700">Wochentage</legend>
-        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-2">
-          {WEEKDAY_ORDER.map((day) => (
-            <label key={day} className="inline-flex items-center gap-1.5">
-              <input type="checkbox" name="weekdays" value={day} defaultChecked={defaults.weekdays.includes(day)} />
-              {WEEKDAY_LABELS[day]}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <label className="flex flex-col text-brand-700">
-        Beginn
-        <input name="startTime" type="time" required defaultValue={defaults.startTime} className={`mt-1 ${INPUT}`} />
-      </label>
-      <label className="flex flex-col text-brand-700">
-        Ende
-        <input name="endTime" type="time" required defaultValue={defaults.endTime} className={`mt-1 ${INPUT}`} />
-      </label>
-      <label className="flex flex-col text-brand-700">
-        Erster Tag{datesRequired ? "" : " (optional)"}
-        <input
-          name="firstDate"
-          type="date"
-          required={datesRequired}
-          defaultValue={defaults.firstDate}
-          className={`mt-1 ${INPUT}`}
-        />
-      </label>
-      <label className="flex flex-col text-brand-700">
-        Letzter Tag{datesRequired ? "" : " (optional)"}
-        <input
-          name="lastDate"
-          type="date"
-          required={datesRequired}
-          defaultValue={defaults.lastDate}
-          className={`mt-1 ${INPUT}`}
-        />
-      </label>
-      <label className="col-span-full flex flex-col text-brand-700">
-        Hinweis im Stundenplan (optional, z. B. „Morgens“)
-        <input name="note" defaultValue={defaults.note} className={`mt-1 ${INPUT}`} />
-      </label>
-      <button className={`col-span-full ${SAVE_BUTTON}`}>{submitLabel}</button>
-    </form>
   );
 }
 
@@ -489,25 +411,7 @@ export default async function CourseSessionsPage({
             Für Zusatz- oder Ersatztermine außerhalb einer Serie. Ohne eigenen Link wird automatisch {meetingDescription}{" "}
             erzeugt.{zoneHint}
           </p>
-          <form action={createClassSession} className="grid gap-3 text-sm sm:grid-cols-2">
-            <input type="hidden" name="courseId" value={course.id} />
-            <input name="title" placeholder="Titel (z. B. Ersatzstunde)" required className={`col-span-full ${INPUT}`} />
-            <label className="flex flex-col text-brand-700">
-              Beginn
-              <input name="startsAt" type="datetime-local" required className={`mt-1 ${INPUT}`} />
-            </label>
-            <label className="flex flex-col text-brand-700">
-              Dauer in Minuten
-              <input name="durationMin" type="number" min={5} max={480} defaultValue={60} className={`mt-1 ${INPUT}`} />
-            </label>
-            <input
-              name="joinUrl"
-              type="url"
-              placeholder="Eigener Link (optional, ersetzt die automatische Erzeugung)"
-              className={`col-span-full ${INPUT}`}
-            />
-            <button className={`col-span-full ${SAVE_BUTTON}`}>Stunde anlegen</button>
-          </form>
+          <SingleSessionForm courseId={course.id} />
         </details>
       </section>
     </div>
