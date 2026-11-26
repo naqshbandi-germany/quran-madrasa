@@ -1,5 +1,6 @@
 import { AgeGroup, Role, Weekday } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 
 import { prisma } from "../src/lib/prisma";
 
@@ -91,31 +92,37 @@ const FLYER_COURSES = [
   },
 ];
 
+// Nur fuer die lokale Entwicklung: legt Beispielkonten an und darf keine entfernte Datenbank treffen.
+function assertLocalDatabase() {
+  const host = new URL(process.env.DATABASE_URL ?? "postgresql://unbekannt").hostname;
+  if (!["localhost", "127.0.0.1", "[::1]"].includes(host)) {
+    throw new Error("Der Seed ist nur für eine lokale Datenbank gedacht (DATABASE_URL zeigt nicht auf localhost).");
+  }
+}
+
+// Beispielkonto anlegen, falls es fehlt. Das Passwort kommt aus der Umgebungsvariable oder wird
+// zufaellig erzeugt und einmal ausgegeben; bestehende Konten bleiben unveraendert.
+async function ensureAccount(email: string, name: string, role: Role, envKey: string) {
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) return existing;
+  const fromEnv = process.env[envKey];
+  const password = fromEnv || randomBytes(12).toString("base64url");
+  const user = await prisma.user.create({
+    data: { name, email, role, passwordHash: await bcrypt.hash(password, 10) },
+  });
+  console.log(`${name}: ${email} / ${fromEnv ? `(Passwort aus ${envKey})` : password}`);
+  return user;
+}
+
 async function main() {
-  const adminPasswordHash = await bcrypt.hash("admin1234", 10);
-  await prisma.user.upsert({
-    where: { email: "admin@quran-madrasa.de" },
-    update: {},
-    create: {
-      name: "Admin",
-      email: "admin@quran-madrasa.de",
-      passwordHash: adminPasswordHash,
-      role: Role.ADMIN,
-    },
-  });
-
-  const passwordHash = await bcrypt.hash("lehrer1234", 10);
-
-  const teacher = await prisma.user.upsert({
-    where: { email: "lehrer@quran-madrasa.de" },
-    update: {},
-    create: {
-      name: "Abdul Fattah",
-      email: "lehrer@quran-madrasa.de",
-      passwordHash,
-      role: Role.TEACHER,
-    },
-  });
+  assertLocalDatabase();
+  await ensureAccount("admin@quran-madrasa.de", "Admin", Role.ADMIN, "SEED_ADMIN_PASSWORD");
+  const teacher = await ensureAccount(
+    "lehrer@quran-madrasa.de",
+    "Abdul Fattah",
+    Role.TEACHER,
+    "SEED_TEACHER_PASSWORD",
+  );
 
   for (const { schedule, ...courseData } of FLYER_COURSES) {
     const course = await prisma.course.upsert({
@@ -137,7 +144,7 @@ async function main() {
     });
   }
 
-  console.log("Seed abgeschlossen. Lehrer-Login: lehrer@quran-madrasa.de / lehrer1234");
+  console.log("Seed abgeschlossen.");
 }
 
 main()

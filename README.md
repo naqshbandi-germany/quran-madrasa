@@ -324,8 +324,10 @@ npx prisma migrate dev
 npm run seed
 ```
 
-Der Seed legt einen Beispiel-Lehrer an (`lehrer@quran-madrasa.de` / `lehrer1234`) sowie
-zwei Beispielkurse.
+Der Seed läuft nur gegen eine lokale Datenbank. Er legt einen Admin (`admin@quran-madrasa.de`), einen
+Beispiel-Lehrer (`lehrer@quran-madrasa.de`) und Beispielkurse an. Die Passwörter werden zufällig
+erzeugt und beim ersten Lauf einmal ausgegeben; eigene lassen sich mit `SEED_ADMIN_PASSWORD` und
+`SEED_TEACHER_PASSWORD` vorgeben.
 
 ### 4. Stripe-Preise anlegen
 
