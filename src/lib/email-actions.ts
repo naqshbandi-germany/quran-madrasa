@@ -116,12 +116,12 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
   const attachments: { filename: string; content: Buffer }[] = [];
   for (const f of files.filter((file) => !asLink.has(file.id))) {
     if (f.data) {
-      attachments.push({ filename: f.fileName, content: Buffer.from(f.data) });
+      attachments.push({ filename: attachmentName(f), content: Buffer.from(f.data) });
     } else if (f.blobPathname) {
       try {
         const blob = await openBlob(f.blobPathname);
         if (!blob?.stream) throw new Error("nicht gefunden");
-        attachments.push({ filename: f.fileName, content: Buffer.from(await new Response(blob.stream).arrayBuffer()) });
+        attachments.push({ filename: attachmentName(f), content: Buffer.from(await new Response(blob.stream).arrayBuffer()) });
       } catch (err) {
         console.error(`Anhang ${f.fileName} konnte nicht geladen werden:`, err);
         return { ok: false, message: `Die Datei „${f.title}“ konnte nicht geladen werden. Es wurde nichts verschickt.` };
@@ -134,6 +134,7 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
     .map((f) => ({ name: f.title, url: `${getAppUrl()}${signedMediaPath(f.id)}` }));
 
   const failed: string[] = [];
+  let lastError = "";
   for (const recipient of recipients) {
     try {
       const content =
@@ -165,13 +166,18 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
     } catch (err) {
       console.error(`Kurs-E-Mail an ${recipient.email} fehlgeschlagen:`, err);
       failed.push(recipient.email);
+      lastError = err instanceof Error ? err.message : String(err);
     }
   }
 
   revalidatePath(`/teacher/courses/${course.id}`);
   const sent = recipients.length - failed.length;
   if (sent === 0) {
-    return { ok: false, message: "Die E-Mail konnte nicht verschickt werden. Bitte versuche es später erneut." };
+    // Die Meldung des Mail-Dienstes mitgeben, damit sich der Fehler eingrenzen laesst.
+    return {
+      ok: false,
+      message: `Die E-Mail konnte nicht verschickt werden${lastError ? ` (Mail-Dienst: ${lastError})` : ""}. Bitte versuche es später erneut.`,
+    };
   }
   const parts = [`${enrollments.length} Teilnehmer`];
   if (links.length > 0) parts.push(`${links.length} ${links.length === 1 ? "Download-Link" : "Download-Links"}`);
@@ -185,4 +191,20 @@ export async function sendCourseEmail(_prev: ActionResult, formData: FormData): 
     ok: failed.length === 0,
     message: failed.length ? `${base} Nicht zugestellt an: ${failed.join(", ")}.` : base,
   };
+}
+
+// Dateiname des Anhangs: der Titel aus der Mediathek mit der Endung der Datei (statt z. B.
+// "WhatsApp Image 2026-11-25 at 7.54.35 PM.jpeg"). Sonderleerzeichen und Steuerzeichen, wie sie
+// in Dateinamen vom Handy vorkommen, werden ersetzt, weil Mail-Dienste daran scheitern koennen.
+function attachmentName(file: { title: string; fileName: string }) {
+  const clean = (value: string) =>
+    value
+      .normalize("NFC")
+      .replace(/[\u00a0\u2000-\u200b\u202f\u205f\u3000]/g, " ")
+      .replace(/[\u0000-\u001f\u007f"\/:*?<>|]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  const ext = /\.[a-z0-9]{1,5}$/i.exec(file.fileName)?.[0] ?? "";
+  const base = clean(file.title).replace(/\.[a-z0-9]{1,5}$/i, "") || clean(file.fileName).replace(/\.[a-z0-9]{1,5}$/i, "");
+  return `${base.slice(0, 100) || "Anhang"}${ext.toLowerCase()}`;
 }
